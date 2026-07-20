@@ -1,19 +1,23 @@
 <script setup lang="ts">
+// 선택 기간의 학습 데이터를 여러 차트와 요약 카드로 구성해 보고서 형태로 보여 줍니다.
 import { ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
 import SaveToast from '@/components/common/SaveToast.vue'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 
+// 기간, 보고서 생성·수정 상태, 메모처럼 변경 가능한 화면 값을 ref로 관리합니다.
 const startDate = ref('2026-06-15')
 const endDate = ref('2026-07-15')
-const loaded = ref(false)
-const saved = ref(false)
+const generated = ref(false)
+const editing = ref(true)
+const { visible: reportSaved, show: showReportSaved } = useTemporaryNotice()
 const { visible: memoSaved, show: showMemoSaved } = useTemporaryNotice()
 const memo = ref(
   '학생은 최근 4주 동안 읽기 정확도와 유창성에서 꾸준한 향상을 보였습니다. 다음 학습에서는 낯선 낱말의 의미를 문맥으로 추론하는 활동을 강화할 예정입니다.',
 )
 
+// 정확도와 유창성 두 지표의 시간에 따른 변화를 비교하는 선 그래프 설정입니다.
 const trendChart: EChartsOption = {
   tooltip: { trigger: 'axis' },
   legend: { data: ['읽기 정확도', '읽기 유창성'], top: 8 },
@@ -40,6 +44,7 @@ const trendChart: EChartsOption = {
   ],
 }
 
+// 읽기 영역별 현재 점수를 가로 막대로 비교하는 차트 설정입니다.
 const domainChart: EChartsOption = {
   tooltip: { trigger: 'axis' },
   grid: { left: 76, right: 24, top: 18, bottom: 24 },
@@ -55,6 +60,7 @@ const domainChart: EChartsOption = {
   ],
 }
 
+// 최근 4주의 학습 시간을 세로 막대로 보여 주는 차트 설정입니다.
 const activityChart: EChartsOption = {
   tooltip: { trigger: 'axis' },
   grid: { left: 48, right: 24, top: 24, bottom: 36 },
@@ -69,50 +75,55 @@ const activityChart: EChartsOption = {
   ],
 }
 
-function loadReport() {
-  loaded.value = true
-  window.setTimeout(() => (loaded.value = false), 1200)
+function handleReportAction() {
+  if (generated.value && !editing.value) {
+    editing.value = true
+    return
+  }
+  generated.value = true
+  editing.value = false
 }
 
 function printReport() {
+  // 브라우저의 기본 인쇄 창을 열며 @media print CSS가 인쇄용 모양을 적용합니다.
   window.print()
 }
 </script>
 
 <template>
+  <!-- print-hidden 클래스가 있는 조작 버튼과 필터는 인쇄 결과에서 제외됩니다. -->
   <div class="report page-stack">
     <header class="page-heading print-hidden">
       <div>
         <h1>학습 보고서</h1>
         <p>선택한 기간의 학습 기록과 변화 추이를 종합해 제공합니다.</p>
       </div>
-      <div class="report-actions">
-        <button class="button button--secondary" type="button" @click="saved = true">
-          보고서 저장
-        </button>
-        <button class="button" type="button" @click="printReport">출력</button>
-      </div>
     </header>
-
-    <div v-if="saved" class="status-message print-hidden">
-      보고서가 목업 데이터에 저장되었습니다.
-    </div>
 
     <section class="surface report-filter print-hidden">
       <div class="field">
         <label for="start-date">시작일</label
-        ><input id="start-date" v-model="startDate" class="input" type="date" />
+        ><input id="start-date" v-model="startDate" class="input" type="date" :disabled="!editing" />
       </div>
       <span>부터</span>
       <div class="field">
         <label for="end-date">종료일</label
-        ><input id="end-date" v-model="endDate" class="input" type="date" />
+        ><input id="end-date" v-model="endDate" class="input" type="date" :disabled="!editing" />
       </div>
-      <button class="button" type="button" @click="loadReport">
-        {{ loaded ? '불러오는 중…' : '보고서 불러오기' }}
-      </button>
+      <div class="report-actions">
+        <button class="button" type="button" @click="handleReportAction">
+          {{ generated && !editing ? '보고서 수정' : '보고서 생성' }}
+        </button>
+        <template v-if="generated && !editing">
+          <button class="button button--secondary" type="button" @click="showReportSaved">보고서 저장</button>
+          <button class="button button--secondary" type="button" @click="printReport">출력</button>
+        </template>
+      </div>
     </section>
 
+    <div v-if="reportSaved" class="status-message print-hidden">보고서가 저장되었습니다.</div>
+
+    <template v-if="generated">
     <section class="surface report-cover">
       <div>
         <span>iRead Learning Report</span>
@@ -144,6 +155,7 @@ function printReport() {
           <p>읽기 정확도와 유창성의 기간별 변화</p>
         </div>
       </div>
+      <!-- 차트 설정은 props로 전달하고 접근성 문구로 차트 의미를 함께 제공합니다. -->
       <ChartPanel :option="trendChart" height="360px" aria-label="학습 변화 추이 차트" />
     </section>
 
@@ -196,6 +208,7 @@ function printReport() {
     </section>
 
     <section class="surface report-memo">
+      <!-- useTemporaryNotice의 memoSaved가 true인 동안만 저장 완료 토스트가 보입니다. -->
       <SaveToast :visible="memoSaved" />
       <div class="surface-header">
         <div>
@@ -208,13 +221,13 @@ function printReport() {
         <button class="button print-hidden" type="button" @click="showMemoSaved">메모 저장</button>
       </div>
     </section>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .report {
-  max-width: 1160px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .report-actions {
@@ -223,6 +236,7 @@ function printReport() {
 }
 
 .report-filter {
+  /* 시작일, 종료일, 불러오기 버튼을 한 줄 아래 기준으로 정렬합니다. */
   display: flex;
   align-items: end;
   gap: 14px;
@@ -238,7 +252,12 @@ function printReport() {
   color: var(--slate-500);
 }
 
+.report-filter .report-actions {
+  margin-left: auto;
+}
+
 .report-cover {
+  /* 보고서 표지는 좌우 정렬과 그라데이션 배경으로 문서 표지처럼 표현합니다. */
   display: flex;
   min-height: 180px;
   align-items: center;
@@ -275,6 +294,7 @@ function printReport() {
 }
 
 .report-metrics {
+  /* 네 핵심 지표를 같은 너비의 네 열로 나란히 표시합니다. */
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(4, 1fr);
@@ -313,6 +333,7 @@ function printReport() {
 }
 
 .report-section :deep(.chart-panel) {
+  /* scoped CSS 범위를 넘어 재사용 차트 컴포넌트 내부에 여백을 줍니다. */
   padding: 10px 18px 0;
 }
 
@@ -323,6 +344,7 @@ function printReport() {
 }
 
 .pattern-grid {
+  /* 개선된 패턴과 어려운 패턴 카드를 같은 너비로 비교합니다. */
   display: grid;
   gap: 18px;
   padding: 22px;
@@ -380,6 +402,7 @@ function printReport() {
 }
 
 @media print {
+  /* 인쇄 시 화면용 최대 너비를 해제하여 종이 폭을 충분히 사용합니다. */
   .report {
     max-width: none;
   }

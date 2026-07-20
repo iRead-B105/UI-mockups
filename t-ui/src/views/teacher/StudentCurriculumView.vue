@@ -1,57 +1,94 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { curriculumItems, recommendedCurriculum } from '@/features/teacher/mockData'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import SaveToast from '@/components/common/SaveToast.vue'
+import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
+import { curriculumItems, recommendedCurriculum as mockRecommendations } from '@/features/teacher/mockData'
+import type { RecommendedCurriculumItem } from '@/features/teacher/types'
 
 const selectedItemId = ref(curriculumItems[0]?.id ?? 1)
-const editMode = ref(false)
-const saved = ref(false)
-const items = ref(curriculumItems.map((item) => ({ ...item })))
-const selectedItem = computed(() => items.value.find((item) => item.id === selectedItemId.value))
+const editRecommendations = ref(false)
+const recommendations = ref(mockRecommendations.map((item) => ({ ...item })))
+const draggedRecommendationId = ref<number>()
+const recommendationPendingDeletion = ref<RecommendedCurriculumItem>()
+const nextRecommendationId = ref(Math.max(0, ...recommendations.value.map((item) => item.id)) + 1)
+const { visible: saved, show: showSaved } = useTemporaryNotice()
 
-function moveItem(direction: -1 | 1) {
-  const index = items.value.findIndex((item) => item.id === selectedItemId.value)
-  const nextIndex = index + direction
-  if (index < 0 || nextIndex < 0 || nextIndex >= items.value.length) return
-  const next = items.value[nextIndex]
-  const current = items.value[index]
-  if (!next || !current) return
-  items.value[index] = next
-  items.value[nextIndex] = current
-  items.value.forEach((item, itemIndex) => (item.order = itemIndex + 1))
+const selectedItem = computed(() =>
+  curriculumItems.find((item) => item.id === selectedItemId.value),
+)
+
+function startDragging(id: number) {
+  if (editRecommendations.value) draggedRecommendationId.value = id
+}
+
+function dropRecommendation(targetId: number) {
+  const draggedId = draggedRecommendationId.value
+  if (!editRecommendations.value || draggedId === undefined || draggedId === targetId) return
+  const from = recommendations.value.findIndex((item) => item.id === draggedId)
+  const to = recommendations.value.findIndex((item) => item.id === targetId)
+  if (from < 0 || to < 0) return
+  const [moved] = recommendations.value.splice(from, 1)
+  if (moved) recommendations.value.splice(to, 0, moved)
+  draggedRecommendationId.value = undefined
+}
+
+function updateCount(item: RecommendedCurriculumItem, amount: number) {
+  item.count = Math.max(1, item.count + amount)
+}
+
+function deleteRecommendation() {
+  if (!recommendationPendingDeletion.value) return
+  recommendations.value = recommendations.value.filter(
+    (item) => item.id !== recommendationPendingDeletion.value?.id,
+  )
+  recommendationPendingDeletion.value = undefined
+}
+
+function addSelectedTraining() {
+  const training = selectedItem.value
+  if (!training) return
+  const existing = recommendations.value.find((item) => item.trainingId === training.id)
+  if (existing) {
+    existing.count += 1
+    return
+  }
+  recommendations.value.push({
+    id: nextRecommendationId.value++,
+    trainingId: training.id,
+    category: training.category,
+    title: training.title,
+    count: 1,
+  })
 }
 </script>
 
 <template>
   <div class="curriculum page-stack">
+    <SaveToast :visible="saved" message="커리큘럼 변경 사항이 저장되었습니다." />
     <header class="page-heading">
       <div>
         <h1>커리큘럼 관리</h1>
-        <p>현재 훈련 순서를 확인하고 다음 회차 추천안을 편집합니다.</p>
+        <p>쉬운 단계부터 전체 훈련을 확인하고 다음 회차 구성을 관리합니다.</p>
       </div>
-      <button class="button" type="button" @click="editMode = !editMode">
-        {{ editMode ? '편집 완료' : '순서 편집' }}
-      </button>
+      <button class="button" type="button" @click="showSaved">변경 사항 저장</button>
     </header>
-
-    <div v-if="saved" class="status-message">
-      커리큘럼 변경 사항이 목업 데이터에 저장되었습니다.
-    </div>
 
     <div class="curriculum-grid">
       <section class="surface current-list">
         <div class="surface-header">
           <div>
             <h2>전체 훈련 목록</h2>
-            <p>항목을 선택하면 상세 정보를 확인할 수 있습니다.</p>
+            <p>음운 인식부터 이해력까지 쉬운 순서로 나열했습니다.</p>
           </div>
-          <span>{{ items.length }}개</span>
+          <span>{{ curriculumItems.length }}개</span>
         </div>
         <div class="curriculum-table">
           <div class="curriculum-table__head">
             <span>순서</span><span>카테고리</span><span>훈련명</span><span>달성률</span>
           </div>
           <button
-            v-for="item in items"
+            v-for="item in curriculumItems"
             :key="item.id"
             class="curriculum-row"
             :class="{ active: item.id === selectedItemId }"
@@ -64,39 +101,51 @@ function moveItem(direction: -1 | 1) {
             <span class="achievement">{{ item.achievement }}%</span>
           </button>
         </div>
-        <div v-if="editMode" class="reorder-actions">
-          <button
-            class="button button--secondary button--small"
-            type="button"
-            @click="moveItem(-1)"
-          >
-            ↑ 위로
-          </button>
-          <button class="button button--secondary button--small" type="button" @click="moveItem(1)">
-            ↓ 아래로
-          </button>
-        </div>
       </section>
 
       <section class="surface recommendations">
         <div class="surface-header">
           <div>
             <h2>다음 회차 추천 커리큘럼</h2>
-            <p>최근 성취도를 기준으로 구성한 추천안입니다.</p>
+            <p>{{ editRecommendations ? '끌어서 순서를 바꾸고 시행 횟수를 조절하세요.' : '다음 회차에 진행할 훈련 순서입니다.' }}</p>
           </div>
-          <span class="ai-label">AI 추천</span>
+          <button class="edit-button" type="button" @click="editRecommendations = !editRecommendations">
+            {{ editRecommendations ? '수정 완료' : '수정' }}
+          </button>
         </div>
+
         <div class="recommendation-list">
-          <article v-for="(item, index) in recommendedCurriculum" :key="item">
-            <span>{{ index + 1 }}</span>
-            <div>
-              <small>{{ index < 2 ? '파닉스' : index === 2 ? '유창성' : '이해력' }}</small>
-              <strong>{{ item }}</strong>
+          <article
+            v-for="(item, index) in recommendations"
+            :key="item.id"
+            :draggable="editRecommendations"
+            :class="{ editable: editRecommendations, dragging: draggedRecommendationId === item.id }"
+            @dragstart="startDragging(item.id)"
+            @dragend="draggedRecommendationId = undefined"
+            @dragover.prevent
+            @drop="dropRecommendation(item.id)"
+          >
+            <span class="drag-handle" :aria-hidden="!editRecommendations">{{ editRecommendations ? '⋮⋮' : index + 1 }}</span>
+            <div class="recommendation-copy">
+              <small>{{ item.category }}</small>
+              <strong>{{ item.title }}</strong>
             </div>
-            <button type="button" aria-label="추천 항목 제거">×</button>
+            <div v-if="editRecommendations" class="count-control" aria-label="시행 횟수 조절">
+              <button type="button" aria-label="횟수 줄이기" @click="updateCount(item, -1)">−</button>
+              <b>{{ item.count }}회</b>
+              <button type="button" aria-label="횟수 늘리기" @click="updateCount(item, 1)">＋</button>
+            </div>
+            <span v-else class="count-label">{{ item.count }}회</span>
+            <button
+              v-if="editRecommendations"
+              class="remove-button"
+              type="button"
+              :aria-label="`${item.title} 삭제`"
+              @click="recommendationPendingDeletion = item"
+            >×</button>
           </article>
+          <p v-if="recommendations.length === 0" class="empty-recommendations">선택한 훈련에서 다음 회차 훈련을 추가해 주세요.</p>
         </div>
-        <button class="add-training" type="button">＋ 훈련 추가</button>
       </section>
     </div>
 
@@ -104,194 +153,59 @@ function moveItem(direction: -1 | 1) {
       <div>
         <span class="detail-label">선택한 훈련</span>
         <h2>{{ selectedItem?.title }}</h2>
-        <p>학생이 혼동하기 쉬운 받침 소리를 낱말과 짧은 문장으로 반복 연습합니다.</p>
       </div>
       <dl>
-        <div>
-          <dt>카테고리</dt>
-          <dd>{{ selectedItem?.category }}</dd>
-        </div>
-        <div>
-          <dt>현재 달성률</dt>
-          <dd>{{ selectedItem?.achievement }}%</dd>
-        </div>
-        <div>
-          <dt>권장 학습 시간</dt>
-          <dd>15분</dd>
-        </div>
+        <div><dt>카테고리</dt><dd>{{ selectedItem?.category }}</dd></div>
+        <div><dt>현재 달성률</dt><dd>{{ selectedItem?.achievement }}%</dd></div>
+        <div><dt>권장 학습 시간</dt><dd>15분</dd></div>
       </dl>
-      <button class="button" type="button" @click="saved = true">커리큘럼 저장</button>
+      <button class="button" type="button" @click="addSelectedTraining">훈련 추가</button>
     </section>
+
+    <ConfirmDialog
+      :open="Boolean(recommendationPendingDeletion)"
+      title="추천 커리큘럼에서 삭제할까요?"
+      :message="`${recommendationPendingDeletion?.title ?? ''} 훈련을 다음 회차에서 제거합니다.`"
+      confirm-label="훈련 삭제"
+      @cancel="recommendationPendingDeletion = undefined"
+      @confirm="deleteRecommendation"
+    />
   </div>
 </template>
 
 <style scoped>
-.curriculum-grid {
-  display: grid;
-  gap: 20px;
-  grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
-}
-
-.surface-header p {
-  margin: 4px 0 0;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-
-.surface-header > span {
-  color: var(--slate-500);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.curriculum-table {
-  padding: 10px 18px 18px;
-}
-
+.curriculum { position: relative; }
+.curriculum-grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.05fr) minmax(460px, .95fr); }
+.surface-header p { margin: 4px 0 0; color: var(--slate-500); font-size: 12px; }
+.surface-header > span { color: var(--slate-500); font-size: 12px; font-weight: 700; }
+.curriculum-table { max-height: 610px; padding: 10px 18px 18px; overflow-y: auto; }
 .curriculum-table__head,
-.curriculum-row {
-  display: grid;
-  align-items: center;
-  gap: 12px;
-  grid-template-columns: 52px 86px 1fr 64px;
-}
-
-.curriculum-table__head {
-  padding: 10px 12px;
-  color: var(--slate-500);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.curriculum-row {
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 14px 12px;
-  border: 1px solid var(--slate-200);
-  border-radius: 9px;
-  background: var(--white);
-  color: var(--slate-700);
-  text-align: left;
-}
-
+.curriculum-row { display: grid; align-items: center; gap: 12px; grid-template-columns: 52px 90px 1fr 64px; }
+.curriculum-table__head { padding: 10px 12px; color: var(--slate-500); font-size: 12px; font-weight: 700; }
+.curriculum-row { width: 100%; margin-bottom: 8px; padding: 13px 12px; border: 1px solid var(--slate-200); border-radius: 9px; background: var(--white); color: var(--slate-700); text-align: left; }
 .curriculum-row:hover,
-.curriculum-row.active {
-  border-color: var(--primary-500);
-  background: var(--primary-50);
-}
-
-.achievement {
-  color: var(--primary-700);
-  font-weight: 800;
-  text-align: right;
-}
-
-.reorder-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 18px 18px;
-}
-
-.ai-label {
-  padding: 6px 9px;
-  border-radius: 999px;
-  background: #ecfeff;
-  color: #0f766e !important;
-}
-
-.recommendation-list {
-  display: grid;
-  gap: 10px;
-  padding: 18px;
-}
-
-.recommendation-list article {
-  display: grid;
-  align-items: center;
-  gap: 12px;
-  padding: 13px;
-  border: 1px solid var(--slate-200);
-  border-radius: 10px;
-  grid-template-columns: 32px 1fr 28px;
-}
-
-.recommendation-list article > span {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 9px;
-  background: var(--primary-50);
-  color: var(--primary-700);
-  font-weight: 800;
-}
-
-.recommendation-list small,
-.recommendation-list strong {
-  display: block;
-}
-
-.recommendation-list small {
-  margin-bottom: 3px;
-  color: var(--slate-500);
-}
-
-.recommendation-list button {
-  border: 0;
-  background: transparent;
-  color: var(--slate-400);
-  font-size: 20px;
-}
-
-.add-training {
-  width: calc(100% - 36px);
-  height: 40px;
-  margin: 0 18px 18px;
-  border: 1px dashed var(--primary-500);
-  border-radius: 9px;
-  background: var(--primary-50);
-  color: var(--primary-700);
-  font-weight: 700;
-}
-
-.curriculum-detail {
-  display: grid;
-  align-items: center;
-  gap: 30px;
-  padding: 24px;
-  grid-template-columns: 1fr auto auto;
-}
-
-.curriculum-detail h2 {
-  margin: 6px 0;
-  font-size: 18px;
-}
-
-.curriculum-detail p {
-  margin: 0;
-  color: var(--slate-500);
-}
-
-.detail-label {
-  color: var(--primary-600);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.curriculum-detail dl {
-  display: flex;
-  margin: 0;
-  gap: 22px;
-}
-
-.curriculum-detail dt {
-  color: var(--slate-500);
-  font-size: 11px;
-}
-
-.curriculum-detail dd {
-  margin: 3px 0 0;
-  font-weight: 800;
-}
+.curriculum-row.active { border-color: var(--primary-500); background: var(--primary-50); }
+.achievement { color: var(--primary-700); font-weight: 800; text-align: right; }
+.edit-button { min-width: 82px; height: 36px; border: 1px solid var(--primary-500); border-radius: 8px; background: var(--primary-50); color: var(--primary-700); font-weight: 800; }
+.recommendation-list { display: grid; gap: 10px; padding: 18px; }
+.recommendation-list article { display: grid; min-height: 72px; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--slate-200); border-radius: 10px; grid-template-columns: 32px 1fr auto auto; transition: 150ms ease; }
+.recommendation-list article.editable { cursor: grab; }
+.recommendation-list article.editable:hover { border-color: var(--primary-300, #a5b4fc); }
+.recommendation-list article.dragging { opacity: .45; transform: scale(.99); }
+.drag-handle { display: grid; width: 30px; height: 30px; border-radius: 9px; background: var(--primary-50); color: var(--primary-700); font-weight: 800; place-items: center; }
+.recommendation-copy small,
+.recommendation-copy strong { display: block; }
+.recommendation-copy small { margin-bottom: 2px; color: var(--slate-500); }
+.count-label { color: var(--slate-600); font-size: 12px; font-weight: 800; }
+.count-control { display: flex; align-items: center; gap: 6px; }
+.count-control button { width: 28px; height: 28px; border: 1px solid var(--slate-300); border-radius: 7px; background: var(--white); color: var(--slate-700); }
+.count-control b { min-width: 30px; font-size: 12px; text-align: center; }
+.remove-button { width: 30px; height: 30px; border: 0; background: transparent; color: var(--danger-600); font-size: 24px; font-weight: 800; }
+.empty-recommendations { margin: 8px 0; padding: 30px; border: 1px dashed var(--slate-300); border-radius: 10px; color: var(--slate-500); text-align: center; }
+.curriculum-detail { display: grid; align-items: center; gap: 30px; padding: 24px; grid-template-columns: 1fr auto auto; }
+.curriculum-detail h2 { margin: 6px 0 0; font-size: 18px; }
+.detail-label { color: var(--primary-600); font-size: 12px; font-weight: 800; }
+.curriculum-detail dl { display: flex; margin: 0; gap: 22px; }
+.curriculum-detail dt { color: var(--slate-500); font-size: 11px; }
+.curriculum-detail dd { margin: 3px 0 0; font-weight: 800; }
 </style>

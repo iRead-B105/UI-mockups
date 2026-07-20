@@ -1,8 +1,12 @@
+// interface는 객체가 어떤 항목과 자료형을 가져야 하는지 정하는 '데이터 설계도'입니다.
+// 실제 데이터는 만들지 않으며, 누락이나 잘못된 값은 개발 단계에서 찾도록 도와줍니다.
 export interface Student {
+  // id는 학생을 서로 구별하는 고유 번호입니다.
   id: number
   name: string
   age: number
   birthDate: string
+  // | 기호는 두 문자열 중 하나만 허용한다는 뜻입니다.
   gender: '남자' | '여자'
   phone: string
   school: string
@@ -11,6 +15,7 @@ export interface Student {
   guardianPhone: string
   guardianEmail: string
   address: string
+  lastLearningDate: string
   lastTestDate: string
   totalLearningTime: string
   latestTraining: string
@@ -19,14 +24,17 @@ export interface Student {
   weeklyAttendance: string
 }
 
+// 학생에게 배정된 커리큘럼 한 항목의 형태입니다.
 export interface CurriculumItem {
   id: number
   category: string
   order: number
   title: string
+  // 화면에서는 0~100 사이의 달성률 숫자로 사용합니다.
   achievement: number
 }
 
+// 한 번의 훈련 기록에 필요한 데이터 형태입니다.
 export interface TrainingSession {
   id: number
   title: string
@@ -34,4 +42,12 @@ export interface TrainingSession {
   achievement: number
   curriculum: string
   summary: string
+}
+
+export interface RecommendedCurriculumItem {
+  id: number
+  trainingId: number
+  category: string
+  title: string
+  count: number
 }

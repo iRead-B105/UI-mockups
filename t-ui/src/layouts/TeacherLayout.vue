@@ -1,40 +1,30 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterView, useRoute } from 'vue-router'
-import TeacherHeader from '@/components/teacher/TeacherHeader.vue'
+// 교수자 화면을 좌측 사이드바와 우측 메인 영역으로 나누는 공통 레이아웃입니다.
+import { RouterView } from 'vue-router'
 import TeacherSidebar from '@/components/teacher/TeacherSidebar.vue'
-
-const route = useRoute()
-const pageTitle = computed(() => String(route.meta.title ?? '교수자 페이지'))
 </script>
 
 <template>
+  <!-- shell은 교수자 페이지 전체를 감싸는 가장 바깥 컨테이너입니다. -->
   <div class="teacher-shell">
-    <TeacherHeader :title="pageTitle" />
-    <div class="teacher-main">
-      <TeacherSidebar />
-      <main class="teacher-content">
-        <RouterView />
-      </main>
-    </div>
+    <TeacherSidebar />
+    <main class="teacher-content"><RouterView /></main>
   </div>
 </template>
 
 <style scoped>
+/* scoped는 아래 CSS가 이 컴포넌트 내부 요소에만 적용되도록 범위를 제한합니다. */
 .teacher-shell {
-  min-height: 100vh;
-  background: var(--slate-50);
-}
-
-.teacher-main {
   display: grid;
-  min-height: calc(100vh - var(--header-height));
-  grid-template-columns: var(--sidebar-width) minmax(940px, 1fr);
+  min-height: 100vh;
+  align-items: start;
+  background: var(--slate-50);
+  grid-template-columns: minmax(250px, 1fr) minmax(0, 4fr);
 }
 
 .teacher-content {
+  min-height: 100vh;
   min-width: 0;
-  padding: 28px 32px 40px;
-  overflow: hidden;
+  padding: 28px 32px;
 }
 </style>

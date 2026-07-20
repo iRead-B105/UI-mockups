@@ -1,26 +1,16 @@
 <script setup lang="ts">
+// 아동 메뉴는 공통 사이드바에서 제공하므로 이 레이아웃은 하위 화면만 표시합니다.
 import { RouterView } from 'vue-router'
-import StudentSummaryHeader from '@/components/teacher/StudentSummaryHeader.vue'
-import StudentTabs from '@/components/teacher/StudentTabs.vue'
 </script>
 
 <template>
   <div class="student-layout">
-    <StudentSummaryHeader />
-    <StudentTabs />
-    <section class="student-layout__content">
-      <RouterView />
-    </section>
+    <RouterView />
   </div>
 </template>
 
 <style scoped>
 .student-layout {
-  display: grid;
-  gap: 0;
-}
-
-.student-layout__content {
-  padding-top: 24px;
+  width: 100%;
 }
 </style>

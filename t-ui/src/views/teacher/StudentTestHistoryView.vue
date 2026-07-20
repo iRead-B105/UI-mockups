@@ -1,18 +1,24 @@
 <script setup lang="ts">
+// 검사 날짜를 고르고 두 검사 결과를 비교하며 교수자 의견을 기록하는 화면입니다.
 import { computed, ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
+import SaveToast from '@/components/common/SaveToast.vue'
+import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 
+// 입력 요소와 연결할 값은 ref로 만들어 변경 사항이 화면에 즉시 반영되게 합니다.
 const testDate = ref('2026-07-14')
 const comparison = ref('2026-06-21')
 const comparisonCount = ref(1)
 const teacherComment = ref(
   '김OO 학생은 읽기 정확도와 시선 유지 시간이 향상되었습니다. 낯선 낱말의 첫소리를 추론하는 연습을 다음 커리큘럼에 포함해 주세요.',
 )
+const { visible: commentSaved, show: showCommentSaved } = useTemporaryNotice()
 
+// computed를 사용해 관련 값이 바뀔 때 차트 설정도 다시 만들 수 있게 합니다.
 const testChart = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'axis' },
-  legend: { data: ['선택 검사', '비교 검사'], top: 8 },
+  legend: { data: ['선택 검사', '비교 검사', '검사 평균'], top: 8 },
   grid: { left: 52, right: 30, top: 56, bottom: 56 },
   xAxis: {
     type: 'category',
@@ -20,6 +26,7 @@ const testChart = computed<EChartsOption>(() => ({
     axisLabel: { interval: 0, rotate: 18 },
   },
   yAxis: { type: 'value', max: 100 },
+  // 두 막대 묶음이 같은 검사 항목에서 나란히 비교됩니다.
   series: [
     {
       name: '선택 검사',
@@ -33,11 +40,23 @@ const testChart = computed<EChartsOption>(() => ({
       data: [35, 46, 48, 68, 50, 58],
       itemStyle: { color: '#cbd5e1', borderRadius: [6, 6, 0, 0] },
     },
+    {
+      name: '검사 평균',
+      type: 'line',
+      smooth: false,
+      data: [28, 39, 56, 61, 42, 66],
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: { color: '#f59e0b', width: 3 },
+      itemStyle: { color: '#f59e0b' },
+      z: 5,
+    },
   ],
 }))
 </script>
 
 <template>
+  <!-- page-stack은 각 카드 사이에 공통 세로 간격을 적용합니다. -->
   <div class="test-history page-stack">
     <header class="page-heading">
       <div>
@@ -55,6 +74,7 @@ const testChart = computed<EChartsOption>(() => ({
         <label for="comparison-date">비교 검사</label
         ><input id="comparison-date" v-model="comparison" class="input" type="date" />
       </div>
+      <!-- Math.min으로 비교 개수가 최대 2를 넘지 않도록 제한합니다. -->
       <button
         class="button button--secondary"
         type="button"
@@ -74,6 +94,7 @@ const testChart = computed<EChartsOption>(() => ({
           </div>
           <span class="score-badge">종합 76점</span>
         </div>
+        <!-- 계산된 설정 객체를 공통 차트 컴포넌트에 전달합니다. -->
         <ChartPanel :option="testChart" height="420px" aria-label="영역별 검사 결과 비교 차트" />
       </section>
 
@@ -101,6 +122,7 @@ const testChart = computed<EChartsOption>(() => ({
     </div>
 
     <section class="surface teacher-comment">
+      <SaveToast :visible="commentSaved" message="교수자 의견이 저장되었습니다." />
       <div class="surface-header">
         <div>
           <h2>교수자 의견</h2>
@@ -109,7 +131,7 @@ const testChart = computed<EChartsOption>(() => ({
       </div>
       <div>
         <textarea v-model="teacherComment" class="textarea"></textarea
-        ><button class="button" type="button">의견 저장</button>
+        ><button class="button" type="button" @click="showCommentSaved">저장</button>
       </div>
     </section>
   </div>
@@ -117,6 +139,7 @@ const testChart = computed<EChartsOption>(() => ({
 
 <style scoped>
 .test-controls {
+  /* 날짜 입력, 버튼, 상태 문구를 한 줄 아래쪽 기준으로 정렬합니다. */
   display: flex;
   align-items: end;
   gap: 16px;
@@ -128,6 +151,7 @@ const testChart = computed<EChartsOption>(() => ({
 }
 
 .test-controls > span {
+  /* margin-left:auto로 상태 문구를 오른쪽으로 보냅니다. */
   align-self: center;
   margin-left: auto;
   color: var(--slate-500);
@@ -135,6 +159,7 @@ const testChart = computed<EChartsOption>(() => ({
 }
 
 .test-grid {
+  /* 넓은 차트와 300px 요약 카드를 좌우로 배치합니다. */
   display: grid;
   gap: 20px;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -161,6 +186,7 @@ const testChart = computed<EChartsOption>(() => ({
 }
 
 .result-chart :deep(.chart-panel) {
+  /* 자식 ChartPanel의 scoped 영역 안쪽까지 들어가 여백을 지정합니다. */
   padding: 8px 18px 0;
 }
 
@@ -209,5 +235,9 @@ const testChart = computed<EChartsOption>(() => ({
   justify-items: end;
   gap: 12px;
   padding: 20px;
+}
+
+.teacher-comment {
+  position: relative;
 }
 </style>

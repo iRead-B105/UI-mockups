@@ -1,17 +1,22 @@
 <script setup lang="ts">
+// 학생 등록과 수정 화면이 같은 입력 폼을 공유하도록 만든 재사용 컴포넌트입니다.
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Student } from '@/features/teacher/types'
 
+// mode로 등록/수정을 구분하고, 수정일 때는 기존 학생 정보를 initialValue로 받습니다.
 const props = defineProps<{
   mode: 'create' | 'edit'
   initialValue?: Student
 }>()
 
+// router는 저장 후 다른 화면으로 이동하거나 취소 버튼으로 뒤로 갈 때 사용합니다.
 const router = useRouter()
+// saved는 저장 안내 표시 여부, previewUrl은 프로필 사진 미리보기 주소입니다.
 const saved = ref(false)
 const previewUrl = ref('/images/student-profile.png')
 
+// 새 학생 등록 화면에서 입력 칸을 비워 두기 위한 초기 객체입니다.
 const emptyStudent: Student = {
   id: 0,
   name: '',
@@ -25,6 +30,7 @@ const emptyStudent: Student = {
   guardianPhone: '',
   guardianEmail: '',
   address: '',
+  lastLearningDate: '',
   lastTestDate: '',
   totalLearningTime: '0시간',
   latestTraining: '-',
@@ -33,7 +39,9 @@ const emptyStudent: Student = {
   weeklyAttendance: '0%',
 }
 
+// reactive는 객체 속성이 바뀔 때 화면을 갱신합니다. ...로 복사해 원본 목업 데이터 변경을 막습니다.
 const form = reactive<Student>({ ...(props.initialValue ?? emptyStudent) })
+// computed는 mode가 바뀌면 등록/수정에 맞는 제목과 설명을 자동으로 다시 계산합니다.
 const title = computed(() => (props.mode === 'create' ? '새 학생 등록' : '학생 정보 수정'))
 const description = computed(() =>
   props.mode === 'create'
@@ -42,14 +50,18 @@ const description = computed(() =>
 )
 
 function selectImage(event: Event) {
+  // change 이벤트가 발생한 실제 파일 입력 요소와 사용자가 고른 첫 파일을 찾습니다.
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  // 전에 만든 임시 주소가 있으면 해제해 브라우저 메모리가 계속 쌓이지 않게 합니다.
   if (previewUrl.value.startsWith('blob:')) URL.revokeObjectURL(previewUrl.value)
+  // 로컬 파일을 브라우저에서 바로 미리 볼 수 있는 일시적인 blob 주소로 바꿉니다.
   previewUrl.value = URL.createObjectURL(file)
 }
 
 function submitForm() {
+  // 현재 목업에는 서버가 없으므로 실제 저장 대신 안내를 보여 준 뒤 화면만 이동합니다.
   saved.value = true
   window.setTimeout(() => {
     router.push(props.mode === 'create' ? '/teacher/dashboard' : '/teacher/students/1')
@@ -58,6 +70,7 @@ function submitForm() {
 </script>
 
 <template>
+  <!-- .prevent는 폼 제출 시 브라우저가 페이지를 새로 고치는 기본 동작을 막습니다. -->
   <form class="student-form page-stack" @submit.prevent="submitForm">
     <header class="page-heading">
       <div>
@@ -67,6 +80,7 @@ function submitForm() {
       <span class="form-badge">필수 항목을 확인해 주세요</span>
     </header>
 
+    <!-- saved가 true가 된 경우에만 저장 완료 문구가 DOM에 만들어집니다. -->
     <div v-if="saved" class="status-message">
       정보가 목업 데이터에 저장되었습니다. 화면을 이동합니다.
     </div>
@@ -84,6 +98,7 @@ function submitForm() {
         <div class="photo-uploader">
           <img :src="previewUrl" alt="학생 프로필 미리보기" />
           <label class="button button--secondary" for="student-photo">사진 선택</label>
+          <!-- 실제 파일 입력은 숨기고 label의 for로 클릭을 대신 전달합니다. -->
           <input id="student-photo" type="file" accept="image/*" hidden @change="selectImage" />
           <small>JPG 또는 PNG, 최대 5MB</small>
         </div>
@@ -105,6 +120,7 @@ function submitForm() {
           </div>
           <div class="field">
             <label for="student-gender">성별</label>
+            <!-- v-model은 입력값과 form 속성을 양방향으로 연결합니다. -->
             <select id="student-gender" v-model="form.gender" class="select">
               <option>남자</option>
               <option>여자</option>
@@ -195,6 +211,7 @@ function submitForm() {
     </section>
 
     <footer class="form-actions">
+      <!-- type=button은 폼 제출을 막고, type=submit만 submitForm을 실행합니다. -->
       <button class="button button--secondary" type="button" @click="router.back()">취소</button>
       <button class="button" type="submit">
         {{ mode === 'create' ? '학생 등록' : '변경 사항 저장' }}
@@ -204,6 +221,7 @@ function submitForm() {
 </template>
 
 <style scoped>
+/* 폼이 매우 넓어져 읽기 어려워지지 않도록 최대 폭을 제한하고 가운데 정렬합니다. */
 .student-form {
   max-width: 1160px;
   margin: 0 auto;
@@ -253,6 +271,7 @@ function submitForm() {
 }
 
 .student-section__body {
+  /* 학생 사진 영역과 기본 입력 영역을 좌우 두 열로 배치합니다. */
   display: grid;
   align-items: start;
   gap: 42px;
@@ -270,6 +289,7 @@ function submitForm() {
 }
 
 .photo-uploader img {
+  /* 비율이 다른 사진도 원형 틀을 가득 채우되 찌그러지지 않도록 잘라 냅니다. */
   width: 148px;
   height: 148px;
   border: 5px solid var(--white);
@@ -284,12 +304,14 @@ function submitForm() {
 }
 
 .form-grid {
+  /* 입력 필드를 같은 너비의 두 열로 정돈합니다. */
   display: grid;
   gap: 18px 20px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .form-grid__wide {
+  /* 주소처럼 긴 입력 필드는 첫 열부터 마지막 열까지 모두 차지합니다. */
   grid-column: 1 / -1;
 }
 
