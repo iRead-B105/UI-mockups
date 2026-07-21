@@ -5,6 +5,7 @@ import { RouterLink, useRouter } from 'vue-router'
 const router = useRouter()
 const form = reactive({ loginId: '', password: '' })
 const helpMessage = ref('')
+const showPassword = ref(false)
 
 function login() {
   router.push('/teacher/dashboard')
@@ -19,109 +20,204 @@ function showHelp(type: 'id' | 'password') {
 </script>
 
 <template>
-  <main class="auth-page">
-    <section class="auth-visual">
-      <div class="auth-visual__brand">
+  <main class="login-page">
+    <section class="login-shell" aria-labelledby="login-title">
+      <RouterLink class="login-logo" to="/login" aria-label="로그인으로 이동">
         <img src="/images/iread-logo.png" alt="iRead" />
-      </div>
-      <div>
-        <span class="auth-kicker">iRead Teacher</span>
-        <h1>학생의 읽기 성장을<br />한눈에 관리하세요.</h1>
-        <p>학습 현황부터 커리큘럼, 보고서까지 교수자에게 필요한 정보를 모았습니다.</p>
-      </div>
-      <div class="auth-visual__feature">
-        <span>01</span><p><strong>맞춤 커리큘럼</strong>학생별 성취도에 맞는 훈련 관리</p>
-        <span>02</span><p><strong>학습 변화 분석</strong>읽기 정확도와 유창성 추이 확인</p>
-      </div>
-    </section>
+      </RouterLink>
 
-    <section class="auth-form-panel">
-      <form class="auth-card" @submit.prevent="login">
-        <div class="auth-card__mobile-logo"><img src="/images/iread-logo.png" alt="iRead" /></div>
-        <span class="auth-kicker">교수자 전용</span>
-        <h2>로그인</h2>
-        <p class="auth-card__description">교수자 계정으로 로그인해 주세요.</p>
+      <form class="login-form" @submit.prevent="login">
+        <header class="login-heading">
+          <h1 id="login-title">로그인</h1>
+          <p>교수자 계정으로 로그인해 주세요.</p>
+        </header>
 
-        <div class="field">
-          <label for="login-id">아이디</label>
-          <input id="login-id" v-model="form.loginId" class="input" required placeholder="아이디 입력" />
+        <div class="login-fields">
+          <div class="field">
+            <label for="login-id">아이디</label>
+            <input id="login-id" v-model="form.loginId" class="input" required placeholder="아이디 입력" />
+          </div>
+          <div class="field">
+            <label for="login-password">비밀번호</label>
+            <div class="password-input">
+              <input
+                id="login-password"
+                v-model="form.password"
+                class="input"
+                required
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="비밀번호 입력"
+              />
+              <button
+                type="button"
+                :aria-label="showPassword ? '비밀번호 숨기기' : '비밀번호 보기'"
+                :aria-pressed="showPassword"
+                @click="showPassword = !showPassword"
+              >
+                {{ showPassword ? '숨기기' : '보기' }}
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="field">
-          <label for="login-password">비밀번호</label>
-          <input
-            id="login-password"
-            v-model="form.password"
-            class="input"
-            required
-            type="password"
-            placeholder="비밀번호 입력"
-          />
-        </div>
 
-        <div class="auth-help-links">
+        <div class="login-help-links">
           <button type="button" @click="showHelp('id')">아이디 찾기</button>
-          <span></span>
+          <span aria-hidden="true"></span>
           <button type="button" @click="showHelp('password')">비밀번호 찾기</button>
         </div>
-        <p v-if="helpMessage" class="auth-help-message" role="status">{{ helpMessage }}</p>
+        <p v-if="helpMessage" class="login-help-message" role="status">{{ helpMessage }}</p>
 
-        <button class="button auth-submit" type="submit">로그인</button>
-        <p class="auth-signup-link">아직 계정이 없으신가요? <RouterLink to="/signup">회원가입</RouterLink></p>
+        <button class="button login-submit" type="submit">로그인</button>
+        <p class="login-signup-link">
+          아직 계정이 없으신가요? <RouterLink to="/signup">회원가입</RouterLink>
+        </p>
       </form>
     </section>
   </main>
 </template>
 
 <style scoped>
-.auth-page {
+.login-page {
   display: grid;
   min-height: 100vh;
+  padding: 64px 48px 52px;
   background: var(--white);
-  grid-template-columns: minmax(460px, 0.95fr) minmax(520px, 1.05fr);
+  place-items: start center;
 }
-.auth-visual {
-  position: relative;
-  display: flex;
-  min-height: 100vh;
-  justify-content: space-between;
-  flex-direction: column;
-  padding: 52px 70px 64px;
+
+.login-shell {
+  display: grid;
+  width: min(420px, 100%);
+  justify-items: stretch;
+}
+
+.login-logo {
+  display: grid;
+  width: 132px;
+  height: 68px;
+  margin: 0 auto 34px;
   overflow: hidden;
-  background: linear-gradient(145deg, #312e81 0%, #4f46e5 58%, #0284c7 120%);
-  color: var(--white);
+  place-items: center;
 }
-.auth-visual::after {
+
+.login-logo img {
+  width: 108px;
+  height: 62px;
+  max-width: none;
+  object-fit: contain;
+  transform: scale(1.85);
+}
+
+.login-heading {
+  margin-bottom: 32px;
+}
+
+.login-heading h1 {
+  margin: 0 0 7px;
+  font-size: 30px;
+}
+
+.login-heading p {
+  margin: 0;
+  color: var(--slate-500);
+}
+
+.login-fields {
+  display: grid;
+  gap: 18px;
+}
+
+.login-fields .input {
+  height: 48px;
+}
+
+.password-input {
+  position: relative;
+}
+
+.password-input .input {
+  padding-right: 64px;
+}
+
+.password-input button {
   position: absolute;
-  right: -160px;
-  bottom: 80px;
-  width: 430px;
-  height: 430px;
-  border: 74px solid rgba(255, 255, 255, 0.07);
-  border-radius: 50%;
-  content: '';
+  top: 50%;
+  right: 13px;
+  min-width: 40px;
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 700;
+  transform: translateY(-50%);
 }
-.auth-visual__brand { display: grid; width: 120px; height: 62px; overflow: hidden; place-items: center; }
-.auth-visual__brand img { width: 100px; height: 58px; max-width: none; filter: brightness(0) invert(1); object-fit: contain; transform: scale(1.85); }
-.auth-kicker { color: #c7d2fe; font-size: 12px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
-.auth-visual h1 { margin: 14px 0 18px; font-size: 42px; line-height: 1.25; }
-.auth-visual > div > p { max-width: 520px; color: #e0e7ff; font-size: 16px; }
-.auth-visual__feature { position: relative; z-index: 1; display: grid; max-width: 500px; align-items: start; gap: 16px 12px; grid-template-columns: 34px 1fr; }
-.auth-visual__feature > span { display: grid; width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.15); font-size: 11px; font-weight: 800; place-items: center; }
-.auth-visual__feature p { display: grid; margin: 0; color: #e0e7ff; font-size: 12px; }
-.auth-visual__feature strong { margin-bottom: 2px; color: var(--white); font-size: 14px; }
-.auth-form-panel { display: grid; padding: 64px; place-items: center; }
-.auth-card { width: min(410px, 100%); }
-.auth-card__mobile-logo { display: none; }
-.auth-card .auth-kicker { color: var(--primary-600); }
-.auth-card h2 { margin: 9px 0 5px; font-size: 30px; }
-.auth-card__description { margin-bottom: 32px; color: var(--slate-500); }
-.auth-card .field { margin-bottom: 18px; }
-.auth-card .input { height: 48px; }
-.auth-help-links { display: flex; justify-content: flex-end; gap: 10px; }
-.auth-help-links button { padding: 0; border: 0; background: transparent; color: var(--slate-500); font-size: 12px; }
-.auth-help-links span { width: 1px; background: var(--slate-200); }
-.auth-help-message { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--slate-50); color: var(--slate-500); font-size: 12px; }
-.auth-submit { width: 100%; min-height: 50px; margin-top: 25px; }
-.auth-signup-link { margin: 22px 0 0; color: var(--slate-500); text-align: center; }
-.auth-signup-link a { color: var(--primary-600); font-weight: 800; }
+
+.password-input button:hover,
+.password-input button:focus-visible {
+  color: var(--slate-900);
+  text-decoration: underline;
+}
+
+.login-help-links {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.login-help-links button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+
+.login-help-links button:hover,
+.login-help-links button:focus-visible {
+  color: var(--slate-800);
+  text-decoration: underline;
+}
+
+.login-help-links span {
+  width: 1px;
+  background: var(--slate-200);
+}
+
+.login-help-message {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: var(--slate-50);
+  color: var(--slate-600);
+  font-size: 12px;
+}
+
+.login-submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 24px;
+}
+
+.login-signup-link {
+  margin: 22px 0 0;
+  color: var(--slate-500);
+  text-align: center;
+}
+
+.login-signup-link a {
+  color: var(--primary-600);
+  font-weight: 800;
+}
+
+@media (max-height: 700px) {
+  .login-page {
+    padding-top: 34px;
+  }
+
+  .login-logo {
+    margin-bottom: 24px;
+  }
+}
 </style>

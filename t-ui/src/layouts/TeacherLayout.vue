@@ -19,12 +19,12 @@ import TeacherSidebar from '@/components/teacher/TeacherSidebar.vue'
   min-height: 100vh;
   align-items: start;
   background: var(--slate-50);
-  grid-template-columns: minmax(250px, 1fr) minmax(0, 4fr);
+  grid-template-columns: 224px minmax(0, 1fr);
 }
 
 .teacher-content {
   min-height: 100vh;
   min-width: 0;
-  padding: 28px 32px;
+  padding: 28px 36px 48px;
 }
 </style>

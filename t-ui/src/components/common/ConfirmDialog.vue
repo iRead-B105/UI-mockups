@@ -1,7 +1,13 @@
 <script setup lang="ts">
 withDefaults(
-  defineProps<{ open: boolean; title: string; message: string; confirmLabel?: string }>(),
-  { confirmLabel: '삭제' },
+  defineProps<{
+    open: boolean
+    title: string
+    message: string
+    confirmLabel?: string
+    tone?: 'danger' | 'primary'
+  }>(),
+  { confirmLabel: '삭제', tone: 'danger' },
 )
 
 defineEmits<{ cancel: []; confirm: [] }>()
@@ -12,12 +18,17 @@ defineEmits<{ cancel: []; confirm: [] }>()
     <Transition name="dialog-fade">
       <div v-if="open" class="dialog-backdrop" @click.self="$emit('cancel')">
         <section class="confirm-dialog" role="alertdialog" aria-modal="true" :aria-label="title">
-          <span class="confirm-dialog__icon" aria-hidden="true">!</span>
+          <span class="confirm-dialog__icon" :class="`is-${tone}`" aria-hidden="true">!</span>
           <h2>{{ title }}</h2>
           <p>{{ message }}</p>
           <div class="confirm-dialog__actions">
             <button class="button button--secondary" type="button" @click="$emit('cancel')">취소</button>
-            <button class="button button--danger-solid" type="button" @click="$emit('confirm')">
+            <button
+              class="button"
+              :class="{ 'button--danger-solid': tone === 'danger' }"
+              type="button"
+              @click="$emit('confirm')"
+            >
               {{ confirmLabel }}
             </button>
           </div>
@@ -58,7 +69,8 @@ defineEmits<{ cancel: []; confirm: [] }>()
   place-items: center;
 }
 .confirm-dialog h2 { margin-bottom: 8px; font-size: 20px; }
-.confirm-dialog p { margin-bottom: 24px; color: var(--slate-500); }
+.confirm-dialog p { margin-bottom: 24px; color: var(--slate-500); white-space: pre-line; }
+.confirm-dialog__icon.is-primary { background: var(--primary-50); color: var(--primary-700); }
 .confirm-dialog__actions { display: flex; justify-content: center; gap: 10px; }
 .dialog-fade-enter-active,
 .dialog-fade-leave-active { transition: opacity 160ms ease; }

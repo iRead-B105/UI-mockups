@@ -3,7 +3,6 @@ import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
 const router = useRouter()
-const previewUrl = ref('/images/teacher-profile.png')
 const errorMessage = ref('')
 const form = reactive({
   loginId: '',
@@ -13,13 +12,6 @@ const form = reactive({
   name: '',
   organization: '',
 })
-
-function selectImage(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  if (previewUrl.value.startsWith('blob:')) URL.revokeObjectURL(previewUrl.value)
-  previewUrl.value = URL.createObjectURL(file)
-}
 
 function signup() {
   if (form.password !== form.passwordConfirm) {
@@ -34,47 +26,45 @@ function signup() {
   <main class="signup-page">
     <header class="signup-header">
       <RouterLink to="/login" aria-label="로그인으로 이동"><img src="/images/iread-logo.png" alt="iRead" /></RouterLink>
-      <p>이미 계정이 있으신가요? <RouterLink to="/login">로그인</RouterLink></p>
     </header>
 
-    <form class="signup-card surface" @submit.prevent="signup">
+    <form class="signup-form" @submit.prevent="signup">
       <div class="signup-heading">
-        <span>교수자 계정</span>
         <h1>회원가입</h1>
-        <p>iRead 교수자 서비스를 이용하기 위한 정보를 입력해 주세요.</p>
+        <p>학습자 관리에 사용할 교수자 계정을 만들어 주세요.</p>
       </div>
 
-      <section class="signup-photo">
-        <img :src="previewUrl" alt="프로필 사진 미리보기" />
-        <div>
-          <h2>프로필 사진</h2>
-          <p>학생과 보호자에게 표시될 사진입니다.</p>
-          <label class="button button--secondary" for="signup-photo">사진 선택</label>
-          <input id="signup-photo" hidden type="file" accept="image/*" @change="selectImage" />
-        </div>
-      </section>
-
-      <section class="signup-fields">
+      <section class="signup-fields" aria-label="계정 정보">
         <div class="field">
           <label for="signup-id">아이디</label>
           <input id="signup-id" v-model="form.loginId" class="input" required placeholder="로그인에 사용할 아이디" />
         </div>
+
         <div class="field">
           <label for="signup-email">이메일</label>
           <input id="signup-email" v-model="form.email" class="input" required type="email" placeholder="example@email.com" />
         </div>
+
         <div class="field">
           <label for="signup-password">비밀번호</label>
           <input id="signup-password" v-model="form.password" class="input" required minlength="8" type="password" placeholder="8자 이상 입력" />
+          <p class="field-help">8자 이상의 비밀번호를 입력해 주세요.</p>
         </div>
+
         <div class="field">
           <label for="signup-password-confirm">비밀번호 확인</label>
           <input id="signup-password-confirm" v-model="form.passwordConfirm" class="input" required type="password" placeholder="비밀번호 다시 입력" />
         </div>
+      </section>
+
+      <div class="signup-divider" aria-hidden="true"></div>
+
+      <section class="signup-fields" aria-label="교수자 정보">
         <div class="field">
           <label for="signup-name">이름</label>
           <input id="signup-name" v-model="form.name" class="input" required placeholder="교수자 이름" />
         </div>
+
         <div class="field">
           <label for="signup-organization">소속기관</label>
           <input id="signup-organization" v-model="form.organization" class="input" required placeholder="소속 기관명" />
@@ -82,32 +72,29 @@ function signup() {
       </section>
 
       <p v-if="errorMessage" class="signup-error" role="alert">{{ errorMessage }}</p>
-      <footer>
-        <RouterLink class="button button--secondary" to="/login">취소</RouterLink>
-        <button class="button" type="submit">회원가입</button>
-      </footer>
+      <button class="button signup-submit" type="submit">회원가입</button>
+      <p class="signup-login-link">
+        이미 계정이 있으신가요? <RouterLink to="/login">로그인</RouterLink>
+      </p>
     </form>
   </main>
 </template>
 
 <style scoped>
-.signup-page { min-height: 100vh; padding: 28px 48px 64px; background: linear-gradient(180deg, #eef2ff 0, var(--slate-50) 300px); }
-.signup-header { display: flex; max-width: 1040px; height: 58px; align-items: center; justify-content: space-between; margin: 0 auto 28px; }
-.signup-header > a { display: grid; width: 116px; height: 58px; overflow: hidden; place-items: center; }
-.signup-header img { width: 96px; height: 56px; max-width: none; object-fit: contain; transform: scale(1.85); }
-.signup-header p { margin: 0; color: var(--slate-500); font-size: 13px; }
-.signup-header p a { color: var(--primary-600); font-weight: 800; }
-.signup-card { max-width: 900px; margin: 0 auto; padding: 38px 46px 32px; }
-.signup-heading { padding-bottom: 26px; border-bottom: 1px solid var(--slate-200); }
-.signup-heading span { color: var(--primary-600); font-size: 12px; font-weight: 900; letter-spacing: .08em; }
-.signup-heading h1 { margin: 8px 0 4px; font-size: 28px; }
+.signup-page { min-height: 100vh; padding: 32px 48px 72px; background: var(--white); }
+.signup-header { display: flex; height: 68px; align-items: center; justify-content: center; margin: 0 auto 26px; }
+.signup-header > a { display: grid; width: 132px; height: 68px; overflow: hidden; place-items: center; }
+.signup-header img { width: 108px; height: 62px; max-width: none; object-fit: contain; transform: scale(1.85); }
+.signup-form { width: min(500px, 100%); margin: 0 auto; }
+.signup-heading { margin-bottom: 34px; }
+.signup-heading h1 { margin: 0 0 7px; font-size: 30px; }
 .signup-heading p { margin: 0; color: var(--slate-500); }
-.signup-photo { display: flex; align-items: center; gap: 22px; padding: 28px 0; border-bottom: 1px solid var(--slate-200); }
-.signup-photo img { width: 108px; height: 108px; border: 5px solid var(--white); border-radius: 50%; box-shadow: 0 0 0 1px var(--slate-200); object-fit: cover; }
-.signup-photo h2 { margin: 0 0 3px; font-size: 16px; }
-.signup-photo p { margin: 0 0 12px; color: var(--slate-500); font-size: 12px; }
-.signup-fields { display: grid; gap: 20px; padding: 28px 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.signup-fields { display: grid; gap: 19px; }
 .signup-fields .input { height: 46px; }
+.field-help { margin: -2px 0 0; color: var(--slate-500); font-size: 11px; }
+.signup-divider { height: 1px; margin: 30px 0; background: var(--slate-200); }
 .signup-error { padding: 10px 13px; border-radius: 8px; background: #fff1f2; color: var(--danger-600); font-size: 12px; }
-.signup-card footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 22px; border-top: 1px solid var(--slate-200); }
+.signup-submit { width: 100%; min-height: 50px; margin-top: 30px; }
+.signup-login-link { margin: 22px 0 0; color: var(--slate-500); text-align: center; }
+.signup-login-link a { color: var(--primary-600); font-weight: 800; }
 </style>

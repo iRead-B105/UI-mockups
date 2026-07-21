@@ -1,38 +1,76 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { selectedStudent } from '@/features/teacher/mockData'
+import { selectedStudent, students } from '@/features/teacher/mockData'
+import type { Student } from '@/features/teacher/types'
+import SidebarIcon from '@/components/teacher/SidebarIcon.vue'
+import StudentSwitcher from '@/components/teacher/StudentSwitcher.vue'
 
 type SidebarMode = 'teacher' | 'student'
 
 const route = useRoute()
 const router = useRouter()
 const mode = ref<SidebarMode>('teacher')
+const isAccountMenuOpen = ref(false)
+const currentStudent = computed(
+  () => students.find((student) => student.id === Number(route.params.id)) ?? selectedStudent,
+)
 const studentRouteNames = new Set([
   'student-overview',
   'student-curriculum',
   'student-training-history',
   'student-test-history',
   'student-report',
+  'student-edit',
 ])
 
 watch(
   () => route.name,
   (routeName) => {
     mode.value = studentRouteNames.has(String(routeName)) ? 'student' : 'teacher'
+    isAccountMenuOpen.value = false
   },
   { immediate: true },
 )
 
 function selectMode(nextMode: SidebarMode) {
   mode.value = nextMode
-  router.push(nextMode === 'teacher' ? '/teacher/dashboard' : '/teacher/students/1')
+  router.push(
+    nextMode === 'teacher' ? '/teacher/dashboard' : `/teacher/students/${currentStudent.value.id}`,
+  )
 }
+
+function selectStudent(student: Student) {
+  const routeName = studentRouteNames.has(String(route.name)) ? String(route.name) : 'student-overview'
+  router.push({ name: routeName, params: { id: student.id } })
+}
+
+function openProfileSettings() {
+  isAccountMenuOpen.value = false
+  router.push('/teacher/settings')
+}
+
+function logout() {
+  isAccountMenuOpen.value = false
+  router.push('/login')
+}
+
+function closeAccountMenuOnOutsideClick(event: MouseEvent) {
+  if (!(event.target instanceof Element)) return
+  if (!event.target.closest('.sidebar-account')) isAccountMenuOpen.value = false
+}
+
+onMounted(() => document.addEventListener('click', closeAccountMenuOnOutsideClick))
+onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOutsideClick))
 </script>
 
 <template>
   <aside class="teacher-sidebar">
-    <RouterLink class="sidebar-logo" to="/teacher/dashboard" aria-label="iRead 학습자 목록">
+    <RouterLink
+      class="sidebar-brand"
+      to="/teacher/dashboard"
+      aria-label="iRead 학습자 목록"
+    >
       <img src="/images/iread-logo.png" alt="iRead" />
     </RouterLink>
 
@@ -59,180 +97,159 @@ function selectMode(nextMode: SidebarMode) {
 
     <Transition name="sidebar-panel" mode="out-in">
       <div v-if="mode === 'teacher'" key="teacher" class="sidebar-panel">
-        <section class="sidebar-profile">
-          <img src="/images/teacher-profile.png" alt="이OO 교수자" />
-          <div>
-            <span>교수자</span>
-            <h2>이OO 선생님</h2>
-            <p>OO복지센터<br />읽기 교육 담당자</p>
-          </div>
-        </section>
-
         <nav class="sidebar-nav" aria-label="교수자 메뉴">
           <RouterLink to="/teacher/dashboard">
-            <span class="sidebar-nav__icon">☷</span>
-            <span><strong>학습자 목록</strong><small>담당 아동 관리</small></span>
-          </RouterLink>
-          <RouterLink to="/teacher/settings">
-            <span class="sidebar-nav__icon">⚙</span>
-            <span><strong>프로필 설정</strong><small>교수자 정보 관리</small></span>
+            <span class="sidebar-nav__icon"><SidebarIcon name="users" /></span>
+            <strong>학습자 목록</strong>
           </RouterLink>
         </nav>
       </div>
 
       <div v-else key="student" class="sidebar-panel">
-        <section class="sidebar-profile sidebar-profile--student">
-          <img src="/images/student-profile.png" :alt="selectedStudent.name" />
-          <div>
-            <span>선택 아동</span>
-            <h2>{{ selectedStudent.name }}</h2>
-            <p>{{ selectedStudent.school }} · {{ selectedStudent.age }}세<br />보호자 {{ selectedStudent.guardianName }}</p>
-          </div>
-        </section>
+        <StudentSwitcher
+          :students="students"
+          :current-student="currentStudent"
+          @select="selectStudent"
+          @manage="router.push('/teacher/dashboard')"
+        />
 
         <nav class="sidebar-nav" aria-label="아동 메뉴">
-          <RouterLink :to="{ name: 'student-overview', params: { id: 1 } }">
-            <span class="sidebar-nav__icon">⌂</span><span><strong>메인</strong><small>학습 현황</small></span>
+          <RouterLink :to="{ name: 'student-overview', params: { id: currentStudent.id } }">
+            <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>메인</strong>
           </RouterLink>
-          <RouterLink :to="{ name: 'student-curriculum', params: { id: 1 } }">
-            <span class="sidebar-nav__icon">▤</span><span><strong>커리큘럼</strong><small>훈련 구성 관리</small></span>
+          <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">
+            <span class="sidebar-nav__icon"><SidebarIcon name="book" /></span><strong>커리큘럼</strong>
           </RouterLink>
-          <RouterLink :to="{ name: 'student-training-history', params: { id: 1 } }">
-            <span class="sidebar-nav__icon">↗</span><span><strong>훈련 이력</strong><small>학습 활동 기록</small></span>
+          <RouterLink :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
+            <span class="sidebar-nav__icon"><SidebarIcon name="chart" /></span><strong>훈련 이력</strong>
           </RouterLink>
-          <RouterLink :to="{ name: 'student-test-history', params: { id: 1 } }">
-            <span class="sidebar-nav__icon">▥</span><span><strong>테스트 이력</strong><small>검사 결과 비교</small></span>
+          <RouterLink :to="{ name: 'student-test-history', params: { id: currentStudent.id } }">
+            <span class="sidebar-nav__icon"><SidebarIcon name="clipboard" /></span><strong>테스트 이력</strong>
           </RouterLink>
-          <RouterLink :to="{ name: 'student-report', params: { id: 1 } }">
-            <span class="sidebar-nav__icon">▧</span><span><strong>보고서</strong><small>학습 보고서 생성</small></span>
+          <RouterLink :to="{ name: 'student-report', params: { id: currentStudent.id } }">
+            <span class="sidebar-nav__icon"><SidebarIcon name="report" /></span><strong>보고서</strong>
+          </RouterLink>
+          <RouterLink :to="{ name: 'student-edit', params: { id: currentStudent.id } }">
+            <span class="sidebar-nav__icon"><SidebarIcon name="edit" /></span><strong>아동 정보 수정</strong>
           </RouterLink>
         </nav>
       </div>
     </Transition>
 
-    <button class="sidebar-logout" type="button" @click="router.push('/login')">로그아웃</button>
+    <div class="sidebar-footer">
+      <span class="sidebar-footer__label">로그인 계정</span>
+      <div class="sidebar-account">
+        <button
+          class="sidebar-account__trigger"
+          type="button"
+          :aria-expanded="isAccountMenuOpen"
+          aria-label="이OO 선생님 계정 메뉴"
+          @click="isAccountMenuOpen = !isAccountMenuOpen"
+        >
+          <img src="/images/teacher-profile.png" alt="" />
+          <span>
+            <strong>이OO 선생님</strong>
+            <small>OO복지센터</small>
+          </span>
+          <span class="sidebar-account__more" aria-hidden="true">···</span>
+        </button>
+
+        <div v-if="isAccountMenuOpen" class="sidebar-account-menu">
+          <button type="button" @click="openProfileSettings">프로필 설정</button>
+          <button class="sidebar-account-menu__danger" type="button" @click="logout">로그아웃</button>
+        </div>
+      </div>
+    </div>
   </aside>
 </template>
 
 <style scoped>
 .teacher-sidebar {
   position: sticky;
+  z-index: 40;
   top: 0;
   display: flex;
   height: 100vh;
-  min-width: 250px;
+  min-width: 224px;
   align-self: start;
   flex-direction: column;
   margin: 0;
-  padding: 0 20px 20px;
-  overflow-y: auto;
+  padding: 16px 16px 14px;
+  overflow: visible;
   border-right: 1px solid var(--slate-200);
   background: var(--white);
 }
 
-.sidebar-logo {
+.sidebar-brand {
   display: grid;
-  width: 126px;
-  height: 72px;
-  margin: 0 auto 10px;
+  width: 92px;
+  height: 48px;
+  flex: 0 0 48px;
+  margin: 0 0 18px 4px;
   overflow: hidden;
   place-items: center;
 }
 
-.sidebar-logo img {
-  width: 102px;
-  height: 58px;
+.sidebar-brand img {
+  width: 78px;
+  height: 46px;
   max-width: none;
   object-fit: contain;
   transform: scale(1.85);
 }
 
 .sidebar-mode-tabs {
-  display: grid;
-  gap: 5px;
-  margin-bottom: 16px;
-  padding: 5px;
-  border-radius: 11px;
-  background: var(--slate-100);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--slate-200);
 }
 
 .sidebar-mode-tabs button {
-  height: 40px;
+  position: relative;
+  flex: 1;
+  height: 38px;
   border: 0;
-  border-radius: 8px;
   background: transparent;
   color: var(--slate-500);
+  font-size: 12px;
   font-weight: 800;
 }
 
 .sidebar-mode-tabs button.active {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-  background: var(--white);
   color: var(--primary-700);
+}
+
+.sidebar-mode-tabs button.active::after {
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--primary-600);
+  content: '';
 }
 
 .sidebar-panel {
   display: grid;
-  gap: 20px;
-}
-
-.sidebar-profile {
-  display: grid;
-  justify-items: center;
-  gap: 11px;
-  padding: 20px 14px;
-  border: 1px solid var(--slate-200);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--white), var(--slate-50));
-  text-align: center;
-}
-
-.sidebar-profile img {
-  width: 86px;
-  height: 86px;
-  border: 5px solid var(--white);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--slate-200);
-  object-fit: cover;
-}
-
-.sidebar-profile span {
-  color: var(--primary-600);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.sidebar-profile h2 {
-  margin: 3px 0 4px;
-  font-size: 18px;
-}
-
-.sidebar-profile p {
-  margin: 0;
-  color: var(--slate-500);
-  font-size: 11px;
-}
-
-.sidebar-profile--student img {
-  border-color: var(--primary-50);
+  gap: 16px;
 }
 
 .sidebar-nav {
   display: grid;
-  gap: 7px;
+  gap: 2px;
 }
 
 .sidebar-nav a {
   display: grid;
-  min-height: 58px;
+  min-height: 44px;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  gap: 8px;
+  padding: 7px 10px 7px 9px;
+  border-left: 3px solid transparent;
+  border-radius: 0 6px 6px 0;
   color: var(--slate-600);
-  grid-template-columns: 36px 1fr;
+  grid-template-columns: 26px 1fr;
 }
 
 .sidebar-nav a:hover {
@@ -241,47 +258,133 @@ function selectMode(nextMode: SidebarMode) {
 }
 
 .sidebar-nav a.router-link-exact-active {
-  background: var(--primary-50);
+  border-left-color: var(--primary-600);
+  background: transparent;
   color: var(--primary-700);
 }
 
 .sidebar-nav__icon {
   display: grid;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: rgba(148, 163, 184, 0.12);
-  font-size: 17px;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  color: var(--slate-500);
   place-items: center;
 }
 
-.sidebar-nav a > span:last-child {
-  display: grid;
+.sidebar-nav a.router-link-exact-active .sidebar-nav__icon {
+  color: var(--primary-700);
 }
 
 .sidebar-nav strong {
-  font-size: 13px;
-}
-
-.sidebar-nav small {
-  color: var(--slate-400);
-  font-size: 10px;
-}
-
-.sidebar-logout {
-  min-height: 40px;
-  margin-top: auto;
-  border: 1px solid var(--slate-200);
-  border-radius: 9px;
-  background: var(--white);
-  color: var(--slate-500);
   font-size: 12px;
-  font-weight: 700;
 }
 
-.sidebar-logout:hover {
-  border-color: #fecaca;
-  background: #fff1f2;
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--slate-200);
+}
+
+.sidebar-footer__label {
+  display: block;
+  margin: 0 4px 4px;
+  color: var(--slate-400);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.sidebar-account {
+  position: relative;
+}
+
+.sidebar-account__trigger {
+  display: grid;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--slate-700);
+  text-align: left;
+  grid-template-columns: 32px minmax(0, 1fr) 18px;
+}
+
+.sidebar-account__trigger:hover,
+.sidebar-account__trigger[aria-expanded='true'] {
+  background: var(--slate-50);
+}
+
+.sidebar-account__trigger img {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--slate-200);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.sidebar-account__trigger > span:not(.sidebar-account__more) {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.sidebar-account__trigger strong {
+  overflow: hidden;
+  color: var(--slate-800);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-account__trigger small {
+  overflow: hidden;
+  color: var(--slate-500);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-account__more {
+  color: var(--slate-400);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.sidebar-account-menu {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+}
+
+.sidebar-account-menu button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--slate-700);
+  font-size: 11px;
+  text-align: left;
+}
+
+.sidebar-account-menu button:hover {
+  background: var(--slate-50);
+}
+
+.sidebar-account-menu .sidebar-account-menu__danger {
   color: var(--danger-600);
 }
 

@@ -3,10 +3,13 @@
 import { computed, ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
+import HistoryToolbar from '@/components/teacher/HistoryToolbar.vue'
+import PageHeader from '@/components/teacher/PageHeader.vue'
 import { trainingSessions } from '@/features/teacher/mockData'
 
 // 첫 훈련을 기본 선택하며 데이터가 비어 있으면 id 1을 임시 기본값으로 씁니다.
 const selectedSessionId = ref(trainingSessions[0]?.id ?? 1)
+const period = ref('최근 30일')
 // 선택 id가 바뀔 때 해당 훈련 객체를 다시 찾아 오른쪽 상세 내용도 갱신합니다.
 const selectedSession = computed(() =>
   trainingSessions.find((session) => session.id === selectedSessionId.value),
@@ -26,12 +29,26 @@ const speedChart: EChartsOption = {
       name: '읽기 속도',
       type: 'line',
       smooth: false,
+      showSymbol: true,
+      symbol: 'circle',
+      symbolSize: 5,
       data: [98, 126, 84, 151, 114, 148, 102, 128, 164],
-      lineStyle: { color: '#0ea5e9', width: 4 },
+      lineStyle: { color: '#0ea5e9', width: 3 },
       itemStyle: { color: '#0ea5e9' },
-      areaStyle: { color: 'rgba(14, 165, 233, 0.12)' },
     },
   ],
+}
+
+function formatSessionDate(value: string) {
+  const [date = '', time = ''] = value.split(' ')
+  const [, month = '01', day = '01'] = date.split('-')
+  return `${Number(month)}월 ${Number(day)}일 ${time}`
+}
+
+function getLearningStatus(score: number) {
+  if (score >= 80) return '양호'
+  if (score >= 60) return '보완 필요'
+  return '재학습 권장'
 }
 
 function downloadRawData() {
@@ -58,230 +75,157 @@ function downloadRawData() {
 </script>
 
 <template>
-  <!-- 왼쪽에는 목록/차트, 오른쪽에는 선택 훈련의 상세 정보를 배치합니다. -->
   <div class="training-history page-stack">
-    <header class="page-heading">
-      <div>
-        <h1>훈련 이력</h1>
-        <p>커리큘럼별 학습 결과와 읽기 속도 변화를 확인합니다.</p>
-      </div>
-      <select class="select period-select" aria-label="조회 기간">
-        <option>최근 30일</option>
-        <option>최근 3개월</option>
-      </select>
-    </header>
+    <PageHeader
+      title="훈련 이력"
+      description="훈련 결과와 읽기 속도 변화를 확인합니다."
+    />
 
-    <div class="history-grid">
-      <div class="history-left">
-        <section class="surface session-summary">
-          <div class="surface-header"><h2>커리큘럼 로그 목록</h2></div>
-          <!-- 훈련 수만큼 버튼을 만들며 클릭한 세션 id를 선택 상태에 저장합니다. -->
-          <button
-            v-for="session in trainingSessions"
-            :key="session.id"
-            class="session-row"
-            :class="{ active: session.id === selectedSessionId }"
-            type="button"
-            @click="selectedSessionId = session.id"
-          >
-            <span>{{ session.date }}</span>
-            <strong>{{ session.curriculum }}</strong>
-            <b>{{ session.achievement }}%</b>
-          </button>
-          <p class="session-description">
-            항목을 선택하면 해당 훈련의 상세 기록이 오른쪽에 표시됩니다.
-          </p>
+    <HistoryToolbar>
+      <div class="field period-field">
+        <label for="training-period">조회 기간</label>
+        <select id="training-period" v-model="period" class="select">
+          <option>최근 30일</option>
+          <option>최근 3개월</option>
+        </select>
+      </div>
+      <template #status>{{ period }} · 훈련 {{ trainingSessions.length }}건</template>
+    </HistoryToolbar>
+
+    <div class="training-workspace">
+      <div class="training-main">
+        <section class="session-history">
+          <header class="section-heading">
+            <div>
+              <h2>훈련 기록</h2>
+            </div>
+          </header>
+
+          <div class="session-table">
+            <div class="session-table__head">
+              <span>학습일</span><span>커리큘럼</span><span>결과</span>
+            </div>
+            <button
+              v-for="session in trainingSessions"
+              :key="session.id"
+              class="session-row"
+              :class="{ active: session.id === selectedSessionId }"
+              type="button"
+              @click="selectedSessionId = session.id"
+            >
+              <span>{{ formatSessionDate(session.date) }}</span>
+              <strong>{{ session.curriculum }}</strong>
+              <span class="session-result">
+                <b>{{ session.achievement }}%</b>
+                <small>{{ getLearningStatus(session.achievement) }}</small>
+              </span>
+            </button>
+          </div>
         </section>
 
-        <section class="surface chart-surface">
-          <div class="surface-header">
+        <section class="speed-trend">
+          <header class="section-heading">
             <div>
               <h2>읽기 속도 추이</h2>
               <p>분당 정확하게 읽은 단어 수</p>
             </div>
-            <span class="trend-up">+18%</span>
-          </div>
-          <!-- 공통 ChartPanel이 speedChart 설정에 따라 canvas 차트를 그립니다. -->
-          <ChartPanel :option="speedChart" height="360px" aria-label="읽기 속도 추이 차트" />
+            <div class="trend-summary">
+              <strong>+18%</strong>
+              <span>기간 시작 대비</span>
+            </div>
+          </header>
+          <ChartPanel :option="speedChart" height="250px" aria-label="읽기 속도 추이 차트" />
         </section>
       </div>
 
-      <section class="surface training-detail">
-        <div class="surface-header">
+      <aside class="training-detail">
+        <header class="detail-heading">
           <div>
+            <span>선택한 훈련</span>
             <h2>{{ selectedSession?.title }}</h2>
-            <p>{{ selectedSession?.date }}</p>
+            <p>{{ formatSessionDate(selectedSession?.date ?? '') }}</p>
           </div>
-          <div class="training-detail__actions">
-            <span>{{ selectedSession?.achievement }}%</span>
-            <button class="button button--secondary button--small" type="button" @click="downloadRawData">
-              원천 데이터 다운로드
-            </button>
+          <div class="detail-score">
+            <strong>{{ selectedSession?.achievement }}%</strong>
+            <span>{{ getLearningStatus(selectedSession?.achievement ?? 0) }}</span>
           </div>
-        </div>
-        <div class="training-detail__summary">
+        </header>
+
+        <div class="training-summary">
           <span>훈련 요약</span>
           <p>{{ selectedSession?.summary }}</p>
         </div>
+
         <div class="detail-list">
-          <!-- 고정된 세 단계 배열을 반복하고 index로 문항 수, 시간, 달성률 예시를 계산합니다. -->
           <article v-for="(label, index) in ['소리 구분', '낱말 읽기', '문장 읽기']" :key="label">
-            <div class="detail-list__number">{{ index + 1 }}</div>
             <div>
               <strong>{{ label }}</strong>
               <p>{{ 8 + index * 2 }}개 문항 · {{ 10 + index * 3 }}분 학습</p>
             </div>
-            <!-- 단계별로 8점씩 줄이되 Math.max로 최소 표시값을 50점으로 제한합니다. -->
-            <span>{{ Math.max(50, (selectedSession?.achievement ?? 0) - index * 8) }}%</span>
+            <span>
+              <b>{{ Math.max(50, (selectedSession?.achievement ?? 0) - index * 8) }}%</b>
+              <small>{{ getLearningStatus(Math.max(50, (selectedSession?.achievement ?? 0) - index * 8)) }}</small>
+            </span>
           </article>
         </div>
-      </section>
+
+        <button class="download-button" type="button" @click="downloadRawData">
+          원천 데이터 다운로드
+        </button>
+      </aside>
     </div>
   </div>
 </template>
 
 <style scoped>
-.period-select {
-  width: 140px;
-}
+.training-history { gap: 18px; container-type: inline-size; }
+.period-field { width: 150px; }
+.training-workspace { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(380px, .88fr); }
+.training-main { min-width: 0; padding: 2px 24px 18px 0; }
+.training-detail { min-width: 0; padding: 2px 0 18px 24px; border-left: 1px solid var(--slate-200); }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.section-heading h2 { margin: 0; font-size: 17px; }
+.section-heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
+.session-table { margin-top: 12px; }
+.session-table__head,
+.session-row { display: grid; align-items: center; gap: 14px; grid-template-columns: 120px minmax(0, 1fr) 88px; }
+.session-table__head { padding: 9px 12px; border-bottom: 1px solid var(--slate-300); color: var(--slate-500); font-size: 12px; font-weight: 600; }
+.session-row { position: relative; width: 100%; min-height: 58px; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--slate-200); background: transparent; color: var(--slate-600); text-align: left; }
+.session-row::before { position: absolute; top: 10px; bottom: 10px; left: 0; width: 3px; background: transparent; content: ''; }
+.session-row:hover { background: var(--slate-50); }
+.session-row.active::before { background: var(--primary-600); }
+.session-row > span:first-child { font-size: 12px; }
+.session-row strong { color: var(--slate-800); font-size: 13px; }
+.session-result { display: grid; justify-items: end; gap: 1px; }
+.session-result b { color: var(--slate-800); font-size: 13px; }
+.session-result small { color: var(--slate-500); font-size: 12px; }
+.speed-trend { margin-top: 30px; }
+.trend-summary { display: grid; justify-items: end; gap: 1px; }
+.trend-summary strong { color: var(--slate-900); font-size: 18px; }
+.trend-summary span { color: var(--slate-500); font-size: 12px; }
+.speed-trend :deep(.chart-panel) { padding-top: 3px; }
+.detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-bottom: 10px; }
+.detail-heading > div:first-child > span { color: var(--slate-500); font-size: 12px; font-weight: 600; }
+.detail-heading h2 { margin: 5px 0 0; font-size: 18px; line-height: 1.4; }
+.detail-heading p { margin: 4px 0 0; color: var(--slate-500); font-size: 12px; }
+.detail-score { display: grid; flex: 0 0 auto; justify-items: end; gap: 1px; }
+.detail-score strong { color: var(--slate-900); font-size: 20px; }
+.detail-score span { color: var(--slate-500); font-size: 12px; }
+.training-summary { padding: 14px 0 8px; }
+.training-summary > span { color: var(--slate-500); font-size: 12px; font-weight: 600; }
+.training-summary p { margin: 6px 0 0; color: var(--slate-700); font-size: 13px; line-height: 1.6; }
+.detail-list { display: grid; }
+.detail-list article { display: grid; min-height: 66px; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--slate-200); grid-template-columns: minmax(0, 1fr) auto; }
+.detail-list strong { color: var(--slate-800); font-size: 13px; }
+.detail-list p { margin: 4px 0 0; color: var(--slate-500); font-size: 12px; }
+.detail-list article > span { display: grid; justify-items: end; gap: 1px; }
+.detail-list article > span b { color: var(--slate-800); font-size: 13px; }
+.detail-list article > span small { color: var(--slate-500); font-size: 12px; }
+.download-button { margin-top: 14px; padding: 6px 0; border: 0; background: transparent; color: var(--primary-700); font-size: 12px; font-weight: 700; }
 
-.history-grid {
-  /* 왼쪽 기록 영역과 오른쪽 상세 영역을 두 열로 나눕니다. */
-  display: grid;
-  gap: 20px;
-  grid-template-columns: minmax(0, 1fr) minmax(390px, 0.82fr);
-}
-
-.history-left {
-  display: grid;
-  gap: 20px;
-}
-
-.session-summary,
-.chart-surface,
-.training-detail {
-  overflow: hidden;
-}
-
-.session-row {
-  /* 날짜, 커리큘럼명, 달성률을 고정/유동/고정의 세 열로 맞춥니다. */
-  display: grid;
-  width: calc(100% - 36px);
-  align-items: center;
-  gap: 16px;
-  margin: 10px 18px;
-  padding: 13px 14px;
-  border: 1px solid var(--slate-200);
-  border-radius: 9px;
-  background: var(--white);
-  color: var(--slate-600);
-  text-align: left;
-  grid-template-columns: 132px 1fr 52px;
-}
-
-.session-row.active,
-.session-row:hover {
-  /* 선택된 세션과 마우스를 올린 세션을 같은 방식으로 강조합니다. */
-  border-color: var(--primary-500);
-  background: var(--primary-50);
-}
-
-.session-row span {
-  font-size: 12px;
-}
-
-.session-row b {
-  color: var(--primary-700);
-  text-align: right;
-}
-
-.session-description {
-  margin: 14px 18px 18px;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-
-.surface-header p {
-  margin: 4px 0 0;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-
-.trend-up {
-  color: var(--success-600);
-  font-weight: 800;
-}
-
-.chart-surface :deep(.chart-panel) {
-  /* 자식 차트 컴포넌트 내부 요소에 scoped 바깥에서 여백을 적용합니다. */
-  padding: 8px 18px 0;
-}
-
-.training-detail__actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.training-detail__actions > span {
-  color: var(--primary-600);
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.training-detail__summary {
-  margin: 18px;
-  padding: 18px;
-  border-radius: 10px;
-  background: var(--slate-50);
-}
-
-.training-detail__summary span {
-  color: var(--primary-600);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.training-detail__summary p {
-  margin: 7px 0 0;
-  color: var(--slate-600);
-}
-
-.detail-list {
-  display: grid;
-  gap: 12px;
-  padding: 0 18px 20px;
-}
-
-.detail-list article {
-  display: grid;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--slate-200);
-  border-radius: 10px;
-  grid-template-columns: 36px 1fr auto;
-}
-
-.detail-list__number {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: 9px;
-  background: var(--primary-50);
-  color: var(--primary-700);
-  font-weight: 800;
-}
-
-.detail-list p {
-  margin: 3px 0 0;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-
-.detail-list article > span {
-  color: var(--primary-700);
-  font-weight: 800;
+@container (max-width: 1000px) {
+  .training-workspace { grid-template-columns: 1fr; }
+  .training-main { padding-right: 0; }
+  .training-detail { padding: 30px 0 18px; border-left: 0; }
 }
 </style>

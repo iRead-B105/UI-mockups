@@ -1,14 +1,29 @@
 <script setup lang="ts">
 // ECharts 전체가 아닌 실제 사용하는 차트·부품·렌더러만 가져와 최종 파일 크기를 줄입니다.
 import { BarChart, LineChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
+import {
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  MarkPointComponent,
+  TooltipComponent,
+} from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { ECharts, EChartsOption } from 'echarts'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 // 가져온 기능을 ECharts 엔진에 등록해야 실제 차트를 그릴 수 있습니다.
-echarts.use([BarChart, LineChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
+echarts.use([
+  BarChart,
+  LineChart,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  MarkPointComponent,
+  TooltipComponent,
+  CanvasRenderer,
+])
 
 // option은 차트 데이터/모양 설정이고, 선택값인 높이와 접근성 문구에는 기본값을 줍니다.
 const props = withDefaults(

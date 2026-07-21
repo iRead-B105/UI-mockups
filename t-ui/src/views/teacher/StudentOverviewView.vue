@@ -1,177 +1,399 @@
 <script setup lang="ts">
-// 학생의 최근 학습 현황, 학습 로그, 교수자 메모를 한 화면에 요약합니다.
-import { ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
 import SaveToast from '@/components/common/SaveToast.vue'
+import PageHeader from '@/components/teacher/PageHeader.vue'
+import StudentCommunicationPanel from '@/components/teacher/StudentCommunicationPanel.vue'
+import StudentLearningEvents from '@/components/teacher/StudentLearningEvents.vue'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
-import { learningLogs } from '@/features/teacher/mockData'
+import { learningEventTypeLabels } from '@/features/teacher/displayLabels'
+import {
+  encouragementMessages as initialEncouragements,
+  guardianComments as initialGuardianComments,
+  learningEvents as initialLearningEvents,
+  learningRecords,
+  recommendedCurriculum,
+  selectedStudent,
+  students,
+  teacherNotes as initialTeacherNotes,
+} from '@/features/teacher/mockData'
+import type {
+  EncouragementMessage,
+  GuardianComment,
+  LearningEvent,
+  TeacherNote,
+} from '@/features/teacher/types'
 
-// ref로 감싼 메모는 textarea의 v-model과 연결되어 입력할 때마다 값이 갱신됩니다.
-const note = ref(
-  '김OO 학생은 글자와 소리의 대응이 빠르게 향상되고 있습니다. 받침이 포함된 문장을 읽을 때 속도가 흔들리는 경향이 있어 반복 연습이 필요합니다.',
+type CommunicationDraft = { note: string; encouragement: string }
+type CommunicationPanelExpose = { openTab: (tab: 'notes' | 'encouragements' | 'guardian') => void }
+
+const route = useRoute()
+const currentStudent = computed(
+  () => students.find((student) => student.id === Number(route.params.id)) ?? selectedStudent,
 )
-// 재사용 기능의 visible/show를 이 화면에서 이해하기 쉬운 saved/showSaved 이름으로 바꿔 받습니다.
-const { visible: saved, show: showSaved } = useTemporaryNotice()
+const referenceDate = new Date('2026-07-20T00:00:00')
+const eventItems = ref<LearningEvent[]>(initialLearningEvents.map((event) => ({ ...event })))
+const noteItems = ref<TeacherNote[]>(initialTeacherNotes.map((note) => ({ ...note })))
+const encouragementItems = ref<EncouragementMessage[]>(
+  initialEncouragements.map((message) => ({ ...message })),
+)
+const guardianCommentItems = ref<GuardianComment[]>(
+  initialGuardianComments.map((message) => ({ ...message })),
+)
+const draftsByStudent = reactive<Record<number, CommunicationDraft>>(
+  Object.fromEntries(students.map((student) => [student.id, { note: '', encouragement: '' }])),
+)
+const busyId = ref<number | null>(null)
+const noticeMessage = ref('변경 사항이 반영되었습니다.')
+const { visible: noticeVisible, show: showNotice } = useTemporaryNotice()
+const eventsSection = ref<HTMLElement | null>(null)
+const communicationSection = ref<HTMLElement | null>(null)
+const communicationPanel = ref<CommunicationPanelExpose | null>(null)
 
-// ECharts가 선 그래프를 그릴 때 사용할 축, 데이터, 색상 설정 객체입니다.
+const currentRecords = computed(() =>
+  learningRecords.filter((record) => record.studentId === currentStudent.value.id).slice(0, 3),
+)
+const currentEvents = computed(() =>
+  eventItems.value.filter((event) => event.studentId === currentStudent.value.id),
+)
+const currentNotes = computed(() =>
+  noteItems.value.filter((note) => note.studentId === currentStudent.value.id),
+)
+const currentEncouragements = computed(() =>
+  encouragementItems.value.filter((message) => message.studentId === currentStudent.value.id),
+)
+const currentGuardianComments = computed(() =>
+  guardianCommentItems.value.filter((message) => message.studentId === currentStudent.value.id),
+)
+const reviewCount = computed(
+  () => currentEvents.value.filter((event) => event.status !== 'reviewed').length,
+)
+const unreadGuardianCount = computed(
+  () => currentGuardianComments.value.filter((message) => message.status === 'unread').length,
+)
+const pendingGuardianEncouragementCount = computed(
+  () => currentEncouragements.value.filter(
+    (message) => message.source === 'guardian' && message.status === 'pending-approval',
+  ).length,
+)
+const totalActionCount = computed(
+  () => reviewCount.value + unreadGuardianCount.value + pendingGuardianEncouragementCount.value,
+)
+const oldestActionLabel = computed(() => {
+  const dates = [
+    ...currentEvents.value.filter((event) => event.status !== 'reviewed').map((event) => event.occurredAt),
+    ...currentGuardianComments.value.filter((message) => message.status === 'unread').map((message) => message.createdAt),
+    ...currentEncouragements.value
+      .filter((message) => message.source === 'guardian' && message.status === 'pending-approval')
+      .map((message) => message.createdAt),
+  ].sort()
+  const oldest = dates[0]
+  if (!oldest) return ''
+  const [date = ''] = oldest.split(' ')
+  const [, month = '01', day = '01'] = date.split('-')
+  return `가장 오래 대기한 항목은 ${Number(month)}월 ${Number(day)}일에 등록되었습니다.`
+})
+
+const currentDraft = computed(() => {
+  const studentId = currentStudent.value.id
+  return draftsByStudent[studentId]!
+})
+const noteDraft = computed({
+  get: () => currentDraft.value.note,
+  set: (value: string) => { currentDraft.value.note = value },
+})
+const encouragementDraft = computed({
+  get: () => currentDraft.value.encouragement,
+  set: (value: string) => { currentDraft.value.encouragement = value },
+})
+
+const recentLearningLabel = computed(() => {
+  const learningDate = new Date(`${currentStudent.value.lastLearningDate}T00:00:00`)
+  const days = Math.floor((referenceDate.getTime() - learningDate.getTime()) / 86_400_000)
+  if (days === 0) return '오늘'
+  if (days === 1) return '어제'
+  return `${days}일 전`
+})
+
+const nextTraining = computed(() => recommendedCurriculum[0]?.title ?? '다음 훈련 확인 필요')
+const formattedLastLearningDate = computed(() => currentStudent.value.lastLearningDate.replaceAll('-', '.'))
+
+function notify(message: string) {
+  noticeMessage.value = message
+  showNotice()
+}
+
+function scrollToActions() {
+  if (reviewCount.value > 0) {
+    eventsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return
+  }
+  communicationPanel.value?.openTab('guardian')
+  communicationSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function reviewEvent(eventId: number) {
+  eventItems.value = eventItems.value.map((event) =>
+    event.id === eventId
+      ? { ...event, status: 'reviewed', reviewedBy: '이OO 선생님', reviewedAt: '2026-07-21 14:20' }
+      : event,
+  )
+  notify('학습 이벤트를 확인 완료로 변경했습니다.')
+}
+
+function addEventToNote(eventId: number) {
+  const event = eventItems.value.find((item) => item.id === eventId)
+  if (!event) return
+  const prefix = noteDraft.value ? `${noteDraft.value}\n` : ''
+  noteDraft.value = `${prefix}[${learningEventTypeLabels[event.type]}] ${event.storyTitle} · ${event.sceneTitle}: ${event.systemResponse}`
+  communicationPanel.value?.openTab('notes')
+  communicationSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function saveNote(noteId: number | null, text: string) {
+  if (noteId) {
+    noteItems.value = noteItems.value.map((note) =>
+      note.id === noteId ? { ...note, text, updatedAt: '2026-07-21 14:24' } : note,
+    )
+  } else {
+    noteItems.value = [
+      {
+        id: Date.now(),
+        studentId: currentStudent.value.id,
+        source: 'teacher',
+        audience: 'teacher-only',
+        status: 'active',
+        author: '이OO 선생님',
+        text,
+        createdAt: '2026-07-21 14:24',
+        updatedAt: '2026-07-21 14:24',
+      },
+      ...noteItems.value,
+    ]
+  }
+  noteDraft.value = ''
+  notify('교수자 내부 메모가 저장되었습니다.')
+}
+
+function sendEncouragement(messageId: number | null, timing: 'immediate' | 'next-login') {
+  const text = encouragementDraft.value.trim()
+  if (!text) return
+  if (messageId) {
+    encouragementItems.value = encouragementItems.value.map((message) =>
+      message.id === messageId
+        ? { ...message, originalText: text, deliveryText: text, deliveryTiming: timing, updatedAt: '2026-07-21 14:30' }
+        : message,
+    )
+  } else {
+    encouragementItems.value = [
+      {
+        id: Date.now(),
+        studentId: currentStudent.value.id,
+        source: 'teacher',
+        audience: 'child',
+        status: timing === 'immediate' ? 'delivered' : 'scheduled',
+        author: '이OO 선생님',
+        originalText: text,
+        deliveryText: text,
+        deliveryTiming: timing,
+        scheduledAt: timing === 'next-login' ? '다음 로그인' : undefined,
+        deliveredAt: timing === 'immediate' ? '2026-07-21 14:30' : undefined,
+        createdAt: '2026-07-21 14:30',
+        updatedAt: '2026-07-21 14:30',
+      },
+      ...encouragementItems.value,
+    ]
+  }
+  encouragementDraft.value = ''
+  notify(timing === 'immediate' ? '아동에게 응원을 전달했습니다.' : '다음 로그인 전달로 예약했습니다.')
+}
+
+function deleteEncouragement(messageId: number) {
+  encouragementItems.value = encouragementItems.value.filter((message) => message.id !== messageId)
+  encouragementDraft.value = ''
+  notify('전달 전 응원을 삭제했습니다.')
+}
+
+function markGuardianRead(commentId: number) {
+  guardianCommentItems.value = guardianCommentItems.value.map((comment) =>
+    comment.id === commentId
+      ? { ...comment, status: 'read', readAt: '2026-07-21 14:32', updatedAt: '2026-07-21 14:32' }
+      : comment,
+  )
+  notify('보호자 의견을 읽음 처리했습니다.')
+}
+
+function addGuardianCommentToNote(commentId: number) {
+  const comment = guardianCommentItems.value.find((item) => item.id === commentId)
+  if (!comment) return
+  const prefix = noteDraft.value ? `${noteDraft.value}\n` : ''
+  noteDraft.value = `${prefix}[보호자 상담 참고] ${comment.text}`
+  communicationPanel.value?.openTab('notes')
+}
+
+function approveGuardianEncouragement(messageId: number, deliveryText: string) {
+  encouragementItems.value = encouragementItems.value.map((message) =>
+    message.id === messageId
+      ? {
+          ...message,
+          deliveryText,
+          status: 'scheduled',
+          scheduledAt: '다음 로그인',
+          approvedBy: '이OO 선생님',
+          approvedAt: '2026-07-21 14:35',
+          updatedAt: '2026-07-21 14:35',
+        }
+      : message,
+  )
+  notify('보호자 응원을 승인하고 전달 예약했습니다.')
+}
+
+function holdGuardianEncouragement(messageId: number, reason: string) {
+  encouragementItems.value = encouragementItems.value.map((message) =>
+    message.id === messageId
+      ? { ...message, status: 'on-hold', holdReason: reason, updatedAt: '2026-07-21 14:35' }
+      : message,
+  )
+  notify('보호자 응원을 보류하고 내부 사유를 기록했습니다.')
+}
+
 const levelChart: EChartsOption = {
-  tooltip: { trigger: 'axis' },
-  grid: { left: 42, right: 22, top: 30, bottom: 34 },
-  xAxis: { type: 'category', data: ['5/1', '5/8', '5/15', '5/22', '5/29', '6/5', '6/12'] },
+  tooltip: { trigger: 'axis', valueFormatter: (value) => `${value}%` },
+  grid: { left: 48, right: 24, top: 36, bottom: 34 },
+  xAxis: { type: 'category', boundaryGap: false, data: ['6/6', '6/13', '6/20', '6/27', '7/4', '7/11', '7/18'] },
   yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
-  series: [
-    {
-      name: '읽기 수준',
-      type: 'line',
-      // 각 측정 지점을 직선으로 연결합니다.
-      smooth: false,
-      data: [42, 51, 49, 63, 68, 72, 78],
-      lineStyle: { width: 4, color: '#4f46e5' },
-      itemStyle: { color: '#4f46e5' },
-      areaStyle: { color: 'rgba(79, 70, 229, 0.12)' },
-    },
-  ],
+  series: [{
+    name: '읽기 정확도', type: 'line', smooth: false, showSymbol: true, symbol: 'circle', symbolSize: 5,
+    data: [66, 69, 67, 70, 72, 71, 78], lineStyle: { width: 3, color: '#4f46e5' }, itemStyle: { color: '#4f46e5' },
+    markLine: { silent: true, symbol: 'none', label: { color: '#64748b', fontSize: 10, formatter: '{b}', position: 'insideEndTop' }, data: [{ name: '목표 80%', yAxis: 80, lineStyle: { color: '#94a3b8', type: 'dashed', width: 1 } }] },
+    markPoint: { symbol: 'circle', symbolSize: 9, itemStyle: { color: '#4f46e5' }, label: { show: true, position: 'top', distance: 9, formatter: '{b}', color: '#475569', fontSize: 11, fontWeight: 600 }, data: [{ name: '훈련 변경', coord: ['6/27', 70] }, { name: '교사 메모', coord: ['7/11', 71] }] },
+  }],
 }
 </script>
 
 <template>
-  <!-- 상단 두 카드와 하단 전체 너비 메모를 CSS Grid로 배치합니다. -->
-  <div class="overview-grid">
-    <section class="surface overview-card chart-card">
-      <div class="surface-header">
-        <div>
-          <h2>정확도 개선 추이</h2>
-          <p>최근 6주 동안의 읽기 정확도 변화입니다.</p>
+  <div class="overview page-stack">
+    <PageHeader title="학습 현황" />
+    <SaveToast :visible="noticeVisible" :show-icon="false" :message="noticeMessage" />
+
+    <section class="student-facts" aria-label="학생 학습 상태 요약">
+      <dl>
+        <div><dt>현재 단계</dt><dd>{{ currentStudent.latestTraining }}</dd><span>이해력 영역</span></div>
+        <div><dt>최근 학습</dt><dd>{{ recentLearningLabel }}</dd><span>{{ formattedLastLearningDate }}</span></div>
+      </dl>
+      <div class="action-summary" :class="{ 'is-complete': totalActionCount === 0 }">
+        <div v-if="totalActionCount > 0">
+          <strong>확인할 항목 {{ totalActionCount }}건</strong>
+          <span>
+            학습 이벤트 {{ reviewCount }}건 · 읽지 않은 보호자 의견 {{ unreadGuardianCount }}건 ·
+            승인 대기 응원 {{ pendingGuardianEncouragementCount }}건
+          </span>
+          <small>{{ oldestActionLabel }}</small>
         </div>
-        <span class="positive">+12%</span>
+        <div v-else>
+          <strong>현재 확인할 항목이 없습니다.</strong>
+          <span>학습 이벤트와 보호자 메시지를 모두 확인했습니다.</span>
+        </div>
+        <button v-if="totalActionCount > 0" type="button" @click="scrollToActions">확인하기</button>
       </div>
-      <!-- 공통 ChartPanel에 설정 객체를 전달해 실제 차트를 그립니다. -->
-      <ChartPanel :option="levelChart" height="360px" aria-label="읽기 정확도 개선 추이" />
     </section>
 
-    <section class="surface overview-card learning-log">
-      <div class="surface-header">
-        <div>
-          <h2>최근 학습 기록</h2>
-          <p>오늘 진행된 학습 활동입니다.</p>
-        </div>
-      </div>
-      <ul>
-        <!-- 로그를 반복하며 날짜와 활동명을 합친 고유 key로 각 행을 구별합니다. -->
-        <li v-for="log in learningLogs" :key="`${log[0]}-${log[1]}`">
-          <span class="log-dot"></span>
-          <div>
-            <strong>{{ log[1] }}</strong>
-            <p>{{ log[0] }} · {{ log[2] }}</p>
+    <section class="learning-analysis">
+      <div class="trend-panel">
+        <header class="section-heading">
+          <div><h2>읽기 정확도</h2><p>훈련 변경과 메모 시점 표시</p></div>
+          <div class="trend-summary"><span>최근 변화</span><strong>+12%p</strong></div>
+        </header>
+        <ChartPanel :option="levelChart" height="220px" aria-label="최근 6주 읽기 정확도 변화" />
+        <div class="analysis-followup">
+          <div><span class="followup-label">변화 해석</span><p>6월 27일 받침 훈련 이후 정확도가 상승했지만 회차별 편차가 있습니다.</p></div>
+          <div class="next-training">
+            <span class="followup-label">다음 권장 훈련</span><strong>{{ nextTraining }}</strong>
+            <p>읽기 속도보다 받침 정확도를 안정시키기 위해 15분씩 2회를 권장합니다.</p>
+            <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">커리큘럼에서 확인</RouterLink>
           </div>
-          <b>{{ log[3] }}</b>
-        </li>
-      </ul>
-    </section>
-
-    <section class="surface student-note">
-      <SaveToast :visible="saved" :show-icon="false" />
-      <div class="surface-header">
-        <div>
-          <h2>학생 특징 메모</h2>
-          <p>학생의 학습 특성을 기록하세요.</p>
         </div>
       </div>
-      <div class="student-note__content">
-        <!-- 입력 내용과 note를 양방향 연결하고 클릭하면 임시 저장 알림을 띄웁니다. -->
-        <textarea v-model="note" class="textarea"></textarea>
-        <button class="button" type="button" @click="showSaved">메모 저장</button>
-      </div>
+
+      <aside ref="eventsSection" class="recent-panel">
+        <StudentLearningEvents
+          :records="currentRecords"
+          :events="currentEvents"
+          @review="reviewEvent"
+          @add-to-note="addEventToNote"
+        />
+        <RouterLink class="history-link" :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
+          전체 훈련 이력 보기
+        </RouterLink>
+      </aside>
     </section>
+
+    <div ref="communicationSection">
+      <StudentCommunicationPanel
+        :key="currentStudent.id"
+        ref="communicationPanel"
+        v-model:note-draft="noteDraft"
+        v-model:encouragement-draft="encouragementDraft"
+        :notes="currentNotes"
+        :encouragements="currentEncouragements"
+        :guardian-comments="currentGuardianComments"
+        :busy-id="busyId"
+        teacher-name="이OO 선생님"
+        @save-note="saveNote"
+        @send-encouragement="sendEncouragement"
+        @delete-encouragement="deleteEncouragement"
+        @mark-guardian-read="markGuardianRead"
+        @add-guardian-comment-to-note="addGuardianCommentToNote"
+        @approve-guardian-encouragement="approveGuardianEncouragement"
+        @hold-guardian-encouragement="holdGuardianEncouragement"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
-.overview-grid {
-  /* 왼쪽 차트가 오른쪽 기록 카드보다 넓도록 1.35:0.85 비율로 나눕니다. */
-  display: grid;
-  gap: 20px;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
-}
+.overview { gap: 18px; container-type: inline-size; }
+.overview > :deep(.save-toast) { position: fixed; z-index: 20; right: 28px; bottom: 28px; }
+.student-facts { padding-bottom: 2px; }
+.student-facts dl { display: flex; align-items: center; margin: 0; padding: 0 0 14px; }
+.student-facts dl > div { display: flex; min-width: 0; align-items: baseline; gap: 10px; }
+.student-facts dl > div + div { margin-left: 28px; padding-left: 28px; border-left: 1px solid var(--slate-200); }
+.student-facts dt { color: var(--slate-500); font-size: 12px; font-weight: 600; }
+.student-facts dd { margin: 0; color: var(--slate-900); font-size: 14px; font-weight: 700; }
+.student-facts span { color: var(--slate-500); font-size: 12px; }
+.action-summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid var(--slate-200); border-bottom: 1px solid var(--slate-200); }
+.action-summary > div { display: grid; gap: 2px; }
+.action-summary strong { color: var(--slate-900); font-size: 13px; }
+.action-summary span { color: var(--slate-600); font-size: 11px; }
+.action-summary small { color: #b45309; font-size: 10px; }
+.action-summary button { border: 0; background: transparent; color: var(--primary-700); font-size: 12px; font-weight: 700; }
+.action-summary.is-complete strong { color: var(--success-600); }
+.learning-analysis { display: grid; align-items: start; grid-template-columns: minmax(0, 1.45fr) minmax(330px, .75fr); }
+.trend-panel { min-width: 0; padding: 2px 24px 16px 0; }
+.recent-panel { min-width: 0; padding: 2px 0 16px 24px; border-left: 1px solid var(--slate-200); scroll-margin-top: 90px; }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.section-heading h2 { margin: 0; font-size: 17px; }
+.section-heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
+.trend-summary { display: grid; flex: 0 0 auto; gap: 2px; text-align: right; }
+.trend-summary span { color: var(--slate-500); font-size: 12px; }
+.trend-summary strong { color: var(--slate-900); font-size: 20px; line-height: 1.2; }
+.trend-panel :deep(.chart-panel) { padding-top: 2px; }
+.analysis-followup { display: grid; gap: 24px; margin-top: 4px; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+.analysis-followup > div { padding-top: 12px; }
+.followup-label { color: var(--slate-500); font-size: 12px; font-weight: 600; }
+.analysis-followup p { margin: 4px 0 0; color: var(--slate-600); font-size: 12px; line-height: 1.5; }
+.next-training strong { display: block; margin-top: 5px; color: var(--slate-900); font-size: 14px; line-height: 1.45; }
+.next-training a,
+.history-link { display: inline-flex; margin-top: 8px; color: var(--primary-700); font-size: 12px; font-weight: 700; text-decoration: none; }
+.next-training a:hover,
+.history-link:hover { text-decoration: underline; }
+.overview > div:last-child { scroll-margin-top: 90px; }
 
-.overview-card {
-  overflow: hidden;
+@container (max-width: 940px) {
+  .learning-analysis { grid-template-columns: 1fr; }
+  .trend-panel { padding-right: 0; }
+  .recent-panel { padding: 22px 0 20px; border-left: 0; border-top: 1px solid var(--slate-200); }
 }
-
-.surface-header p {
-  margin: 4px 0 0;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-
-.positive {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.chart-card :deep(.chart-panel) {
-  /* :deep은 scoped 경계를 넘어 자식 ChartPanel 내부 요소에 여백을 적용합니다. */
-  padding: 10px 18px 0;
-}
-
-.learning-log ul {
-  display: grid;
-  margin: 0;
-  padding: 16px 22px 22px;
-  list-style: none;
-}
-
-.learning-log li {
-  /* 점, 로그 설명, 점수를 3열로 정렬합니다. */
-  display: grid;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--slate-100);
-  grid-template-columns: 10px 1fr auto;
-}
-
-.learning-log li:last-child {
-  border-bottom: 0;
-}
-
-.learning-log p {
-  margin: 3px 0 0;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-
-.learning-log b {
-  color: var(--primary-600);
-}
-
-.log-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary-500);
-}
-
-.student-note {
-  /* 첫 열부터 마지막 열까지 차지해 두 카드 아래 전체 너비로 표시합니다. */
-  position: relative;
-  grid-column: 1 / -1;
-}
-
-.student-note__content {
-  display: grid;
-  justify-items: end;
-  gap: 12px;
-  padding: 22px;
-}
-
-.student-note .textarea {
-  min-height: 160px;
-}
-
 </style>

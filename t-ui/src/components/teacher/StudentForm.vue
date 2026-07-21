@@ -1,22 +1,24 @@
 <script setup lang="ts">
-// 학생 등록과 수정 화면이 같은 입력 폼을 공유하도록 만든 재사용 컴포넌트입니다.
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import FormActions from '@/components/teacher/FormActions.vue'
+import PageHeader from '@/components/teacher/PageHeader.vue'
+import ProfileImageEditor from '@/components/teacher/ProfileImageEditor.vue'
+import SettingsSection from '@/components/teacher/SettingsSection.vue'
+import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 import type { Student } from '@/features/teacher/types'
 
-// mode로 등록/수정을 구분하고, 수정일 때는 기존 학생 정보를 initialValue로 받습니다.
 const props = defineProps<{
   mode: 'create' | 'edit'
   initialValue?: Student
 }>()
 
-// router는 저장 후 다른 화면으로 이동하거나 취소 버튼으로 뒤로 갈 때 사용합니다.
 const router = useRouter()
-// saved는 저장 안내 표시 여부, previewUrl은 프로필 사진 미리보기 주소입니다.
-const saved = ref(false)
-const previewUrl = ref('/images/student-profile.png')
+const { visible: saved, show: showSaved } = useTemporaryNotice()
+const photoChanged = ref(false)
+const deleteDialogOpen = ref(false)
 
-// 새 학생 등록 화면에서 입력 칸을 비워 두기 위한 초기 객체입니다.
 const emptyStudent: Student = {
   id: 0,
   name: '',
@@ -39,137 +41,98 @@ const emptyStudent: Student = {
   weeklyAttendance: '0%',
 }
 
-// reactive는 객체 속성이 바뀔 때 화면을 갱신합니다. ...로 복사해 원본 목업 데이터 변경을 막습니다.
 const form = reactive<Student>({ ...(props.initialValue ?? emptyStudent) })
-// computed는 mode가 바뀌면 등록/수정에 맞는 제목과 설명을 자동으로 다시 계산합니다.
+const savedSnapshot = ref(JSON.stringify(form))
 const title = computed(() => (props.mode === 'create' ? '새 학생 등록' : '학생 정보 수정'))
 const description = computed(() =>
   props.mode === 'create'
-    ? '학습자와 보호자 정보를 입력해 교수자 관리 목록에 추가합니다.'
-    : '변경이 필요한 정보를 수정한 뒤 저장해 주세요.',
+    ? '학생과 보호자 정보를 입력합니다.'
+    : '학생과 보호자 정보를 수정합니다.',
 )
+const studentInitial = computed(() => form.name.trim().charAt(0) || '학')
+const formChanged = computed(
+  () => JSON.stringify(form) !== savedSnapshot.value || photoChanged.value,
+)
+const requiredFieldsEntered = computed(
+  () =>
+    Boolean(form.name.trim()) &&
+    Boolean(form.birthDate) &&
+    Boolean(form.school.trim()) &&
+    Boolean(form.guardianName.trim()) &&
+    Boolean(form.guardianPhone.trim()),
+)
+const canSubmit = computed(() => formChanged.value && requiredFieldsEntered.value)
 
-function selectImage(event: Event) {
-  // change 이벤트가 발생한 실제 파일 입력 요소와 사용자가 고른 첫 파일을 찾습니다.
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  // 전에 만든 임시 주소가 있으면 해제해 브라우저 메모리가 계속 쌓이지 않게 합니다.
-  if (previewUrl.value.startsWith('blob:')) URL.revokeObjectURL(previewUrl.value)
-  // 로컬 파일을 브라우저에서 바로 미리 볼 수 있는 일시적인 blob 주소로 바꿉니다.
-  previewUrl.value = URL.createObjectURL(file)
+function markPhotoChanged() {
+  photoChanged.value = true
 }
 
 function submitForm() {
-  // 현재 목업에는 서버가 없으므로 실제 저장 대신 안내를 보여 준 뒤 화면만 이동합니다.
-  saved.value = true
-  window.setTimeout(() => {
-    router.push(props.mode === 'create' ? '/teacher/dashboard' : '/teacher/students/1')
-  }, 700)
+  if (!canSubmit.value) return
+
+  savedSnapshot.value = JSON.stringify(form)
+  photoChanged.value = false
+  showSaved()
+
+  if (props.mode === 'create') {
+    window.setTimeout(() => router.push('/teacher/dashboard'), 700)
+  }
+}
+
+function confirmStudentDeletion() {
+  deleteDialogOpen.value = false
+  router.push('/teacher/dashboard')
 }
 </script>
 
 <template>
-  <!-- .prevent는 폼 제출 시 브라우저가 페이지를 새로 고치는 기본 동작을 막습니다. -->
   <form class="student-form page-stack" @submit.prevent="submitForm">
-    <header class="page-heading">
-      <div>
-        <h1>{{ title }}</h1>
-        <p>{{ description }}</p>
-      </div>
-      <span class="form-badge">필수 항목을 확인해 주세요</span>
-    </header>
+    <PageHeader :title="title" :description="description" />
 
-    <!-- saved가 true가 된 경우에만 저장 완료 문구가 DOM에 만들어집니다. -->
-    <div v-if="saved" class="status-message">
-      정보가 목업 데이터에 저장되었습니다. 화면을 이동합니다.
-    </div>
+    <SettingsSection title="학생 기본 정보" description="학습 관리에 사용하는 정보입니다.">
+      <ProfileImageEditor
+        input-id="student-photo"
+        label="프로필 사진"
+        :image-url="initialValue?.profileImage"
+        :fallback="studentInitial"
+        button-label="사진 선택"
+        @select="markPhotoChanged"
+      />
 
-    <section class="surface form-section student-section">
-      <div class="form-section__heading">
-        <span>01</span>
-        <div>
-          <h2>학생 정보</h2>
-          <p>학생의 기본 정보와 학교 정보를 입력합니다.</p>
+      <div class="form-grid section-fields">
+        <div class="field field--medium">
+          <label for="student-name">학생명</label>
+          <input id="student-name" v-model="form.name" class="input" required placeholder="학생 이름" />
+        </div>
+        <div class="field field--date">
+          <label for="student-birth">생년월일</label>
+          <input id="student-birth" v-model="form.birthDate" class="input" required type="date" />
+        </div>
+        <div class="field field--short">
+          <label for="student-gender">성별</label>
+          <select id="student-gender" v-model="form.gender" class="select">
+            <option>남자</option>
+            <option>여자</option>
+          </select>
+        </div>
+        <div class="field field--phone">
+          <label for="student-phone">학생 연락처</label>
+          <input id="student-phone" v-model="form.phone" class="input" placeholder="010-0000-0000" />
+        </div>
+        <div class="field form-grid__wide">
+          <label for="student-school">학교명</label>
+          <input id="student-school" v-model="form.school" class="input" required placeholder="학교명" />
         </div>
       </div>
+    </SettingsSection>
 
-      <div class="student-section__body">
-        <div class="photo-uploader">
-          <img :src="previewUrl" alt="학생 프로필 미리보기" />
-          <label class="button button--secondary" for="student-photo">사진 선택</label>
-          <!-- 실제 파일 입력은 숨기고 label의 for로 클릭을 대신 전달합니다. -->
-          <input id="student-photo" type="file" accept="image/*" hidden @change="selectImage" />
-          <small>JPG 또는 PNG, 최대 5MB</small>
-        </div>
-
-        <div class="form-grid">
-          <div class="field">
-            <label for="student-name">학생명</label>
-            <input
-              id="student-name"
-              v-model="form.name"
-              class="input"
-              required
-              placeholder="학생 이름"
-            />
-          </div>
-          <div class="field">
-            <label for="student-birth">생년월일</label>
-            <input id="student-birth" v-model="form.birthDate" class="input" required type="date" />
-          </div>
-          <div class="field">
-            <label for="student-gender">성별</label>
-            <!-- v-model은 입력값과 form 속성을 양방향으로 연결합니다. -->
-            <select id="student-gender" v-model="form.gender" class="select">
-              <option>남자</option>
-              <option>여자</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="student-phone">학생 연락처</label>
-            <input
-              id="student-phone"
-              v-model="form.phone"
-              class="input"
-              placeholder="010-0000-0000"
-            />
-          </div>
-          <div class="field form-grid__wide">
-            <label for="student-school">학교명</label>
-            <input
-              id="student-school"
-              v-model="form.school"
-              class="input"
-              required
-              placeholder="학교명"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="surface form-section">
-      <div class="form-section__heading">
-        <span>02</span>
-        <div>
-          <h2>보호자 정보</h2>
-          <p>학습 안내와 상담에 사용할 보호자 연락처입니다.</p>
-        </div>
-      </div>
-
-      <div class="form-grid form-section__fields">
-        <div class="field">
+    <SettingsSection title="보호자 정보" description="상담에 사용할 보호자 연락처입니다.">
+      <div class="form-grid">
+        <div class="field field--medium">
           <label for="guardian-name">보호자명</label>
-          <input
-            id="guardian-name"
-            v-model="form.guardianName"
-            class="input"
-            required
-            placeholder="보호자 이름"
-          />
+          <input id="guardian-name" v-model="form.guardianName" class="input" required placeholder="보호자 이름" />
         </div>
-        <div class="field">
+        <div class="field field--short">
           <label for="guardian-relation">관계</label>
           <select id="guardian-relation" v-model="form.guardianRelation" class="select">
             <option>어머니</option>
@@ -178,151 +141,99 @@ function submitForm() {
             <option>기타</option>
           </select>
         </div>
-        <div class="field">
+        <div class="field field--phone">
           <label for="guardian-phone">보호자 연락처</label>
-          <input
-            id="guardian-phone"
-            v-model="form.guardianPhone"
-            class="input"
-            required
-            placeholder="010-0000-0000"
-          />
+          <input id="guardian-phone" v-model="form.guardianPhone" class="input" required placeholder="010-0000-0000" />
         </div>
         <div class="field">
           <label for="guardian-email">보호자 이메일</label>
-          <input
-            id="guardian-email"
-            v-model="form.guardianEmail"
-            class="input"
-            type="email"
-            placeholder="example@email.com"
-          />
+          <input id="guardian-email" v-model="form.guardianEmail" class="input" type="email" placeholder="example@email.com" />
         </div>
         <div class="field form-grid__wide">
           <label for="address">주소</label>
-          <input
-            id="address"
-            v-model="form.address"
-            class="input"
-            placeholder="주소를 입력하세요"
-          />
+          <input id="address" v-model="form.address" class="input" placeholder="주소를 입력하세요" />
         </div>
       </div>
+    </SettingsSection>
+
+    <FormActions
+      :saved="saved"
+      :disabled="!canSubmit"
+      :save-label="mode === 'create' ? '학생 등록' : '변경 사항 저장'"
+      :saved-message="mode === 'create' ? '학생 정보가 저장되었습니다.' : '변경 사항이 저장되었습니다.'"
+      @cancel="router.back()"
+    />
+
+    <section v-if="mode === 'edit'" class="danger-zone" aria-label="학생 삭제">
+      <div>
+        <h2>학생 삭제</h2>
+        <p>학생 목록에서 제외하고 연결된 학습 기록에 더 이상 접근할 수 없게 됩니다.</p>
+      </div>
+      <button class="button button--danger button--small" type="button" @click="deleteDialogOpen = true">
+        학생 삭제
+      </button>
     </section>
 
-    <footer class="form-actions">
-      <!-- type=button은 폼 제출을 막고, type=submit만 submitForm을 실행합니다. -->
-      <button class="button button--secondary" type="button" @click="router.back()">취소</button>
-      <button class="button" type="submit">
-        {{ mode === 'create' ? '학생 등록' : '변경 사항 저장' }}
-      </button>
-    </footer>
+    <ConfirmDialog
+      :open="deleteDialogOpen"
+      title="학생을 삭제할까요?"
+      :message="`${form.name} 학생을 목록에서 삭제합니다. 목업에서는 실제 데이터가 삭제되지 않습니다.`"
+      confirm-label="학생 삭제"
+      @cancel="deleteDialogOpen = false"
+      @confirm="confirmStudentDeletion"
+    />
   </form>
 </template>
 
 <style scoped>
-/* 폼이 매우 넓어져 읽기 어려워지지 않도록 최대 폭을 제한하고 가운데 정렬합니다. */
 .student-form {
-  max-width: 1160px;
+  max-width: 1020px;
   margin: 0 auto;
 }
 
-.form-badge {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: var(--primary-50);
-  color: var(--primary-700);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.form-section {
-  padding: 24px;
-}
-
-.form-section__heading {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--slate-200);
-}
-
-.form-section__heading > span {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--primary-50);
-  color: var(--primary-700);
-  font-weight: 800;
-}
-
-.form-section__heading h2 {
-  margin: 0 0 3px;
-  font-size: 17px;
-}
-
-.form-section__heading p {
-  margin: 0;
-  color: var(--slate-500);
-  font-size: 13px;
-}
-
-.student-section__body {
-  /* 학생 사진 영역과 기본 입력 영역을 좌우 두 열로 배치합니다. */
-  display: grid;
-  align-items: start;
-  gap: 42px;
-  padding-top: 28px;
-  grid-template-columns: 220px 1fr;
-}
-
-.photo-uploader {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  padding: 20px;
-  border-radius: var(--radius-md);
-  background: var(--slate-50);
-}
-
-.photo-uploader img {
-  /* 비율이 다른 사진도 원형 틀을 가득 채우되 찌그러지지 않도록 잘라 냅니다. */
-  width: 148px;
-  height: 148px;
-  border: 5px solid var(--white);
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 0 1px var(--slate-200);
-}
-
-.photo-uploader small {
-  color: var(--slate-400);
-  font-size: 11px;
-}
-
 .form-grid {
-  /* 입력 필드를 같은 너비의 두 열로 정돈합니다. */
   display: grid;
+  max-width: 620px;
   gap: 18px 20px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.section-fields {
+  padding-top: 20px;
 }
 
 .form-grid__wide {
-  /* 주소처럼 긴 입력 필드는 첫 열부터 마지막 열까지 모두 차지합니다. */
   grid-column: 1 / -1;
 }
 
-.form-section__fields {
-  padding-top: 24px;
+.danger-zone {
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 0;
+  border-top: 1px solid #fecaca;
+  border-bottom: 1px solid #fecaca;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-bottom: 20px;
+.danger-zone h2 {
+  margin: 0;
+  color: var(--slate-800);
+  font-size: 15px;
+}
+
+.danger-zone p {
+  margin: 3px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+
+.student-form .button:disabled {
+  border-color: var(--slate-200);
+  background: var(--slate-100);
+  color: var(--slate-400);
+  cursor: default;
+  transform: none;
 }
 </style>

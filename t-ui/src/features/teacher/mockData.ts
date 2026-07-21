@@ -1,8 +1,14 @@
 // import type은 실행 코드가 아니라 TypeScript의 자료형 검사에만 사용하는 가져오기입니다.
 import type {
   CurriculumItem,
+  EncouragementMessage,
+  GuardianComment,
+  LearningEvent,
+  LearningRecord,
   RecommendedCurriculumItem,
+  ShareLink,
   Student,
+  TeacherNote,
   TrainingSession,
 } from './types'
 
@@ -105,10 +111,148 @@ export const trainingSessions: TrainingSession[] = [
   },
 ]
 
-// 학습 로그 표의 행이며, 내부 배열은 날짜·활동·상태·점수 순서입니다.
-export const learningLogs = [
-  ['2026-07-14 15:44', '커리큘럼 전체', '종료', '88%'],
-  ['2026-07-14 15:44', '훈련(음운 연습)', '종료', '100%'],
-  ['2026-07-14 15:39', '훈련(음운 연습)', '시작', 'N/A'],
-  ['2026-07-14 15:38', '훈련(파닉스)', '종료', '50%'],
+export const learningRecords: LearningRecord[] = [
+  {
+    id: 1,
+    studentId: 1,
+    occurredAt: '2026-07-18 15:44',
+    activity: '구름 마을의 비밀 · 받침 소리 구분',
+    result: 'completed',
+    score: 88,
+  },
+  {
+    id: 2,
+    studentId: 1,
+    occurredAt: '2026-07-18 15:31',
+    activity: '토끼의 우체국 · 짧은 문장 읽기',
+    result: 'completed',
+    score: 76,
+    eventId: 101,
+  },
+  {
+    id: 3,
+    studentId: 1,
+    occurredAt: '2026-07-16 16:05',
+    activity: '바닷속 도서관 · 핵심 내용 찾기',
+    result: 'completed',
+    score: 64,
+    eventId: 102,
+  },
+  {
+    id: 4,
+    studentId: 2,
+    occurredAt: '2026-07-17 18:20',
+    activity: '별빛 캠핑 · 문장 유창하게 읽기',
+    result: 'completed',
+    score: 91,
+  },
 ]
+
+export const learningEvents: LearningEvent[] = [
+  {
+    id: 101,
+    studentId: 1,
+    recordId: 2,
+    occurredAt: '2026-07-18 15:34',
+    storyTitle: '토끼의 우체국',
+    sceneTitle: '편지를 읽어요',
+    type: 'speech-recognition-low-confidence',
+    retryCount: 2,
+    finalSucceeded: true,
+    usedSafeFallback: false,
+    learningOutcome: 'completed',
+    status: 'needs-review',
+    issueSegment: '받침이 포함된 짧은 구간',
+    recognitionConfidence: 62,
+    systemResponse: '속도를 낮춘 문장으로 다시 안내한 뒤 학습을 이어갔습니다.',
+  },
+  {
+    id: 102,
+    studentId: 1,
+    recordId: 3,
+    occurredAt: '2026-07-16 16:12',
+    storyTitle: '바닷속 도서관',
+    sceneTitle: '다음 장면을 골라요',
+    type: 'safety-restriction',
+    retryCount: 0,
+    finalSucceeded: true,
+    usedSafeFallback: true,
+    learningOutcome: 'completed',
+    status: 'follow-up-needed',
+    systemResponse: '중립적인 기본 이야기 분기로 이동해 학습을 마쳤습니다.',
+  },
+]
+
+export const teacherNotes: TeacherNote[] = [
+  {
+    id: 201,
+    studentId: 1,
+    source: 'teacher',
+    audience: 'teacher-only',
+    status: 'active',
+    author: '이OO 선생님',
+    text: '글자와 소리의 대응이 빠르게 향상되고 있습니다. 받침이 포함된 문장을 읽을 때 속도가 흔들리는 경향이 있어 반복 연습이 필요합니다.',
+    createdAt: '2026-07-18 17:10',
+    updatedAt: '2026-07-18 17:10',
+  },
+]
+
+export const encouragementMessages: EncouragementMessage[] = [
+  {
+    id: 301,
+    studentId: 1,
+    source: 'teacher',
+    audience: 'child',
+    status: 'seen-by-child',
+    author: '이OO 선생님',
+    originalText: '어려운 받침도 끝까지 읽어 낸 노력이 정말 멋졌어!',
+    deliveryText: '어려운 받침도 끝까지 읽어 낸 노력이 정말 멋졌어!',
+    deliveryTiming: 'immediate',
+    deliveredAt: '2026-07-17 16:42',
+    seenAt: '2026-07-17 18:03',
+    createdAt: '2026-07-17 16:40',
+    updatedAt: '2026-07-17 18:03',
+  },
+  {
+    id: 302,
+    studentId: 1,
+    source: 'guardian',
+    audience: 'child',
+    status: 'pending-approval',
+    author: '이OO 보호자',
+    originalText: '요즘 스스로 책을 펼치는 모습이 대견해. 천천히 해도 괜찮아!',
+    deliveryText: '스스로 책을 펼치는 모습이 정말 대견해. 천천히 해도 괜찮아!',
+    deliveryTiming: 'next-login',
+    createdAt: '2026-07-20 20:14',
+    updatedAt: '2026-07-20 20:14',
+  },
+]
+
+export const guardianComments: GuardianComment[] = [
+  {
+    id: 401,
+    studentId: 1,
+    source: 'guardian',
+    audience: 'teacher-only',
+    status: 'unread',
+    author: '이OO 보호자',
+    reportVersion: 1,
+    text: '집에서도 소리 내어 읽는 시간이 늘었습니다. 다음 단계에서 집에서 도울 방법이 있을까요?',
+    createdAt: '2026-07-20 20:09',
+    updatedAt: '2026-07-20 20:09',
+  },
+]
+
+export const activeShareLink: ShareLink = {
+  id: 501,
+  reportVersionId: 1,
+  status: 'active',
+  maskedUrl: 'iread.kr/r/••••••8K2P',
+  copyValue: 'https://iread.kr/r/mock-8K2P',
+  expiresAt: '2026-08-20',
+  createdAt: '2026-07-20 18:30',
+  firstViewedAt: '2026-07-20 20:02',
+  lastViewedAt: '2026-07-20 20:14',
+  guardianAuthentication: 'verified',
+  guardianContactHint: '010-****-5678',
+}

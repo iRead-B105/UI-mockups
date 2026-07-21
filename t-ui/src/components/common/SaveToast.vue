@@ -5,10 +5,12 @@ withDefaults(
     visible: boolean
     message?: string
     showIcon?: boolean
+    inline?: boolean
   }>(),
   {
     message: '변경 사항이 저장되었습니다.',
     showIcon: true,
+    inline: false,
   },
 )
 </script>
@@ -17,7 +19,13 @@ withDefaults(
   <!-- Transition은 요소가 생기고 사라질 때 아래 enter/leave CSS 애니메이션을 적용합니다. -->
   <Transition name="save-toast">
     <!-- v-if가 false면 HTML 자체를 제거합니다. role=status는 보조 기술에도 알림을 전달합니다. -->
-    <div v-if="visible" class="save-toast" role="status" aria-live="polite">
+    <div
+      v-if="visible"
+      class="save-toast"
+      :class="{ 'save-toast--inline': inline }"
+      role="status"
+      aria-live="polite"
+    >
       <span v-if="showIcon" aria-hidden="true">✓</span>
       {{ message }}
     </div>
@@ -54,6 +62,21 @@ withDefaults(
   background: #16a34a;
   color: #fff;
   font-size: 12px;
+}
+
+.save-toast--inline {
+  position: static;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.save-toast--inline span {
+  width: 19px;
+  height: 19px;
+  font-size: 11px;
 }
 
 .save-toast-enter-active,

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+// 학생 상세 페이지 위쪽에서 공통으로 보이는 학생 요약 정보와 수정/삭제 동작입니다.
 import { useRouter } from 'vue-router'
 import { selectedStudent } from '@/features/teacher/mockData'
 
 const router = useRouter()
 
 function deleteStudent() {
+  // confirm이 true(확인)일 때만 다음 안내를 보여 줍니다. 목업이라 실제 삭제는 하지 않습니다.
   if (window.confirm('목업에서 이 학생을 삭제 처리할까요?')) {
     window.alert('목업 환경에서는 실제 데이터가 삭제되지 않습니다.')
   }
@@ -12,6 +14,7 @@ function deleteStudent() {
 </script>
 
 <template>
+  <!-- dl은 용어(dt)와 설명(dd)이 짝을 이루는 정보 목록에 적합한 HTML 구조입니다. -->
   <section class="student-summary surface">
     <img src="/images/student-profile.png" :alt="selectedStudent.name" />
     <dl>
@@ -41,6 +44,7 @@ function deleteStudent() {
       </div>
     </dl>
     <div class="student-summary__actions">
+      <!-- 클릭 시 수정 화면 주소를 이동 기록에 추가합니다. -->
       <button
         class="button button--secondary button--small"
         type="button"
@@ -57,6 +61,7 @@ function deleteStudent() {
 
 <style scoped>
 .student-summary {
+  /* 프로필 사진, 정보 목록, 버튼을 각각 세 열로 배치합니다. */
   display: grid;
   min-height: 146px;
   align-items: center;
@@ -74,6 +79,7 @@ function deleteStudent() {
 }
 
 .student-summary dl {
+  /* 여섯 개 정보를 한 줄에 세 개씩 보이도록 3열 Grid로 만듭니다. */
   display: grid;
   margin: 0;
   gap: 18px 24px;
@@ -92,6 +98,7 @@ function deleteStudent() {
 }
 
 .student-summary dd {
+  /* 긴 값은 한 줄로 유지하고 넘치는 부분을 말줄임표로 표시합니다. */
   overflow: hidden;
   margin: 0;
   font-size: 14px;

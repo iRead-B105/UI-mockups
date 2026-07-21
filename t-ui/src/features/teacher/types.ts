@@ -4,6 +4,8 @@ export interface Student {
   // id는 학생을 서로 구별하는 고유 번호입니다.
   id: number
   name: string
+  // 등록된 프로필 이미지가 없으면 화면에서 이름 이니셜을 대신 표시합니다.
+  profileImage?: string
   age: number
   birthDate: string
   // | 기호는 두 문자열 중 하나만 허용한다는 뜻입니다.
@@ -50,4 +52,126 @@ export interface RecommendedCurriculumItem {
   category: string
   title: string
   count: number
+}
+
+export type Audience = 'teacher-only' | 'child' | 'guardian'
+
+export type MessageSource = 'teacher' | 'guardian'
+
+export type AsyncContentState = 'loading' | 'ready' | 'error'
+
+export type LearningEventType =
+  | 'pronunciation-correction'
+  | 'speech-recognition-low-confidence'
+  | 'device-or-network-error'
+  | 'safety-restriction'
+  | 'generation-failure'
+
+export type LearningEventStatus = 'needs-review' | 'reviewed' | 'follow-up-needed'
+
+export type EncouragementStatus =
+  | 'pending-approval'
+  | 'scheduled'
+  | 'delivered'
+  | 'seen-by-child'
+  | 'on-hold'
+  | 'archived'
+
+export type ReportStatus = 'draft' | 'published' | 'shared' | 'share-ended'
+
+export type ShareLinkStatus = 'active' | 'expired' | 'revoked'
+
+export interface LearningRecord {
+  id: number
+  studentId: number
+  occurredAt: string
+  activity: string
+  result: 'started' | 'completed'
+  score?: number
+  eventId?: number
+}
+
+export interface LearningEvent {
+  id: number
+  studentId: number
+  recordId: number
+  occurredAt: string
+  storyTitle: string
+  sceneTitle: string
+  type: LearningEventType
+  retryCount: number
+  finalSucceeded: boolean
+  usedSafeFallback: boolean
+  learningOutcome: 'completed' | 'left'
+  status: LearningEventStatus
+  issueSegment?: string
+  recognitionConfidence?: number
+  systemResponse: string
+  reviewedBy?: string
+  reviewedAt?: string
+}
+
+export interface MessageBase<TStatus extends string> {
+  id: number
+  studentId: number
+  source: MessageSource
+  audience: Audience
+  status: TStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TeacherNote extends MessageBase<'active' | 'archived'> {
+  author: string
+  text: string
+}
+
+export interface EncouragementMessage extends MessageBase<EncouragementStatus> {
+  author: string
+  originalText: string
+  deliveryText: string
+  deliveryTiming: 'immediate' | 'next-login'
+  scheduledAt?: string
+  deliveredAt?: string
+  seenAt?: string
+  approvedBy?: string
+  approvedAt?: string
+  holdReason?: string
+  deliveryStatusPending?: boolean
+}
+
+export interface GuardianComment extends MessageBase<'unread' | 'read' | 'archived'> {
+  author: string
+  reportVersion: number
+  text: string
+  readAt?: string
+}
+
+export interface ReportVersion {
+  id: number
+  studentId: number
+  version: number
+  status: ReportStatus
+  periodStart: string
+  periodEnd: string
+  teacherOpinion: string
+  createdAt: string
+  updatedAt: string
+  publishedAt?: string
+}
+
+export interface ShareLink {
+  id: number
+  reportVersionId: number
+  status: ShareLinkStatus
+  maskedUrl: string
+  copyValue: string
+  expiresAt: string
+  createdAt: string
+  firstViewedAt?: string
+  lastViewedAt?: string
+  pdfSavedAt?: string
+  revokedAt?: string
+  guardianAuthentication: 'not-attempted' | 'verified' | 'failed'
+  guardianContactHint: string
 }

@@ -169,6 +169,15 @@ p {
   transform: translateY(-1px);
 }
 
+.button:disabled,
+.button:disabled:hover {
+  border-color: var(--slate-200);
+  background: var(--slate-100);
+  color: var(--slate-400);
+  cursor: default;
+  transform: none;
+}
+
 .button--secondary {
   /* 기본 button 뒤에 함께 붙여 사용하는 흰색 보조 버튼 변형입니다. */
   border-color: var(--slate-300);
@@ -224,6 +233,22 @@ p {
   font-weight: 700;
 }
 
+.field--short {
+  max-width: 240px;
+}
+
+.field--date {
+  max-width: 280px;
+}
+
+.field--phone {
+  max-width: 360px;
+}
+
+.field--medium {
+  max-width: 420px;
+}
+
 .input,
 .select,
 .textarea {
@@ -276,6 +301,12 @@ p {
 
 @media print {
   /* 아래 규칙은 화면이 아니라 종이 또는 PDF로 인쇄할 때만 적용됩니다. */
+  html,
+  body {
+    min-width: 0;
+    background: var(--white);
+  }
+
   .teacher-header,
   .teacher-sidebar,
   .student-tabs,
