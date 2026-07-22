@@ -6,11 +6,8 @@ import type { Student } from '@/features/teacher/types'
 import SidebarIcon from '@/components/teacher/SidebarIcon.vue'
 import StudentSwitcher from '@/components/teacher/StudentSwitcher.vue'
 
-type SidebarMode = 'teacher' | 'student'
-
 const route = useRoute()
 const router = useRouter()
-const mode = ref<SidebarMode>('teacher')
 const isAccountMenuOpen = ref(false)
 const currentStudent = computed(
   () => students.find((student) => student.id === Number(route.params.id)) ?? selectedStudent,
@@ -25,23 +22,16 @@ const studentRouteNames = new Set([
 ])
 
 watch(
-  () => route.name,
-  (routeName) => {
-    mode.value = studentRouteNames.has(String(routeName)) ? 'student' : 'teacher'
+  () => route.fullPath,
+  () => {
     isAccountMenuOpen.value = false
   },
-  { immediate: true },
 )
 
-function selectMode(nextMode: SidebarMode) {
-  mode.value = nextMode
-  router.push(
-    nextMode === 'teacher' ? '/teacher/dashboard' : `/teacher/students/${currentStudent.value.id}`,
-  )
-}
-
 function selectStudent(student: Student) {
-  const routeName = studentRouteNames.has(String(route.name)) ? String(route.name) : 'student-overview'
+  const routeName = studentRouteNames.has(String(route.name))
+    ? String(route.name)
+    : 'student-overview'
   router.push({ name: routeName, params: { id: student.id } })
 }
 
@@ -66,78 +56,50 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 
 <template>
   <aside class="teacher-sidebar">
-    <RouterLink
-      class="sidebar-brand"
-      to="/teacher/dashboard"
-      aria-label="iRead 학습자 목록"
-    >
+    <RouterLink class="sidebar-brand" to="/teacher/dashboard" aria-label="iRead 학습자 목록">
       <img src="/images/iread-logo.png" alt="iRead" />
     </RouterLink>
 
-    <div class="sidebar-mode-tabs" role="tablist" aria-label="관리 대상 선택">
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="mode === 'teacher'"
-        :class="{ active: mode === 'teacher' }"
-        @click="selectMode('teacher')"
-      >
-        교수자
-      </button>
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="mode === 'student'"
-        :class="{ active: mode === 'student' }"
-        @click="selectMode('student')"
-      >
-        아동
-      </button>
+    <div class="sidebar-panel">
+      <StudentSwitcher
+        :students="students"
+        :current-student="currentStudent"
+        @select="selectStudent"
+        @manage="router.push('/teacher/dashboard')"
+      />
+
+      <nav class="sidebar-nav" aria-label="교수자 아동 관리 메뉴">
+        <RouterLink to="/teacher/dashboard">
+          <span class="sidebar-nav__icon"><SidebarIcon name="users" /></span>
+          <strong>아동 목록</strong>
+        </RouterLink>
+        <RouterLink :to="{ name: 'student-overview', params: { id: currentStudent.id } }">
+          <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>메인</strong>
+        </RouterLink>
+        <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">
+          <span class="sidebar-nav__icon"><SidebarIcon name="book" /></span
+          ><strong>커리큘럼</strong>
+        </RouterLink>
+        <RouterLink :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
+          <span class="sidebar-nav__icon"><SidebarIcon name="chart" /></span
+          ><strong>훈련 이력</strong>
+        </RouterLink>
+        <RouterLink :to="{ name: 'student-test-history', params: { id: currentStudent.id } }">
+          <span class="sidebar-nav__icon"><SidebarIcon name="clipboard" /></span
+          ><strong>테스트 이력</strong>
+        </RouterLink>
+        <RouterLink :to="{ name: 'student-report', params: { id: currentStudent.id } }">
+          <span class="sidebar-nav__icon"><SidebarIcon name="report" /></span
+          ><strong>보고서</strong>
+        </RouterLink>
+        <RouterLink :to="{ name: 'student-edit', params: { id: currentStudent.id } }">
+          <span class="sidebar-nav__icon"><SidebarIcon name="edit" /></span
+          ><strong>아동 정보 수정</strong>
+        </RouterLink>
+      </nav>
     </div>
 
-    <Transition name="sidebar-panel" mode="out-in">
-      <div v-if="mode === 'teacher'" key="teacher" class="sidebar-panel">
-        <nav class="sidebar-nav" aria-label="교수자 메뉴">
-          <RouterLink to="/teacher/dashboard">
-            <span class="sidebar-nav__icon"><SidebarIcon name="users" /></span>
-            <strong>학습자 목록</strong>
-          </RouterLink>
-        </nav>
-      </div>
-
-      <div v-else key="student" class="sidebar-panel">
-        <StudentSwitcher
-          :students="students"
-          :current-student="currentStudent"
-          @select="selectStudent"
-          @manage="router.push('/teacher/dashboard')"
-        />
-
-        <nav class="sidebar-nav" aria-label="아동 메뉴">
-          <RouterLink :to="{ name: 'student-overview', params: { id: currentStudent.id } }">
-            <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>메인</strong>
-          </RouterLink>
-          <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">
-            <span class="sidebar-nav__icon"><SidebarIcon name="book" /></span><strong>커리큘럼</strong>
-          </RouterLink>
-          <RouterLink :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
-            <span class="sidebar-nav__icon"><SidebarIcon name="chart" /></span><strong>훈련 이력</strong>
-          </RouterLink>
-          <RouterLink :to="{ name: 'student-test-history', params: { id: currentStudent.id } }">
-            <span class="sidebar-nav__icon"><SidebarIcon name="clipboard" /></span><strong>테스트 이력</strong>
-          </RouterLink>
-          <RouterLink :to="{ name: 'student-report', params: { id: currentStudent.id } }">
-            <span class="sidebar-nav__icon"><SidebarIcon name="report" /></span><strong>보고서</strong>
-          </RouterLink>
-          <RouterLink :to="{ name: 'student-edit', params: { id: currentStudent.id } }">
-            <span class="sidebar-nav__icon"><SidebarIcon name="edit" /></span><strong>아동 정보 수정</strong>
-          </RouterLink>
-        </nav>
-      </div>
-    </Transition>
-
     <div class="sidebar-footer">
-      <span class="sidebar-footer__label">로그인 계정</span>
       <div class="sidebar-account">
         <button
           class="sidebar-account__trigger"
@@ -156,7 +118,9 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 
         <div v-if="isAccountMenuOpen" class="sidebar-account-menu">
           <button type="button" @click="openProfileSettings">프로필 설정</button>
-          <button class="sidebar-account-menu__danger" type="button" @click="logout">로그아웃</button>
+          <button class="sidebar-account-menu__danger" type="button" @click="logout">
+            로그아웃
+          </button>
         </div>
       </div>
     </div>
@@ -182,10 +146,10 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 
 .sidebar-brand {
   display: grid;
-  width: 92px;
+  width: 100%;
   height: 48px;
   flex: 0 0 48px;
-  margin: 0 0 18px 4px;
+  margin: 0 0 18px;
   overflow: hidden;
   place-items: center;
 }
@@ -196,38 +160,6 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
   max-width: none;
   object-fit: contain;
   transform: scale(1.85);
-}
-
-.sidebar-mode-tabs {
-  display: flex;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--slate-200);
-}
-
-.sidebar-mode-tabs button {
-  position: relative;
-  flex: 1;
-  height: 38px;
-  border: 0;
-  background: transparent;
-  color: var(--slate-500);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.sidebar-mode-tabs button.active {
-  color: var(--primary-700);
-}
-
-.sidebar-mode-tabs button.active::after {
-  position: absolute;
-  right: 12px;
-  bottom: -1px;
-  left: 12px;
-  height: 3px;
-  border-radius: 999px 999px 0 0;
-  background: var(--primary-600);
-  content: '';
 }
 
 .sidebar-panel {
@@ -284,14 +216,6 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
   margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--slate-200);
-}
-
-.sidebar-footer__label {
-  display: block;
-  margin: 0 4px 4px;
-  color: var(--slate-400);
-  font-size: 9px;
-  font-weight: 800;
 }
 
 .sidebar-account {
@@ -366,7 +290,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
   border: 1px solid var(--slate-200);
   border-radius: 8px;
   background: var(--white);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
 }
 
 .sidebar-account-menu button {
@@ -386,16 +310,5 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 
 .sidebar-account-menu .sidebar-account-menu__danger {
   color: var(--danger-600);
-}
-
-.sidebar-panel-enter-active,
-.sidebar-panel-leave-active {
-  transition: 140ms ease;
-}
-
-.sidebar-panel-enter-from,
-.sidebar-panel-leave-to {
-  opacity: 0;
-  transform: translateY(5px);
 }
 </style>

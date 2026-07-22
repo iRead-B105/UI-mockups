@@ -1,23 +1,56 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SaveToast from '@/components/common/SaveToast.vue'
+import LessonMaterialEditor from '@/components/teacher/LessonMaterialEditor.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
-import { curriculumItems, recommendedCurriculum as mockRecommendations } from '@/features/teacher/mockData'
-import type { RecommendedCurriculumItem } from '@/features/teacher/types'
+import { recommendedCurricula, studentCurricula } from '@/features/teacher/mockData'
+import type { CurriculumItem, RecommendedCurriculumItem } from '@/features/teacher/types'
 
-const selectedItemId = ref(curriculumItems[0]?.id ?? 1)
+const route = useRoute()
+const studentId = computed(() => Number(route.params.id) || 1)
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+const curriculumItems = ref<CurriculumItem[]>([])
+const selectedItemId = ref(1)
+const editingRecommendationId = ref<number>()
+const editingItem = ref<CurriculumItem>()
 const editRecommendations = ref(false)
 const hasChanges = ref(false)
-const recommendations = ref(mockRecommendations.map((item) => ({ ...item })))
+const recommendations = ref<RecommendedCurriculumItem[]>([])
 const draggedRecommendationId = ref<number>()
 const recommendationPendingDeletion = ref<RecommendedCurriculumItem>()
 const nextRecommendationId = ref(Math.max(0, ...recommendations.value.map((item) => item.id)) + 1)
 const { visible: saved, show: showSaved } = useTemporaryNotice()
 
+function loadStudentCurriculum(id: number) {
+  curriculumItems.value = clone(studentCurricula[id] ?? studentCurricula[1] ?? [])
+  recommendations.value = clone(recommendedCurricula[id] ?? recommendedCurricula[1] ?? []).map(
+    (recommendation) => {
+      const source = curriculumItems.value.find((item) => item.id === recommendation.trainingId)
+      return {
+        ...recommendation,
+        material: recommendation.material
+          ? clone(recommendation.material)
+          : source
+            ? clone(source.material)
+            : undefined,
+      }
+    },
+  )
+  selectedItemId.value = curriculumItems.value[0]?.id ?? 1
+  editingRecommendationId.value = undefined
+  editingItem.value = undefined
+  editRecommendations.value = false
+  hasChanges.value = false
+  nextRecommendationId.value = Math.max(0, ...recommendations.value.map((item) => item.id)) + 1
+}
+
+watch(studentId, loadStudentCurriculum, { immediate: true })
+
 const selectedItem = computed(() =>
-  curriculumItems.find((item) => item.id === selectedItemId.value),
+  curriculumItems.value.find((item) => item.id === selectedItemId.value),
 )
 const selectedStatus = computed(() =>
   selectedItem.value ? getAchievementStatus(selectedItem.value.achievement) : '',
@@ -79,8 +112,27 @@ function addSelectedTraining() {
     category: training.category,
     title: training.title,
     count: 1,
+    material: clone(training.material),
   })
   hasChanges.value = true
+}
+
+function openRecommendationMaterial(item: RecommendedCurriculumItem) {
+  const source = curriculumItems.value.find((entry) => entry.id === item.trainingId)
+  if (!source) return
+
+  editingRecommendationId.value = item.id
+  editingItem.value = {
+    ...clone(source),
+    category: item.category,
+    title: item.title,
+    material: clone(item.material ?? source.material),
+  }
+}
+
+function closeLessonMaterial() {
+  editingRecommendationId.value = undefined
+  editingItem.value = undefined
 }
 
 function saveChanges() {
@@ -89,20 +141,30 @@ function saveChanges() {
   editRecommendations.value = false
   showSaved()
 }
+
+function saveLessonMaterial(item: CurriculumItem) {
+  const recommendation = recommendations.value.find(
+    (entry) => entry.id === editingRecommendationId.value,
+  )
+  if (!recommendation) return
+
+  recommendation.category = item.category
+  recommendation.title = item.title
+  recommendation.material = clone(item.material)
+  editingRecommendationId.value = undefined
+  editingItem.value = undefined
+  showSaved()
+}
 </script>
 
 <template>
   <div class="curriculum page-stack">
     <PageHeader
       title="커리큘럼 관리"
-      description="훈련과 다음 회차 구성을 관리합니다."
+      description="AI가 개인화한 훈련 순서와 아동별 교안 내용을 관리합니다."
     >
       <template #actions>
-        <SaveToast
-          :visible="saved"
-          inline
-          message="커리큘럼 변경 사항이 저장되었습니다."
-        />
+        <SaveToast :visible="saved" inline message="교안 및 커리큘럼 변경 사항이 저장되었습니다." />
         <button class="button" type="button" :disabled="!hasChanges" @click="saveChanges">
           변경 사항 저장
         </button>
@@ -143,15 +205,32 @@ function saveChanges() {
 
       <aside class="curriculum-panel">
         <section class="selected-training">
-          <span class="detail-label">선택한 훈련</span>
-          <h2>{{ selectedItem?.title }}</h2>
-          <p>{{ selectedItem?.category }} · {{ selectedItem?.order }}단계</p>
+          <header class="section-heading">
+            <h2>선택한 훈련</h2>
+          </header>
+          <div class="selected-training__identity">
+            <strong>{{ selectedItem?.title }}</strong>
+            <span>{{ selectedItem?.category }} · {{ selectedItem?.order }}단계</span>
+          </div>
 
           <dl>
-            <div><dt>현재 달성률</dt><dd>{{ selectedItem?.achievement }}%</dd></div>
-            <div><dt>학습 판단</dt><dd>{{ selectedStatus }}</dd></div>
-            <div><dt>권장 시간</dt><dd>15분</dd></div>
+            <div>
+              <dt>현재 정확도</dt>
+              <dd>{{ selectedItem?.achievement }}%</dd>
+            </div>
+            <div>
+              <dt>학습 판단</dt>
+              <dd>{{ selectedStatus }}</dd>
+            </div>
+            <div>
+              <dt>권장 시간</dt>
+              <dd>{{ selectedItem?.material.duration }}분</dd>
+            </div>
           </dl>
+
+          <div class="material-access-card">
+            <p>{{ selectedItem?.material.objective }}</p>
+          </div>
 
           <div class="selected-training__actions">
             <button class="button button--secondary" type="button" @click="addSelectedTraining">
@@ -170,10 +249,29 @@ function saveChanges() {
                 <h2>다음 회차 순서</h2>
                 <span v-if="hasChanges" class="unsaved-indicator">저장 필요</span>
               </div>
-              <p>{{ editRecommendations ? '핸들을 끌어 순서를 바꾸고 횟수를 조절하세요.' : `${recommendations.length}개 훈련이 예정되어 있습니다.` }}</p>
+              <p>
+                {{
+                  editRecommendations
+                    ? '핸들을 끌어 순서를 바꾸고 횟수를 조절하세요.'
+                    : `${recommendations.length}개 훈련이 예정되어 있습니다.`
+                }}
+              </p>
             </div>
-            <button class="edit-button" type="button" @click="editRecommendations = !editRecommendations">
-              {{ editRecommendations ? '수정 완료' : '수정' }}
+            <button
+              class="edit-button"
+              :class="{ active: editRecommendations }"
+              type="button"
+              :aria-pressed="editRecommendations"
+              @click="editRecommendations = !editRecommendations"
+            >
+              <svg v-if="editRecommendations" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m4 16-.5 4.5L8 20l11-11-4-4L4 16Z" />
+                <path d="m13.5 6.5 4 4" />
+              </svg>
+              <span>{{ editRecommendations ? '수정 완료' : '수정' }}</span>
             </button>
           </header>
 
@@ -182,7 +280,10 @@ function saveChanges() {
               v-for="(item, index) in recommendations"
               :key="item.id"
               :draggable="editRecommendations"
-              :class="{ editable: editRecommendations, dragging: draggedRecommendationId === item.id }"
+              :class="{
+                editable: editRecommendations,
+                dragging: draggedRecommendationId === item.id,
+              }"
               @dragstart="startDragging(item.id)"
               @dragend="draggedRecommendationId = undefined"
               @dragover.prevent
@@ -199,21 +300,39 @@ function saveChanges() {
                 <small>{{ item.category }}</small>
                 <strong>{{ item.title }}</strong>
               </div>
-              <div v-if="editRecommendations" class="count-control" aria-label="시행 횟수 조절">
-                <button type="button" aria-label="횟수 줄이기" @click="updateCount(item, -1)">−</button>
-                <b>{{ item.count }}회</b>
-                <button type="button" aria-label="횟수 늘리기" @click="updateCount(item, 1)">＋</button>
+              <div v-if="editRecommendations" class="recommendation-actions">
+                <div class="count-control" aria-label="시행 횟수 조절">
+                  <button type="button" aria-label="횟수 줄이기" @click="updateCount(item, -1)">
+                    −
+                  </button>
+                  <b>{{ item.count }}회</b>
+                  <button type="button" aria-label="횟수 늘리기" @click="updateCount(item, 1)">
+                    ＋
+                  </button>
+                </div>
+                <button
+                  class="recommendation-material-button"
+                  type="button"
+                  draggable="false"
+                  @click.stop="openRecommendationMaterial(item)"
+                >
+                  교안 편집
+                </button>
+                <button
+                  class="remove-button"
+                  type="button"
+                  draggable="false"
+                  :aria-label="`${item.title} 삭제`"
+                  @click.stop="recommendationPendingDeletion = item"
+                >
+                  ×
+                </button>
               </div>
               <span v-else class="count-label">{{ item.count }}회</span>
-              <button
-                v-if="editRecommendations"
-                class="remove-button"
-                type="button"
-                :aria-label="`${item.title} 삭제`"
-                @click="recommendationPendingDeletion = item"
-              >×</button>
             </article>
-            <p v-if="recommendations.length === 0" class="empty-recommendations">선택한 훈련에서 다음 회차에 진행할 훈련을 추가해 주세요.</p>
+            <p v-if="recommendations.length === 0" class="empty-recommendations">
+              선택한 훈련에서 다음 회차에 진행할 훈련을 추가해 주세요.
+            </p>
           </div>
         </section>
       </aside>
@@ -227,71 +346,383 @@ function saveChanges() {
       @cancel="recommendationPendingDeletion = undefined"
       @confirm="deleteRecommendation"
     />
+
+    <LessonMaterialEditor
+      v-if="editingItem"
+      :item="editingItem"
+      @cancel="closeLessonMaterial"
+      @save="saveLessonMaterial"
+    />
   </div>
 </template>
 
 <style scoped>
-.curriculum { position: relative; gap: 20px; container-type: inline-size; }
-.curriculum-workspace { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(390px, .92fr); }
-.curriculum-library { min-width: 0; padding: 2px 24px 18px 0; }
-.curriculum-panel { min-width: 0; padding: 2px 0 18px 24px; border-left: 1px solid var(--slate-200); }
-.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.section-heading h2 { margin: 0; font-size: 17px; }
-.section-heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.section-heading > span { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.curriculum-table { margin-top: 12px; }
+.curriculum {
+  position: relative;
+  gap: 20px;
+  container-type: inline-size;
+}
+.curriculum-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
+}
+.curriculum-library {
+  min-width: 0;
+  padding: 2px 24px 18px 0;
+}
+.curriculum-panel {
+  min-width: 0;
+  padding: 2px 0 18px 24px;
+  border-left: 1px solid var(--slate-200);
+}
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.section-heading p {
+  margin: 5px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.section-heading > span {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.curriculum-table {
+  margin-top: 12px;
+}
 .curriculum-table__head,
-.curriculum-row { display: grid; align-items: center; gap: 12px; grid-template-columns: 46px 86px minmax(0, 1fr) 94px; }
-.curriculum-table__head { padding: 9px 12px; border-bottom: 1px solid var(--slate-300); color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.curriculum-row { position: relative; width: 100%; min-height: 54px; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--slate-200); background: transparent; color: var(--slate-700); text-align: left; }
-.curriculum-row::before { position: absolute; top: 9px; bottom: 9px; left: 0; width: 3px; background: transparent; content: ''; }
-.curriculum-row:hover { background: var(--slate-50); }
-.curriculum-row.active::before { background: var(--primary-600); }
-.curriculum-row.active strong { color: var(--slate-900); }
-.achievement { display: grid; justify-items: end; gap: 1px; }
-.achievement b { color: var(--slate-800); font-size: 13px; }
-.achievement small { color: var(--slate-500); font-size: 12px; font-weight: 500; }
-.selected-training { padding-bottom: 10px; }
-.selected-training h2 { margin: 5px 0 0; font-size: 19px; line-height: 1.4; }
-.selected-training > p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.detail-label { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.selected-training dl { display: grid; margin: 17px 0 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.selected-training dl > div + div { padding-left: 14px; border-left: 1px solid var(--slate-200); }
-.selected-training dt { color: var(--slate-500); font-size: 12px; }
-.selected-training dd { margin: 4px 0 0; color: var(--slate-900); font-size: 14px; font-weight: 700; }
-.selected-training .button { min-height: 36px; }
-.selected-training__actions { display: flex; align-items: center; gap: 10px; }
-.inclusion-note { color: var(--slate-500); font-size: 12px; }
-.next-session { padding-top: 24px; }
-.title-line { display: flex; align-items: center; gap: 9px; }
-.unsaved-indicator { color: var(--slate-600); font-size: 12px; font-weight: 700; }
-.unsaved-indicator::before { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--primary-600); content: ''; vertical-align: 1px; }
-.edit-button { padding: 5px 0; border: 0; background: transparent; color: var(--primary-700); font-size: 12px; font-weight: 700; }
-.recommendation-list { display: grid; margin-top: 10px; }
-.recommendation-list article { display: grid; min-height: 58px; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--slate-200); grid-template-columns: 20px 22px minmax(0, 1fr) auto auto; transition: 150ms ease; }
-.recommendation-list article.editable { cursor: grab; }
-.recommendation-list article.editable:hover { background: var(--slate-50); }
-.recommendation-list article.dragging { opacity: .45; transform: scale(.99); }
-.drag-handle { width: 15px; height: 21px; background-image: radial-gradient(circle, var(--slate-300) 1.4px, transparent 1.6px); background-position: 1px 1px; background-size: 6px 6px; }
-.drag-handle.enabled { background-image: radial-gradient(circle, var(--slate-600) 1.5px, transparent 1.7px); cursor: grab; }
-.recommendation-order { color: var(--slate-500); font-size: 12px; }
+.curriculum-row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  grid-template-columns: 46px 86px minmax(0, 1fr) 94px;
+}
+.curriculum-table__head {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--slate-300);
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.curriculum-row {
+  position: relative;
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--slate-200);
+  background: transparent;
+  color: var(--slate-700);
+  text-align: left;
+}
+.curriculum-row::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 3px;
+  background: transparent;
+  content: '';
+}
+.curriculum-row:hover {
+  background: var(--slate-50);
+}
+.curriculum-row.active::before {
+  background: var(--primary-600);
+}
+.curriculum-row.active strong {
+  color: var(--slate-900);
+}
+.achievement {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.achievement b {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+.achievement small {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 500;
+}
+.selected-training {
+  padding-bottom: 10px;
+}
+.selected-training__identity {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 12px;
+  white-space: nowrap;
+}
+.selected-training__identity strong {
+  overflow: hidden;
+  color: var(--slate-900);
+  font-size: 15px;
+  text-overflow: ellipsis;
+}
+.selected-training__identity span {
+  flex: 0 0 auto;
+  color: var(--slate-500);
+  font-size: 11px;
+}
+.selected-training dl {
+  display: grid;
+  margin: 17px 0 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.selected-training dl > div + div {
+  padding-left: 14px;
+  border-left: 1px solid var(--slate-200);
+}
+.selected-training dl > div {
+  text-align: center;
+}
+.selected-training dt {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.selected-training dd {
+  margin: 4px 0 0;
+  color: var(--slate-900);
+  font-size: 14px;
+  font-weight: 700;
+}
+.material-access-card {
+  margin: 4px 0 15px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--primary-300);
+  background: var(--primary-50);
+}
+.material-access-card > p {
+  margin: 0;
+  color: var(--slate-700);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.selected-training .button {
+  min-height: 36px;
+}
+.selected-training__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.inclusion-note {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.next-session {
+  padding-top: 24px;
+}
+.title-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.unsaved-indicator {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 700;
+}
+.unsaved-indicator::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--primary-600);
+  content: '';
+  vertical-align: 1px;
+}
+.edit-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid var(--slate-300);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--primary-700);
+  font-size: 12px;
+  font-weight: 700;
+}
+.edit-button:hover,
+.edit-button:focus-visible {
+  border-color: var(--primary-400);
+  background: var(--primary-50);
+}
+.edit-button:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+.edit-button.active {
+  border-color: var(--primary-600);
+  background: var(--primary-600);
+  color: var(--white);
+}
+.edit-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.recommendation-list {
+  display: grid;
+  margin-top: 10px;
+}
+.recommendation-list article {
+  display: grid;
+  min-height: 58px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--slate-200);
+  grid-template-columns: 20px 22px minmax(0, 1fr) auto;
+  transition: 150ms ease;
+}
+.recommendation-list article.editable {
+  cursor: grab;
+}
+.recommendation-list article.editable:hover {
+  background: var(--slate-50);
+}
+.recommendation-list article.dragging {
+  opacity: 0.45;
+  transform: scale(0.99);
+}
+.drag-handle {
+  width: 15px;
+  height: 21px;
+  background-image: radial-gradient(circle, var(--slate-300) 1.4px, transparent 1.6px);
+  background-position: 1px 1px;
+  background-size: 6px 6px;
+}
+.drag-handle.enabled {
+  background-image: radial-gradient(circle, var(--slate-600) 1.5px, transparent 1.7px);
+  cursor: grab;
+}
+.recommendation-order {
+  color: var(--slate-500);
+  font-size: 12px;
+}
 .recommendation-copy small,
-.recommendation-copy strong { display: block; }
-.recommendation-copy small { margin-bottom: 2px; color: var(--slate-500); font-size: 12px; }
-.recommendation-copy strong { color: var(--slate-800); font-size: 13px; }
-.count-label { color: var(--slate-600); font-size: 12px; font-weight: 700; }
-.count-control { display: flex; align-items: center; gap: 6px; }
-.count-control button { width: 26px; height: 26px; border: 1px solid var(--slate-300); border-radius: 5px; background: var(--white); color: var(--slate-700); }
-.count-control b { min-width: 30px; font-size: 12px; text-align: center; }
-.remove-button { width: 26px; height: 26px; border: 0; background: transparent; color: var(--slate-400); font-size: 20px; font-weight: 700; opacity: .52; transition: color 150ms ease, opacity 150ms ease; }
+.recommendation-copy strong {
+  display: block;
+}
+.recommendation-copy small {
+  margin-bottom: 2px;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.recommendation-copy strong {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+.count-label {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 700;
+}
+.recommendation-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: default;
+}
+.count-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.count-control button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--slate-300);
+  border-radius: 5px;
+  background: var(--white);
+  color: var(--slate-700);
+}
+.count-control b {
+  min-width: 30px;
+  font-size: 12px;
+  text-align: center;
+}
+.recommendation-material-button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--primary-200);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--primary-700);
+  font-size: 10px;
+  font-weight: 800;
+}
+.recommendation-material-button:hover,
+.recommendation-material-button:focus-visible {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+}
+.remove-button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  background: transparent;
+  color: var(--slate-400);
+  font-size: 20px;
+  font-weight: 700;
+  opacity: 0.52;
+  transition:
+    color 150ms ease,
+    opacity 150ms ease;
+}
 .remove-button:hover,
-.remove-button:focus-visible { color: var(--danger-600); opacity: 1; }
-.empty-recommendations { margin: 0; padding: 24px 0; color: var(--slate-500); font-size: 12px; text-align: center; }
-.curriculum .button:disabled { border-color: var(--slate-200); background: var(--slate-100); box-shadow: none; color: var(--slate-400); cursor: default; opacity: 1; transform: none; }
+.remove-button:focus-visible {
+  color: var(--danger-600);
+  opacity: 1;
+}
+.empty-recommendations {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--slate-500);
+  font-size: 12px;
+  text-align: center;
+}
+.curriculum .button:disabled {
+  border-color: var(--slate-200);
+  background: var(--slate-100);
+  box-shadow: none;
+  color: var(--slate-400);
+  cursor: default;
+  opacity: 1;
+  transform: none;
+}
 
 @container (max-width: 1000px) {
-  .curriculum-workspace { grid-template-columns: 1fr; }
-  .curriculum-library { padding-right: 0; }
-  .curriculum-panel { padding: 28px 0 18px; border-left: 0; }
+  .curriculum-workspace {
+    grid-template-columns: 1fr;
+  }
+  .curriculum-library {
+    padding-right: 0;
+  }
+  .curriculum-panel {
+    padding: 28px 0 18px;
+    border-left: 0;
+  }
 }
 </style>

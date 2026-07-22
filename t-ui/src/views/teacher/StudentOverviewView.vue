@@ -47,8 +47,8 @@ const draftsByStudent = reactive<Record<number, CommunicationDraft>>(
 )
 const busyId = ref<number | null>(null)
 const noticeMessage = ref('변경 사항이 반영되었습니다.')
+const noticeKey = ref(0)
 const { visible: noticeVisible, show: showNotice } = useTemporaryNotice()
-const eventsSection = ref<HTMLElement | null>(null)
 const communicationSection = ref<HTMLElement | null>(null)
 const communicationPanel = ref<CommunicationPanelExpose | null>(null)
 
@@ -74,17 +74,22 @@ const unreadGuardianCount = computed(
   () => currentGuardianComments.value.filter((message) => message.status === 'unread').length,
 )
 const pendingGuardianEncouragementCount = computed(
-  () => currentEncouragements.value.filter(
-    (message) => message.source === 'guardian' && message.status === 'pending-approval',
-  ).length,
+  () =>
+    currentEncouragements.value.filter(
+      (message) => message.source === 'guardian' && message.status === 'pending-approval',
+    ).length,
 )
 const totalActionCount = computed(
   () => reviewCount.value + unreadGuardianCount.value + pendingGuardianEncouragementCount.value,
 )
 const oldestActionLabel = computed(() => {
   const dates = [
-    ...currentEvents.value.filter((event) => event.status !== 'reviewed').map((event) => event.occurredAt),
-    ...currentGuardianComments.value.filter((message) => message.status === 'unread').map((message) => message.createdAt),
+    ...currentEvents.value
+      .filter((event) => event.status !== 'reviewed')
+      .map((event) => event.occurredAt),
+    ...currentGuardianComments.value
+      .filter((message) => message.status === 'unread')
+      .map((message) => message.createdAt),
     ...currentEncouragements.value
       .filter((message) => message.source === 'guardian' && message.status === 'pending-approval')
       .map((message) => message.createdAt),
@@ -102,11 +107,15 @@ const currentDraft = computed(() => {
 })
 const noteDraft = computed({
   get: () => currentDraft.value.note,
-  set: (value: string) => { currentDraft.value.note = value },
+  set: (value: string) => {
+    currentDraft.value.note = value
+  },
 })
 const encouragementDraft = computed({
   get: () => currentDraft.value.encouragement,
-  set: (value: string) => { currentDraft.value.encouragement = value },
+  set: (value: string) => {
+    currentDraft.value.encouragement = value
+  },
 })
 
 const recentLearningLabel = computed(() => {
@@ -118,20 +127,14 @@ const recentLearningLabel = computed(() => {
 })
 
 const nextTraining = computed(() => recommendedCurriculum[0]?.title ?? '다음 훈련 확인 필요')
-const formattedLastLearningDate = computed(() => currentStudent.value.lastLearningDate.replaceAll('-', '.'))
+const formattedLastLearningDate = computed(() =>
+  currentStudent.value.lastLearningDate.replaceAll('-', '.'),
+)
 
 function notify(message: string) {
   noticeMessage.value = message
+  noticeKey.value += 1
   showNotice()
-}
-
-function scrollToActions() {
-  if (reviewCount.value > 0) {
-    eventsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    return
-  }
-  communicationPanel.value?.openTab('guardian')
-  communicationSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function reviewEvent(eventId: number) {
@@ -183,7 +186,13 @@ function sendEncouragement(messageId: number | null, timing: 'immediate' | 'next
   if (messageId) {
     encouragementItems.value = encouragementItems.value.map((message) =>
       message.id === messageId
-        ? { ...message, originalText: text, deliveryText: text, deliveryTiming: timing, updatedAt: '2026-07-21 14:30' }
+        ? {
+            ...message,
+            originalText: text,
+            deliveryText: text,
+            deliveryTiming: timing,
+            updatedAt: '2026-07-21 14:30',
+          }
         : message,
     )
   } else {
@@ -207,7 +216,9 @@ function sendEncouragement(messageId: number | null, timing: 'immediate' | 'next
     ]
   }
   encouragementDraft.value = ''
-  notify(timing === 'immediate' ? '아동에게 응원을 전달했습니다.' : '다음 로그인 전달로 예약했습니다.')
+  notify(
+    timing === 'immediate' ? '아동에게 응원을 전달했습니다.' : '다음 로그인 전달로 예약했습니다.',
+  )
 }
 
 function deleteEncouragement(messageId: number) {
@@ -247,7 +258,7 @@ function approveGuardianEncouragement(messageId: number, deliveryText: string) {
         }
       : message,
   )
-  notify('보호자 응원을 승인하고 전달 예약했습니다.')
+  notify('보호자 응원이 승인되어 다음 로그인 때 전달됩니다.')
 }
 
 function holdGuardianEncouragement(messageId: number, reason: string) {
@@ -262,26 +273,80 @@ function holdGuardianEncouragement(messageId: number, reason: string) {
 const levelChart: EChartsOption = {
   tooltip: { trigger: 'axis', valueFormatter: (value) => `${value}%` },
   grid: { left: 48, right: 24, top: 36, bottom: 34 },
-  xAxis: { type: 'category', boundaryGap: false, data: ['6/6', '6/13', '6/20', '6/27', '7/4', '7/11', '7/18'] },
+  xAxis: {
+    type: 'category',
+    boundaryGap: false,
+    data: ['6/6', '6/13', '6/20', '6/27', '7/4', '7/11', '7/18'],
+  },
   yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
-  series: [{
-    name: '읽기 정확도', type: 'line', smooth: false, showSymbol: true, symbol: 'circle', symbolSize: 5,
-    data: [66, 69, 67, 70, 72, 71, 78], lineStyle: { width: 3, color: '#4f46e5' }, itemStyle: { color: '#4f46e5' },
-    markLine: { silent: true, symbol: 'none', label: { color: '#64748b', fontSize: 10, formatter: '{b}', position: 'insideEndTop' }, data: [{ name: '목표 80%', yAxis: 80, lineStyle: { color: '#94a3b8', type: 'dashed', width: 1 } }] },
-    markPoint: { symbol: 'circle', symbolSize: 9, itemStyle: { color: '#4f46e5' }, label: { show: true, position: 'top', distance: 9, formatter: '{b}', color: '#475569', fontSize: 11, fontWeight: 600 }, data: [{ name: '훈련 변경', coord: ['6/27', 70] }, { name: '교사 메모', coord: ['7/11', 71] }] },
-  }],
+  series: [
+    {
+      name: '읽기 정확도',
+      type: 'line',
+      smooth: false,
+      showSymbol: true,
+      symbol: 'circle',
+      symbolSize: 5,
+      data: [66, 69, 67, 70, 72, 71, 78],
+      lineStyle: { width: 3, color: '#4f46e5' },
+      itemStyle: { color: '#4f46e5' },
+      markLine: {
+        silent: true,
+        symbol: 'none',
+        label: { color: '#64748b', fontSize: 10, formatter: '{b}', position: 'insideEndTop' },
+        data: [
+          {
+            name: '목표 80%',
+            yAxis: 80,
+            lineStyle: { color: '#94a3b8', type: 'dashed', width: 1 },
+          },
+        ],
+      },
+      markPoint: {
+        symbol: 'circle',
+        symbolSize: 9,
+        itemStyle: { color: '#4f46e5' },
+        label: {
+          show: true,
+          position: 'top',
+          distance: 9,
+          formatter: '{b}',
+          color: '#475569',
+          fontSize: 11,
+          fontWeight: 600,
+        },
+        data: [
+          { name: '훈련 변경', coord: ['6/27', 70] },
+          { name: '교사 메모', coord: ['7/11', 71] },
+        ],
+      },
+    },
+  ],
 }
 </script>
 
 <template>
   <div class="overview page-stack">
-    <PageHeader title="학습 현황" />
-    <SaveToast :visible="noticeVisible" :show-icon="false" :message="noticeMessage" />
+    <PageHeader title="학습 현황" description="최근 학습 변화와 확인할 항목을 살펴봅니다." />
+    <SaveToast
+      :key="noticeKey"
+      :visible="noticeVisible"
+      :show-icon="false"
+      :message="noticeMessage"
+    />
 
     <section class="student-facts" aria-label="학생 학습 상태 요약">
       <dl>
-        <div><dt>현재 단계</dt><dd>{{ currentStudent.latestTraining }}</dd><span>이해력 영역</span></div>
-        <div><dt>최근 학습</dt><dd>{{ recentLearningLabel }}</dd><span>{{ formattedLastLearningDate }}</span></div>
+        <div>
+          <dt>현재 단계</dt>
+          <dd>{{ currentStudent.latestTraining }}</dd>
+          <span>이해력 영역</span>
+        </div>
+        <div>
+          <dt>최근 학습</dt>
+          <dd>{{ recentLearningLabel }}</dd>
+          <span>{{ formattedLastLearningDate }}</span>
+        </div>
       </dl>
       <div class="action-summary" :class="{ 'is-complete': totalActionCount === 0 }">
         <div v-if="totalActionCount > 0">
@@ -296,35 +361,45 @@ const levelChart: EChartsOption = {
           <strong>현재 확인할 항목이 없습니다.</strong>
           <span>학습 이벤트와 보호자 메시지를 모두 확인했습니다.</span>
         </div>
-        <button v-if="totalActionCount > 0" type="button" @click="scrollToActions">확인하기</button>
       </div>
     </section>
 
     <section class="learning-analysis">
       <div class="trend-panel">
         <header class="section-heading">
-          <div><h2>읽기 정확도</h2><p>훈련 변경과 메모 시점 표시</p></div>
+          <div>
+            <h2>읽기 정확도</h2>
+            <p>훈련 변경과 메모 시점 표시</p>
+          </div>
           <div class="trend-summary"><span>최근 변화</span><strong>+12%p</strong></div>
         </header>
         <ChartPanel :option="levelChart" height="220px" aria-label="최근 6주 읽기 정확도 변화" />
         <div class="analysis-followup">
-          <div><span class="followup-label">변화 해석</span><p>6월 27일 받침 훈련 이후 정확도가 상승했지만 회차별 편차가 있습니다.</p></div>
+          <div>
+            <span class="followup-label">변화 해석</span>
+            <p>6월 27일 받침 훈련 이후 정확도가 상승했지만 회차별 편차가 있습니다.</p>
+          </div>
           <div class="next-training">
             <span class="followup-label">다음 권장 훈련</span><strong>{{ nextTraining }}</strong>
             <p>읽기 속도보다 받침 정확도를 안정시키기 위해 15분씩 2회를 권장합니다.</p>
-            <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">커리큘럼에서 확인</RouterLink>
+            <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }"
+              >커리큘럼에서 확인</RouterLink
+            >
           </div>
         </div>
       </div>
 
-      <aside ref="eventsSection" class="recent-panel">
+      <aside class="recent-panel">
         <StudentLearningEvents
           :records="currentRecords"
           :events="currentEvents"
           @review="reviewEvent"
           @add-to-note="addEventToNote"
         />
-        <RouterLink class="history-link" :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
+        <RouterLink
+          class="history-link"
+          :to="{ name: 'student-training-history', params: { id: currentStudent.id } }"
+        >
           전체 훈련 이력 보기
         </RouterLink>
       </aside>
@@ -340,7 +415,6 @@ const levelChart: EChartsOption = {
         :encouragements="currentEncouragements"
         :guardian-comments="currentGuardianComments"
         :busy-id="busyId"
-        teacher-name="이OO 선생님"
         @save-note="saveNote"
         @send-encouragement="sendEncouragement"
         @delete-encouragement="deleteEncouragement"
@@ -354,46 +428,190 @@ const levelChart: EChartsOption = {
 </template>
 
 <style scoped>
-.overview { gap: 18px; container-type: inline-size; }
-.overview > :deep(.save-toast) { position: fixed; z-index: 20; right: 28px; bottom: 28px; }
-.student-facts { padding-bottom: 2px; }
-.student-facts dl { display: flex; align-items: center; margin: 0; padding: 0 0 14px; }
-.student-facts dl > div { display: flex; min-width: 0; align-items: baseline; gap: 10px; }
-.student-facts dl > div + div { margin-left: 28px; padding-left: 28px; border-left: 1px solid var(--slate-200); }
-.student-facts dt { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.student-facts dd { margin: 0; color: var(--slate-900); font-size: 14px; font-weight: 700; }
-.student-facts span { color: var(--slate-500); font-size: 12px; }
-.action-summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid var(--slate-200); border-bottom: 1px solid var(--slate-200); }
-.action-summary > div { display: grid; gap: 2px; }
-.action-summary strong { color: var(--slate-900); font-size: 13px; }
-.action-summary span { color: var(--slate-600); font-size: 11px; }
-.action-summary small { color: #b45309; font-size: 10px; }
-.action-summary button { border: 0; background: transparent; color: var(--primary-700); font-size: 12px; font-weight: 700; }
-.action-summary.is-complete strong { color: var(--success-600); }
-.learning-analysis { display: grid; align-items: start; grid-template-columns: minmax(0, 1.45fr) minmax(330px, .75fr); }
-.trend-panel { min-width: 0; padding: 2px 24px 16px 0; }
-.recent-panel { min-width: 0; padding: 2px 0 16px 24px; border-left: 1px solid var(--slate-200); scroll-margin-top: 90px; }
-.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-.section-heading h2 { margin: 0; font-size: 17px; }
-.section-heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.trend-summary { display: grid; flex: 0 0 auto; gap: 2px; text-align: right; }
-.trend-summary span { color: var(--slate-500); font-size: 12px; }
-.trend-summary strong { color: var(--slate-900); font-size: 20px; line-height: 1.2; }
-.trend-panel :deep(.chart-panel) { padding-top: 2px; }
-.analysis-followup { display: grid; gap: 24px; margin-top: 4px; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
-.analysis-followup > div { padding-top: 12px; }
-.followup-label { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.analysis-followup p { margin: 4px 0 0; color: var(--slate-600); font-size: 12px; line-height: 1.5; }
-.next-training strong { display: block; margin-top: 5px; color: var(--slate-900); font-size: 14px; line-height: 1.45; }
+.overview {
+  gap: 18px;
+  container-type: inline-size;
+}
+.overview > :deep(.save-toast) {
+  position: fixed;
+  z-index: 20;
+  top: auto;
+  right: 28px;
+  bottom: 28px;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 40px));
+  min-height: 40px;
+  padding: 9px 13px;
+  font-size: 12px;
+}
+.student-facts {
+  display: grid;
+  align-items: stretch;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--slate-200);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.student-facts dl {
+  display: contents;
+  margin: 0;
+  padding: 0;
+}
+.student-facts dl > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding-right: 24px;
+}
+.student-facts dl > div + div {
+  margin-left: 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--slate-200);
+}
+.student-facts dt {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.student-facts dd {
+  margin: 0;
+  color: var(--slate-900);
+  font-size: 14px;
+  font-weight: 700;
+}
+.student-facts span {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.action-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  padding-left: 24px;
+  border-left: 1px solid var(--slate-200);
+}
+.action-summary > div {
+  display: grid;
+  gap: 2px;
+}
+.action-summary strong {
+  color: var(--slate-900);
+  font-size: 13px;
+}
+.action-summary span {
+  color: var(--slate-600);
+  font-size: 11px;
+}
+.action-summary small {
+  color: #b45309;
+  font-size: 10px;
+}
+.action-summary.is-complete strong {
+  color: var(--success-600);
+}
+.learning-analysis {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.75fr);
+}
+.trend-panel {
+  min-width: 0;
+  padding: 2px 24px 16px 0;
+}
+.recent-panel {
+  min-width: 0;
+  padding: 2px 0 16px 24px;
+  border-left: 1px solid var(--slate-200);
+  scroll-margin-top: 90px;
+}
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.section-heading p {
+  margin: 5px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.trend-summary {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 2px;
+  text-align: right;
+}
+.trend-summary span {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.trend-summary strong {
+  color: var(--slate-900);
+  font-size: 20px;
+  line-height: 1.2;
+}
+.trend-panel :deep(.chart-panel) {
+  padding-top: 2px;
+}
+.analysis-followup {
+  display: grid;
+  gap: 24px;
+  margin-top: 4px;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+.analysis-followup > div {
+  padding-top: 12px;
+}
+.followup-label {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.analysis-followup p {
+  margin: 4px 0 0;
+  color: var(--slate-600);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.next-training strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--slate-900);
+  font-size: 14px;
+  line-height: 1.45;
+}
 .next-training a,
-.history-link { display: inline-flex; margin-top: 8px; color: var(--primary-700); font-size: 12px; font-weight: 700; text-decoration: none; }
+.history-link {
+  display: inline-flex;
+  margin-top: 8px;
+  color: var(--primary-700);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
 .next-training a:hover,
-.history-link:hover { text-decoration: underline; }
-.overview > div:last-child { scroll-margin-top: 90px; }
+.history-link:hover {
+  text-decoration: underline;
+}
+.overview > div:last-child {
+  scroll-margin-top: 90px;
+}
 
 @container (max-width: 940px) {
-  .learning-analysis { grid-template-columns: 1fr; }
-  .trend-panel { padding-right: 0; }
-  .recent-panel { padding: 22px 0 20px; border-left: 0; border-top: 1px solid var(--slate-200); }
+  .learning-analysis {
+    grid-template-columns: 1fr;
+  }
+  .trend-panel {
+    padding-right: 0;
+  }
+  .recent-panel {
+    padding: 22px 0 20px;
+    border-left: 0;
+    border-top: 1px solid var(--slate-200);
+  }
 }
 </style>
