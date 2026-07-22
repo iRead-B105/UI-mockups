@@ -1,4 +1,4 @@
-# t-ui 프론트엔드 개발 통합 가이드
+# 아이리드 교수자 UI 프론트엔드 개발 통합 가이드
 
 > 대상: HTML, CSS, JavaScript를 처음 배우면서 이 프로젝트의 Vue 화면을 직접 수정하고 싶은 사람  
 > 기준 프로젝트: Vue 3 + TypeScript + Vue Router + Vite + ECharts  
@@ -90,10 +90,10 @@ App.vue
 
 ## 2. 개발 환경과 기본 명령어
 
-터미널 위치는 `t-ui` 폴더여야 한다.
+터미널 위치는 저장소의 `apps/teacher` 폴더여야 한다.
 
 ```powershell
-cd C:\Users\rapal\Desktop\UI-mockups\t-ui
+cd apps\teacher
 ```
 
 ### 2.1 자주 사용하는 명령어
@@ -141,7 +141,7 @@ PowerShell 실행 정책 때문에 `pnpm`이 실행되지 않으면 `pnpm.cmd de
 ## 3. 현재 프로젝트 구조
 
 ```text
-t-ui/
+apps/teacher/
 ├─ public/
 │  └─ images/                  # 주소를 /images/...로 사용하는 정적 이미지
 ├─ src/

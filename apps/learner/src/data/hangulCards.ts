@@ -1,5 +1,5 @@
 // 한글 자모 카드 리소스 매핑
-// 리소스/docs/design/HANGUL_CARD_RESOURCE_INVENTORY.md 에 정의된
+// design-resources/docs/design/HANGUL_CARD_RESOURCE_INVENTORY.md 에 정의된
 // 자음/모음 카드 PNG를 자모 글자 기준으로 조회할 수 있도록 돕는 유틸리티입니다.
 // 실제 카드 이미지는 src/assets/cards/hangul 아래에 위치합니다.
 
