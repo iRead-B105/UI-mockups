@@ -51,15 +51,15 @@ export const hardWordLesson: TrainingLesson = {
 export const sentenceOrderLesson: TrainingLesson = {
   id: 'sentence-order',
   categoryId: 'short-text',
-  title: '문장 순서 맞추기',
-  description: '낱말 카드를 문장 순서로 놓아요.',
+  title: '문장 전체 조립하기',
+  description: '어절 카드를 빈칸에 놓아 문장을 만들어요.',
   activityType: 'sentence-order',
   estimatedMinutes: 12,
   questions: [
     { id: 'q1', instruction: '문장을 순서대로 만들어봐요.', targetText: '윤정이가 사과를 먹어요.', choices: [{ id: 'eat', text: '먹어요.' }, { id: 'apple', text: '사과를' }, { id: 'yj', text: '윤정이가' }], answer: 'yj|apple|eat', feedback: { correct: '맞아요! 문장을 잘 만들었어요.', retry: '누가, 무엇을, 어떻게 했는지 차례로 놓아봐요.' } },
-    { id: 'q2', instruction: '문장을 순서대로 만들어봐요.', targetText: '강아지가 공을 찾아요.', choices: [{ id: 'ball', text: '공을' }, { id: 'find', text: '찾아요.' }, { id: 'dog', text: '강아지가' }], answer: 'dog|ball|find', feedback: { correct: '문장 순서가 맞아요!', retry: '누가 먼저 오는지 찾아봐요.' } },
+    { id: 'q2', instruction: '문장을 순서대로 만들어봐요.', targetText: '강아지가 빨간 공을 찾아요.', choices: [{ id: 'ball', text: '공을' }, { id: 'find', text: '찾아요.' }, { id: 'dog', text: '강아지가' }, { id: 'red', text: '빨간' }], answer: 'dog|red|ball|find', feedback: { correct: '문장 순서가 맞아요!', retry: '한 번 더 해봐요.' } },
     { id: 'q3', instruction: '문장을 순서대로 만들어봐요.', targetText: '나비가 꽃에 앉아요.', choices: [{ id: 'sit', text: '앉아요.' }, { id: 'butterfly', text: '나비가' }, { id: 'flower', text: '꽃에' }], answer: 'butterfly|flower|sit', feedback: { correct: '잘했어요! 자연스러운 문장이 되었어요.', retry: '나비가 어디에 앉는지 생각해봐요.' } },
-    { id: 'q4', instruction: '문장을 순서대로 만들어봐요.', targetText: '친구가 책을 읽어요.', choices: [{ id: 'read', text: '읽어요.' }, { id: 'friend', text: '친구가' }, { id: 'book', text: '책을' }], answer: 'friend|book|read', feedback: { correct: '맞아요! 문장을 잘 완성했어요.', retry: '친구가 무엇을 하는지 차례로 놓아봐요.' } },
-    { id: 'q5', instruction: '문장을 순서대로 만들어봐요.', targetText: '새가 하늘을 날아요.', choices: [{ id: 'sky', text: '하늘을' }, { id: 'bird', text: '새가' }, { id: 'fly', text: '날아요.' }], answer: 'bird|sky|fly', feedback: { correct: '훌륭해요! 문장 순서가 맞아요.', retry: '누가, 어디를, 어떻게 하는지 놓아봐요.', completed: '문장 순서 맞추기를 마쳤어요!' } },
+    { id: 'q4', instruction: '문장을 순서대로 만들어봐요.', targetText: '친구가 도서관에서 그림책을 읽어요.', choices: [{ id: 'read', text: '읽어요.' }, { id: 'friend', text: '친구가' }, { id: 'book', text: '그림책을' }, { id: 'library', text: '도서관에서' }], answer: 'friend|library|book|read', feedback: { correct: '맞아요! 문장을 잘 완성했어요.', retry: '한 번 더 해봐요.' } },
+    { id: 'q5', instruction: '문장을 순서대로 만들어봐요.', targetText: '작은 새가 파란 하늘을 날아요.', choices: [{ id: 'sky', text: '하늘을' }, { id: 'bird', text: '새가' }, { id: 'fly', text: '날아요.' }, { id: 'small', text: '작은' }, { id: 'blue', text: '파란' }], answer: 'small|bird|blue|sky|fly', feedback: { correct: '훌륭해요! 문장 순서가 맞아요.', retry: '한 번 더 해봐요.', completed: '문장 전체 조립하기를 마쳤어요!' } },
   ],
 }

@@ -12,6 +12,13 @@ export type TrainingCategoryId =
 // 실제 컴포넌트가 구현된 유형과 향후 확장용 유형을 함께 정의합니다.
 export type TrainingActivityType =
   | 'listen-and-select' // 소리 듣고 카드/글자 선택 (예: 첫소리 찾기)
+  | 'audio-letter-choice' // 소리만 듣고 글자 카드 3개 중 하나를 즉시 선택
+  | 'gaze-trace' // 시선으로 획순을 따라가고 소리 내어 읽기
+  | 'letter-build' // 소리를 듣고 자모 카드를 빈칸에 끌어 글자 만들기
+  | 'sound-manipulation' // 소리 단위를 클릭해 탈락시키거나 다른 소리로 대치
+  | 'hangul-battle' // 캐릭터와 제한 시간 없이 먼저 낱말을 조합하는 배틀
+  | 'word-reading-grid' // 2×2 낱말을 시선과 음성으로 차례대로 읽기
+  | 'sentence-reading' // 한 문장을 어절 순서대로 시선과 음성으로 읽기
   | 'sound-choice' // 대상 글자를 숨기고 소리만 듣고 선택
   | 'sound-omit' // 원래 낱말에서 한 음절을 빼 목표 낱말 만들기
   | 'sound-blend' // 나뉜 음절 소리 카드를 낱말로 합치기
@@ -69,6 +76,47 @@ export interface WordBreakdown {
   syllables: string[]
 }
 
+export interface TracePoint {
+  x: number
+  y: number
+}
+
+export interface LetterBuildSlot {
+  id: string
+  role: 'initial' | 'medial' | 'final'
+  answerChoiceId: string
+  hintText: string
+}
+
+export interface SoundManipulationUnit {
+  id: string
+  text: string
+}
+
+export interface HangulBattleTile {
+  id: string
+  text: string
+}
+
+export interface HangulBattleRound {
+  id: string
+  word: string
+  answer: string[]
+  tiles: HangulBattleTile[]
+  opponentDurationMs: number
+}
+
+export interface WordReadingItem {
+  id: string
+  text: string
+  speechAliases?: string[]
+}
+
+export interface ReadingSentence {
+  id: string
+  chunks: string[]
+}
+
 // 선택지 카드(글자/문장/음절)
 export interface TrainingChoice {
   id: string
@@ -108,6 +156,21 @@ export interface TrainingQuestion {
   targetImageLabel?: string // 리소스 추가 필요 코멘트용 설명
   choices?: TrainingChoice[]
   soundParts?: string[] // 소리 탈락의 원 낱말 또는 합성할 음절 단위
+  traceGlyph?: string // 시선으로 따라 볼 한글 자모 또는 음절
+  traceStrokes?: TracePoint[][] // 획순대로 정렬된 시선 체크포인트
+  speechAliases?: string[] // STT가 허용할 발음 표기 변형
+  buildSlots?: LetterBuildSlot[] // 글자 만들기 빈칸과 정답 카드 연결
+  manipulationMode?: 'remove' | 'replace'
+  manipulationUnits?: SoundManipulationUnit[]
+  manipulationTargetUnitIds?: string[]
+  manipulationAnswerSets?: string[][] // 같은 결과가 되는 복수 정답(예: 같은 '나' 중 하나 빼기)
+  replacementChoices?: TrainingChoice[]
+  replacementAnswerId?: string
+  targetResult?: string
+  battleOpponent?: 'rabbit' | 'turtle' | 'ant'
+  battleRounds?: HangulBattleRound[]
+  readingWords?: WordReadingItem[]
+  readingSentences?: ReadingSentence[]
 
   // card-combine 전용
   consonant?: string // 예: 'ㄱ'

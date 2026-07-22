@@ -68,7 +68,6 @@ const router = createRouter({
           path: 'stories/:storyId',
           name: 'story-reading',
           component: () => import('../../views/learner/StoryReaderView.vue'),
-          meta: { hideLearnerHeader: true },
         },
         {
           // 훈련 선택 홈: 4개 대분류

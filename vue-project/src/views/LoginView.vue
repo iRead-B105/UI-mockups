@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import iReadLogo from '../assets/header/iread-logo.png'
+import iReadMainLogo from '../assets/header/iread-main.png'
 
 const router = useRouter()
 const userId = ref('')
@@ -37,7 +37,7 @@ const handleLogin = async () => {
 
     <div class="login-shell">
       <div class="login-logo-frame">
-        <img :src="iReadLogo" alt="아이리드" class="login-logo" />
+        <img :src="iReadMainLogo" alt="아이리드" class="login-logo" />
       </div>
 
       <section class="login-card" aria-labelledby="login-title">
@@ -106,7 +106,7 @@ const handleLogin = async () => {
 
 .login-logo-frame {
   width: min(92vw, 650px);
-  height: clamp(160px, 23vh, 220px);
+  height: clamp(220px, 30vh, 300px);
   margin: 0 auto var(--learner-space-6);
   overflow: visible;
 }
@@ -116,8 +116,7 @@ const handleLogin = async () => {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: translateY(3px) scale(2.9);
-  transform-origin: center;
+  object-position: center;
 }
 
 .login-title {
@@ -226,7 +225,7 @@ const handleLogin = async () => {
 
 @media (max-height: 760px) {
   .login-card { padding-block: var(--learner-space-6); }
-  .login-logo-frame { height: 138px; margin-bottom: var(--learner-space-4); }
+  .login-logo-frame { height: 210px; margin-bottom: var(--learner-space-4); }
   .login-title { margin-bottom: var(--learner-space-5); font-size: clamp(28px, 3vw, 38px); }
 }
 </style>

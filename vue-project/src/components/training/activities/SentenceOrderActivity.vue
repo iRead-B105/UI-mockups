@@ -1,104 +1,286 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { TrainingChoice, TrainingQuestion } from '@/types/training'
 import { useTrainingSession } from '@/composables/useTrainingSession'
-import SoundButton from '../SoundButton.vue'
 
 const props = defineProps<{ question: TrainingQuestion }>()
 defineEmits<{ next: [] }>()
 
-const session = useTrainingSession()
-const { progressState } = session
-const choices = computed<TrainingChoice[]>(() => props.question.choices ?? [])
-const slots = ref<(string | null)[]>([])
-const draggedId = ref<string | null>(null)
-const isAnswered = computed(() => progressState.isCurrentCorrect === true)
-const isWrong = computed(() => progressState.isCurrentCorrect === false)
-
-const reset = () => {
-  slots.value = Array.from({ length: choices.value.length }, () => null)
-  draggedId.value = null
+interface SpeechResultEvent extends Event {
+  results: { [index: number]: { [index: number]: { transcript: string } } }
 }
-watch(() => props.question.id, reset, { immediate: true })
+interface SpeechErrorEvent extends Event { error?: string }
+interface SpeechRecognitionLike {
+  lang: string
+  interimResults: boolean
+  continuous: boolean
+  onresult: ((event: SpeechResultEvent) => void) | null
+  onerror: ((event: SpeechErrorEvent) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
+type SpeechState = 'waiting' | 'listening' | 'retry' | 'success' | 'denied'
+
+const session = useTrainingSession()
+const slotsElement = ref<HTMLElement | null>(null)
+const choices = computed<TrainingChoice[]>(() => props.question.choices ?? [])
+const correctOrder = computed(() => props.question.answer.split('|'))
+const slots = ref<(string | null)[]>([])
+const attempts = ref(0)
+const wrongIndices = ref<number[]>([])
+const assemblyCorrect = ref(false)
+const statusMessage = ref('')
+const speechState = ref<SpeechState>('waiting')
+const draggingChoiceId = ref<string | null>(null)
+const draggingFromSlot = ref<number | null>(null)
+const dragPoint = ref({ x: 0, y: 0 })
+const overSlotIndex = ref<number | null>(null)
+let wrongTimer: ReturnType<typeof setTimeout> | null = null
+let recognition: SpeechRecognitionLike | null = null
 
 const placed = computed(() => slots.value.map((id) => choices.value.find((choice) => choice.id === id) ?? null))
 const remaining = computed(() => choices.value.filter((choice) => !slots.value.includes(choice.id)))
-const allFilled = computed(() => slots.value.every(Boolean))
+const allFilled = computed(() => slots.value.length > 0 && slots.value.every(Boolean))
+const isComplete = computed(() => speechState.value === 'success')
+const nextEmptyIndex = computed(() => slots.value.findIndex((value) => value === null))
+const hintChoiceId = computed(() => {
+  if (attempts.value < 2 || assemblyCorrect.value) return null
+  const emptyIndex = nextEmptyIndex.value
+  return emptyIndex >= 0 ? correctOrder.value[emptyIndex] ?? null : null
+})
 
-const sync = () => {
-  progressState.isCurrentCorrect = null
-  if (allFilled.value) session.selectAnswer(slots.value.join('|'))
-  else progressState.selectedAnswer = null
+const reset = () => {
+  slots.value = Array.from({ length: choices.value.length }, () => null)
+  attempts.value = 0
+  wrongIndices.value = []
+  assemblyCorrect.value = false
+  statusMessage.value = ''
+  speechState.value = 'waiting'
+  draggingChoiceId.value = null
+  draggingFromSlot.value = null
+  overSlotIndex.value = null
+  recognition?.stop()
+  recognition = null
+  if (wrongTimer) clearTimeout(wrongTimer)
 }
-const place = (id: string, target?: number) => {
-  if (isAnswered.value || slots.value.includes(id)) return
-  const index = target ?? slots.value.findIndex((value) => value === null)
-  if (index < 0 || slots.value[index]) return
+watch(() => props.question.id, reset, { immediate: true })
+
+const normalize = (value: string) => value.replace(/[\s.,!?~'"’“”]/g, '').toLowerCase()
+const sentenceMatches = (transcript: string) => {
+  const heard = normalize(transcript)
+  const answer = normalize(props.question.targetText ?? '')
+  return Boolean(answer && (heard === answer || heard.includes(answer)))
+}
+
+const finishSpeech = () => {
+  if (isComplete.value) return
+  speechState.value = 'success'
+  statusMessage.value = '다 읽었어요!'
+  session.markRecordingComplete({ isMock: false, audioUrl: null })
+}
+const handleTranscript = (transcript: string) => {
+  if (!assemblyCorrect.value || speechState.value !== 'listening') return
+  if (sentenceMatches(transcript)) finishSpeech()
+  else {
+    speechState.value = 'retry'
+    statusMessage.value = '한 번 더 읽어봐요'
+  }
+}
+const startSpeech = () => {
+  if (!assemblyCorrect.value || speechState.value === 'listening' || isComplete.value) return
+  speechState.value = 'listening'
+  statusMessage.value = '문장을 읽어봐요'
+  const speechWindow = window as typeof window & {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+  const Recognition = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition
+  if (!Recognition) return
+
+  recognition?.stop()
+  recognition = new Recognition()
+  recognition.lang = 'ko-KR'
+  recognition.interimResults = false
+  recognition.continuous = false
+  recognition.onresult = (event) => handleTranscript(event.results[0]?.[0]?.transcript ?? '')
+  recognition.onerror = (event) => {
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
+      speechState.value = 'denied'
+      statusMessage.value = '마이크를 켜고 다시 눌러요'
+      return
+    }
+    if (event.error !== 'aborted') {
+      speechState.value = 'retry'
+      statusMessage.value = '한 번 더 읽어봐요'
+    }
+  }
+  recognition.onend = () => {
+    if (speechState.value === 'listening') {
+      speechState.value = 'retry'
+      statusMessage.value = '한 번 더 읽어봐요'
+    }
+    recognition = null
+  }
+  recognition.start()
+}
+
+const evaluateSentence = () => {
+  if (!allFilled.value || assemblyCorrect.value) return
+  const wrong = slots.value
+    .map((id, index) => id === correctOrder.value[index] ? -1 : index)
+    .filter((index) => index >= 0)
+
+  if (wrong.length === 0) {
+    assemblyCorrect.value = true
+    statusMessage.value = ''
+    speechState.value = 'waiting'
+    return
+  }
+
+  attempts.value += 1
+  wrongIndices.value = wrong
+  statusMessage.value = '한 번 더 해봐요'
+  if (wrongTimer) clearTimeout(wrongTimer)
+  wrongTimer = setTimeout(() => {
+    const next = [...slots.value]
+    wrong.forEach((index) => { next[index] = null })
+    slots.value = next
+    wrongIndices.value = []
+  }, 700)
+}
+
+const slotIndexAt = (clientX: number, clientY: number) => {
+  const slotNodes = slotsElement.value?.querySelectorAll<HTMLElement>('.sentence-slot')
+  if (!slotNodes) return null
+  for (let index = 0; index < slotNodes.length; index += 1) {
+    const rect = slotNodes[index]?.getBoundingClientRect()
+    if (rect && clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) return index
+  }
+  return null
+}
+const startPointerDrag = (event: PointerEvent, choiceId: string, fromSlot: number | null) => {
+  if (assemblyCorrect.value || event.button !== 0 || wrongIndices.value.length > 0) return
+  event.preventDefault()
+  draggingChoiceId.value = choiceId
+  draggingFromSlot.value = fromSlot
+  dragPoint.value = { x: event.clientX, y: event.clientY }
+  overSlotIndex.value = slotIndexAt(event.clientX, event.clientY)
+}
+const onPointerMove = (event: PointerEvent) => {
+  if (!draggingChoiceId.value) return
+  dragPoint.value = { x: event.clientX, y: event.clientY }
+  overSlotIndex.value = slotIndexAt(event.clientX, event.clientY)
+}
+const finishPointerDrag = (event: PointerEvent) => {
+  const choiceId = draggingChoiceId.value
+  const origin = draggingFromSlot.value
+  if (!choiceId) return
+  const target = slotIndexAt(event.clientX, event.clientY)
+  draggingChoiceId.value = null
+  draggingFromSlot.value = null
+  overSlotIndex.value = null
+
   const next = [...slots.value]
-  next[index] = id
+  if (target === null) {
+    if (origin !== null) next[origin] = null
+  } else if (origin === null) {
+    next[target] = choiceId
+  } else if (target !== origin) {
+    const displaced = next[target] ?? null
+    next[target] = choiceId
+    next[origin] = displaced
+  }
   slots.value = next
-  sync()
+  void nextTick(evaluateSentence)
 }
-const remove = (index: number) => {
-  if (isAnswered.value || !slots.value[index]) return
-  const next = [...slots.value]
-  next[index] = null
-  slots.value = next
-  sync()
+const cancelPointerDrag = () => {
+  draggingChoiceId.value = null
+  draggingFromSlot.value = null
+  overSlotIndex.value = null
 }
-const drop = (index: number) => {
-  if (draggedId.value) place(draggedId.value, index)
-  draggedId.value = null
+const onExternalSpeech = (event: Event) => {
+  const detail = (event as CustomEvent<{ transcript?: string }>).detail
+  if (detail?.transcript) handleTranscript(detail.transcript)
 }
+
+onMounted(() => {
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', finishPointerDrag)
+  window.addEventListener('pointercancel', cancelPointerDrag)
+  window.addEventListener('iread:speech', onExternalSpeech)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerup', finishPointerDrag)
+  window.removeEventListener('pointercancel', cancelPointerDrag)
+  window.removeEventListener('iread:speech', onExternalSpeech)
+  recognition?.stop()
+  if (wrongTimer) clearTimeout(wrongTimer)
+})
 </script>
 
 <template>
   <section class="activity" :aria-label="question.instruction">
-    <header class="activity-heading"><h1>{{ question.instruction }}</h1></header>
+    <header class="activity-heading">
+      <h1>{{ assemblyCorrect ? '완성한 문장을 읽어봐요' : '문장을 만들어봐요' }}</h1>
+      <p v-if="statusMessage" class="status-message" :class="speechState" role="status" aria-live="polite">{{ statusMessage }}</p>
+    </header>
 
-    <div class="slots" :class="{ wrong: isWrong }">
-      <button
+    <div ref="slotsElement" class="slots" :style="{ '--slot-count': slots.length }">
+      <div
         v-for="(choice, index) in placed"
         :key="index"
         class="sentence-slot"
-        :class="{ filled: choice, correct: isAnswered }"
-        type="button"
-        :disabled="isAnswered"
-        :aria-label="choice ? `${index + 1}번째 ${choice.text}, 빼기` : `${index + 1}번째 빈칸`"
-        @click="remove(index)"
-        @dragover.prevent
-        @drop="drop(index)"
+        :class="{
+          filled: choice,
+          correct: assemblyCorrect,
+          wrong: wrongIndices.includes(index),
+          over: overSlotIndex === index,
+          hint: hintChoiceId && nextEmptyIndex === index,
+        }"
       >
-        <span v-if="choice">{{ choice.text }}</span>
-        <span v-else>{{ index + 1 }}</span>
-      </button>
+        <span
+          v-if="choice"
+          class="placed-card"
+          @pointerdown="startPointerDrag($event, choice.id, index)"
+        >{{ choice.text }}</span>
+      </div>
     </div>
 
-    <div class="source-cards" aria-label="문장 카드">
-      <button
+    <div class="source-cards" :style="{ '--card-count': remaining.length || choices.length }" aria-label="문장 카드">
+      <article
         v-for="choice in remaining"
         :key="choice.id"
         class="sentence-card"
-        type="button"
-        :draggable="!isAnswered"
-        :disabled="isAnswered"
-        @click="place(choice.id)"
-        @dragstart="draggedId = choice.id"
-        @dragend="draggedId = null"
+        :class="{ hint: hintChoiceId === choice.id }"
+        @pointerdown="startPointerDrag($event, choice.id, null)"
       >
-        {{ choice.text }}
+        <span class="grip" aria-hidden="true">⠿</span>
+        <strong>{{ choice.text }}</strong>
+      </article>
+    </div>
+
+    <Teleport to="body">
+      <div
+        v-if="draggingChoiceId"
+        class="drag-ghost"
+        :style="{ left: `${dragPoint.x}px`, top: `${dragPoint.y}px` }"
+        aria-hidden="true"
+      >{{ choices.find((choice) => choice.id === draggingChoiceId)?.text }}</div>
+    </Teleport>
+
+    <footer class="action-bar">
+      <button v-if="assemblyCorrect && !isComplete" class="speak-button" type="button" :disabled="speechState === 'listening'" @click="startSpeech">
+        <span aria-hidden="true">●</span>
+        {{ speechState === 'listening' ? '듣고 있어요' : '문장 읽기' }}
       </button>
-    </div>
-
-    <SoundButton v-if="allFilled" :text="question.targetText ?? ''" label="완성 문장 듣기" size="medium" variant="ghost" />
-
-    <div class="action-bar">
-      <button v-if="!isAnswered" class="action action--primary" type="button" :disabled="!allFilled" @click="session.submitAnswer()">확인</button>
-      <button v-else class="action action--next" type="button" @click="$emit('next')">다음 문제</button>
-    </div>
+      <button v-else-if="isComplete" class="next-button" type="button" @click="$emit('next')">다음</button>
+    </footer>
   </section>
 </template>
 
 <style scoped>
-.activity{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;width:100%;max-width:1180px;height:100%;min-height:0;padding:22px 28px 20px;border:4px solid rgba(255,255,255,.92);border-radius:30px;background:linear-gradient(180deg,#d9efff 0%,#eef8ff 58%,#e5f4d1 100%);box-shadow:inset 0 0 0 2px rgba(89,145,212,.2),0 12px 26px rgba(45,94,145,.14)}.activity-heading h1{margin:0;color:#193b79;font-family:var(--learner-font-display);font-size:clamp(28px,2.4vw,38px);font-weight:900}.slots{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:18px;width:min(100%,900px)}.sentence-slot{min-height:120px;padding:16px;border:4px dashed #86a3df;border-radius:24px;background:rgba(255,255,255,.68);color:#8795aa;font-family:var(--learner-font-display);font-size:24px;font-weight:900;cursor:pointer}.sentence-slot.filled{border-style:solid;border-color:#7191e9;background:#fffdf8;color:#263853;box-shadow:var(--learner-shadow-card)}.sentence-slot.correct{border-color:#5fbd69;background:#f3fff0}.slots.wrong .sentence-slot.filled{border-color:#ef8a7f;background:#fff4f1}.source-cards{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:18px;width:min(100%,900px);min-height:100px}.sentence-card{min-height:94px;padding:14px 18px;border:4px solid #f1e4c5;border-radius:22px;background:#fffdf8;color:#263853;font-family:var(--learner-font-display);font-size:24px;font-weight:900;box-shadow:var(--learner-shadow-card);cursor:grab}.sentence-card:hover{transform:translateY(-4px);box-shadow:var(--learner-shadow-floating)}.sentence-card:active{cursor:grabbing}.activity :deep(.sound-button){height:52px;color:#3b64d8;background:#fff;border:2px solid #f1dfae}.sentence-slot:focus-visible,.sentence-card:focus-visible,.action:focus-visible{outline:5px solid #ffd54a;outline-offset:3px}.action-bar{display:flex;justify-content:flex-end;width:100%}.action{min-width:190px;min-height:60px;padding:0 28px;border:0;border-radius:22px;color:#fff;font-family:var(--learner-font-display);font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 7px 16px rgba(49,80,150,.24)}.action--primary{background:linear-gradient(180deg,#7797f5,#4f72e1)}.action--next{background:linear-gradient(180deg,#ffc657,#f2a92e)}.action:disabled{opacity:.42;cursor:default}@media(max-width:700px){.activity{overflow-y:auto}.slots,.source-cards{gap:8px}.sentence-slot,.sentence-card{font-size:18px;padding:10px}}@media(max-height:800px){.activity{gap:18px;padding:14px 22px}.activity-heading h1{font-size:26px}.sentence-slot{min-height:96px}.source-cards{min-height:80px}.sentence-card{min-height:76px}.action{min-height:56px}}
+.activity{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;width:100%;max-width:1160px;height:100%;min-height:0;padding:22px 28px 20px;border:4px solid rgba(255,255,255,.94);border-radius:30px;background:linear-gradient(180deg,#d9efff 0%,#eff8ff 58%,#e7f4d5 100%);box-shadow:inset 0 0 0 2px rgba(89,145,212,.18),0 12px 26px rgba(45,94,145,.14);overflow:hidden}.activity-heading{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:54px}.activity-heading h1{margin:0;color:#193b79;font-family:var(--learner-font-display);font-size:clamp(28px,2.4vw,38px);font-weight:900}.status-message{position:absolute;right:0;margin:0;padding:11px 17px;border:2px solid #ecd79e;border-radius:999px;background:#fffdf4;color:#88651c;font-family:var(--learner-font-display);font-size:17px;font-weight:900}.status-message.success{border-color:#9bd488;background:#f2ffec;color:#388452}.status-message.denied{border-color:#e5b1a9;color:#a34d42}.slots{--slot-count:3;display:grid;grid-template-columns:repeat(var(--slot-count),minmax(0,1fr));gap:12px;width:min(100%,1040px);min-height:128px}.sentence-slot{display:grid;place-items:center;min-width:0;min-height:118px;padding:9px;border:5px dashed #829fdf;border-radius:23px;background:rgba(255,255,255,.62);transition:border-color .18s,background .18s,box-shadow .18s}.sentence-slot.filled{border-style:solid;border-color:#7594e5;background:#f9fbff}.sentence-slot.over{border-color:#ffc83d;background:#fff9d8;box-shadow:0 0 0 6px rgba(255,208,48,.2)}.sentence-slot.wrong{border-color:#ed8175;background:#fff1ee;animation:shake .38s ease-in-out}.sentence-slot.hint{border-color:#ffc83d;animation:slot-pulse .9s ease-in-out infinite}.sentence-slot.correct{border-color:#65bd6d;background:#effbea}.placed-card{display:grid;place-items:center;width:100%;height:100%;min-height:88px;border-radius:16px;color:#263853;font-family:var(--learner-font-display);font-size:clamp(19px,2vw,29px);font-weight:900;cursor:grab;touch-action:none;user-select:none}.source-cards{--card-count:3;display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;gap:14px;width:min(100%,1040px);min-height:118px}.sentence-card{position:relative;display:grid;place-items:center;flex:0 1 195px;min-width:150px;min-height:108px;padding:13px;border:4px solid #efe1bd;border-radius:22px;background:#fffdf8;color:#263853;box-shadow:0 7px 17px rgba(59,83,111,.13);cursor:grab;touch-action:none;user-select:none;transition:border-color .18s,box-shadow .18s,transform .18s}.sentence-card strong{font-family:var(--learner-font-display);font-size:clamp(20px,2vw,29px);font-weight:900}.grip{position:absolute;right:12px;top:8px;color:#a8b2c1;font-size:21px}.sentence-card.hint{border-color:#ffc83d;animation:card-pulse .9s ease-in-out infinite}.action-bar{display:flex;align-items:center;justify-content:center;width:100%;min-height:62px}.speak-button,.next-button{display:flex;align-items:center;justify-content:center;gap:11px;min-width:210px;min-height:60px;border:0;border-radius:21px;color:#fff;font-family:var(--learner-font-display);font-size:22px;font-weight:900;cursor:pointer}.speak-button{background:linear-gradient(180deg,#7194f2,#4f72df);box-shadow:0 8px 18px rgba(50,81,155,.25)}.speak-button span{display:grid;place-items:center;width:34px;height:34px;border:3px solid rgba(255,255,255,.82);border-radius:50%;font-size:14px}.speak-button:disabled{opacity:.62}.next-button{background:linear-gradient(180deg,#ffc75a,#f2a92f);box-shadow:0 8px 18px rgba(150,96,16,.22)}.speak-button:focus-visible,.next-button:focus-visible{outline:5px solid #ffd54a;outline-offset:3px}.drag-ghost{position:fixed;z-index:100;display:grid;place-items:center;min-width:175px;min-height:90px;padding:12px 20px;border:4px solid #6f91e9;border-radius:21px;background:#fffdf8;color:#263853;font-family:var(--learner-font-display);font-size:28px;font-weight:900;box-shadow:0 16px 28px rgba(45,75,120,.28);transform:translate(-50%,-50%) rotate(-2deg);pointer-events:none}@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}@keyframes slot-pulse{50%{border-color:#ffb823;background:#fff8cf}}@keyframes card-pulse{50%{box-shadow:0 0 0 7px rgba(255,210,52,.3),0 8px 18px rgba(151,111,20,.18)}}@media(max-height:800px){.activity{gap:14px;padding:13px 22px}.activity-heading{min-height:44px}.activity-heading h1{font-size:27px}.slots{min-height:98px}.sentence-slot{min-height:92px}.placed-card{min-height:68px}.source-cards{min-height:88px}.sentence-card{min-height:82px}.action-bar{min-height:52px}.speak-button,.next-button{min-height:52px}}@media(max-width:800px){.activity{padding:14px}.activity-heading{align-items:flex-start;flex-direction:column}.status-message{position:static;align-self:flex-end}.slots{gap:6px}.sentence-slot{padding:4px}.placed-card{font-size:17px}.sentence-card{min-width:120px;flex-basis:150px}}@media(prefers-reduced-motion:reduce){.sentence-slot,.sentence-card,.sentence-slot.wrong,.sentence-slot.hint,.sentence-card.hint{transition:none;animation:none}}
 </style>

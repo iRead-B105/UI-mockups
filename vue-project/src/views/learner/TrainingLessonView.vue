@@ -16,6 +16,13 @@ import { useTrainingSession } from '@/composables/useTrainingSession'
 import TrainingIntro from '@/components/training/TrainingIntro.vue'
 import RiveGuideCharacter from '@/components/RiveGuideCharacter.vue'
 import ListenAndSelectActivity from '@/components/training/activities/ListenAndSelectActivity.vue'
+import AudioLetterChoiceActivity from '@/components/training/activities/AudioLetterChoiceActivity.vue'
+import GazeTraceActivity from '@/components/training/activities/GazeTraceActivity.vue'
+import LetterBuildActivity from '@/components/training/activities/LetterBuildActivity.vue'
+import SoundManipulationActivity from '@/components/training/activities/SoundManipulationActivity.vue'
+import HangulBattleActivity from '@/components/training/activities/HangulBattleActivity.vue'
+import WordReadingGridActivity from '@/components/training/activities/WordReadingGridActivity.vue'
+import SentenceReadingActivity from '@/components/training/activities/SentenceReadingActivity.vue'
 import SoundBuildActivity from '@/components/training/activities/SoundBuildActivity.vue'
 import SoundOmitActivity from '@/components/training/activities/SoundOmitActivity.vue'
 import SoundChoiceActivity from '@/components/training/activities/SoundChoiceActivity.vue'
@@ -36,6 +43,13 @@ const lesson = computed(() => getLessonById(lessonId.value))
 // 구현된 액티비티 컴포넌트만 매핑. 준비 중 유형은 여기 없으며(도달 불가),
 // 향후 추가 시 이 맵에만 등록하면 됩니다.
 const activityComponents: Partial<Record<TrainingActivityType, Component>> = {
+  'gaze-trace': GazeTraceActivity,
+  'audio-letter-choice': AudioLetterChoiceActivity,
+  'letter-build': LetterBuildActivity,
+  'sound-manipulation': SoundManipulationActivity,
+  'hangul-battle': HangulBattleActivity,
+  'word-reading-grid': WordReadingGridActivity,
+  'sentence-reading': SentenceReadingActivity,
   'listen-and-select': ListenAndSelectActivity,
   'sound-choice': SoundChoiceActivity,
   'sound-omit': SoundOmitActivity,
@@ -101,9 +115,22 @@ const isSavingFailed = computed(() => session.savingState.status === 'failed')
 // 풀이 대기 중: 액티비티 유형에 맞춘 가벼운 응원.
 const waitingEncouragement = computed(() => {
   switch (lesson.value?.activityType) {
+    case 'gaze-trace':
+      return '반짝이는 길을\n눈으로 따라가요!'
     case 'listen-and-select':
+    case 'audio-letter-choice':
     case 'sound-choice':
       return '소리를 잘 듣고\n골라보세요!'
+    case 'letter-build':
+      return '카드를 빈칸으로\n끌어다 놓아요!'
+    case 'sound-manipulation':
+      return '소리를 눌러서\n새 낱말을 만들어요!'
+    case 'hangul-battle':
+      return '상대보다 먼저\n낱말을 만들어요!'
+    case 'word-reading-grid':
+      return '왼쪽부터\n또박또박 읽어요!'
+    case 'sentence-reading':
+      return '말을 이어서\n문장을 읽어요!'
     case 'sound-omit':
       return '들은 소리가 되도록\n하나를 빼보세요!'
     case 'sound-blend':
@@ -188,7 +215,7 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
 
     <!-- 토끼(응원/피드백). 인트로·풀이에 상주. 저장 중엔 숨김 -->
     <RiveGuideCharacter
-      v-if="phase !== 'saving' && lesson"
+      v-if="phase !== 'saving' && lesson && lesson.activityType !== 'hangul-battle'"
       :message="companionMessage"
       :mood="companionMood"
     />

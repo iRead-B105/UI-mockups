@@ -26,7 +26,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
         <span aria-hidden="true"></span>
       </header>
 
-      <article class="story-card">
+      <RouterLink
+        class="story-card"
+        :to="{ name: 'story-reading', params: { storyId: 'alice' }, query: { continue: '1' } }"
+        aria-label="이상한 나라의 앨리스 이어 읽기"
+      >
         <div class="story-visual">
           <img :src="aliceContinueImage" alt="다독 악어와 함께 이상한 나라의 엘리스를 이어 읽는 장면" />
         </div>
@@ -34,7 +38,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
           <h3>이야기 이어 읽기</h3>
           <p>책을 읽으며 이야기를 함께 만들어봐요!</p>
         </div>
-      </article>
+      </RouterLink>
 
       <nav class="story-actions" aria-label="이야기 선택 메뉴">
         <RouterLink class="story-action story-action--mine" :to="{ name: 'story-selection', query: { view: 'mine' } }">
@@ -99,12 +103,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   transform-origin: center;
   container-type: size;
   transition: transform var(--learner-duration-normal) var(--learner-easing-standard), box-shadow var(--learner-duration-normal);
+  color: inherit;
+  text-decoration: none;
 }
 
 .story-card:hover {
   transform: scale(1.025);
   box-shadow: var(--learner-shadow-floating);
 }
+.story-card:focus-visible { outline:none;box-shadow:var(--learner-shadow-focus); }
 
 .story-visual {
   position: absolute;

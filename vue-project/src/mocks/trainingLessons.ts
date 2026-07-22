@@ -3,6 +3,15 @@
 // 나머지 레슨은 "이 훈련은 준비하고 있어요." 처리됩니다.
 
 import type { TrainingLesson } from '@/types/training'
+import { traceConsonantLesson, traceSyllableLesson, traceVowelLesson } from './gazeTraceLessons'
+import { letterSoundChoiceLesson, wordFirstSoundChoiceLesson } from './audioChoiceLessons'
+import { basicLetterBuildLesson, batchimLetterBuildLesson, doubleBatchimLetterBuildLesson } from './letterBuildLessons'
+import { removeBatchimLesson, removeSyllableLesson, replaceSyllableLesson } from './soundManipulationLessons'
+import { antBattleLesson, rabbitBattleLesson, turtleBattleLesson } from './hangulBattleLessons'
+import { nonwordReadingLesson, realWordReadingLesson } from './wordReadingLessons'
+import { sentenceReadingLesson } from './sentenceReadingLessons'
+import { shortPassageReadingLesson } from './shortPassageReadingLessons'
+import { pictureSentenceLesson } from './pictureSentenceLessons'
 import {
   batchimSoundLesson,
   consonantSoundLesson,
@@ -753,6 +762,24 @@ export const followSentenceLesson: TrainingLesson = {
 
 // 레슨 맵 (레슨 ID로 레슨 데이터 조회)
 export const lessonMap: Record<string, TrainingLesson> = {
+  'trace-consonant': traceConsonantLesson,
+  'trace-vowel': traceVowelLesson,
+  'trace-syllable': traceSyllableLesson,
+  'letter-sound-choice': letterSoundChoiceLesson,
+  'word-first-sound-choice': wordFirstSoundChoiceLesson,
+  'build-basic-letter': basicLetterBuildLesson,
+  'build-batchim-letter': batchimLetterBuildLesson,
+  'build-double-batchim-letter': doubleBatchimLetterBuildLesson,
+  'remove-batchim': removeBatchimLesson,
+  'remove-syllable': removeSyllableLesson,
+  'replace-syllable': replaceSyllableLesson,
+  'battle-rabbit': rabbitBattleLesson,
+  'battle-turtle': turtleBattleLesson,
+  'battle-ant': antBattleLesson,
+  'read-real-words': realWordReadingLesson,
+  'read-nonwords': nonwordReadingLesson,
+  'read-sentences': sentenceReadingLesson,
+  'read-short-passage': shortPassageReadingLesson,
   'same-sound': sameSoundLesson,
   'first-sound': firstSoundLesson,
   'last-sound': lastSoundLesson,
@@ -765,7 +792,7 @@ export const lessonMap: Record<string, TrainingLesson> = {
   'similar-sound': similarSoundLesson,
   'repeat-sentence': repeatSentenceLesson,
   'fill-blank': fillBlankLesson,
-  'match-picture': matchSentenceLesson,
+  'match-picture': pictureSentenceLesson,
   'hard-word': hardWordLesson,
   'sentence-order': sentenceOrderLesson,
   'word-chain': wordChainLesson,

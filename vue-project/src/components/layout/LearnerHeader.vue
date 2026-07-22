@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import iReadLogo from '../../assets/header/iread-logo.png'
+import iReadHeaderLogo from '../../assets/header/iread-header.png'
 
 withDefaults(defineProps<{ userName?: string; stars?: number }>(), { userName: '윤정', stars: undefined })
 </script>
@@ -7,7 +7,7 @@ withDefaults(defineProps<{ userName?: string; stars?: number }>(), { userName: '
 <template>
   <header class="learner-header">
     <RouterLink class="brand" :to="{ name: 'learner-home' }" aria-label="아이리드 학습자 홈">
-      <img :src="iReadLogo" alt="아이리드" />
+      <img :src="iReadHeaderLogo" alt="아이리드" />
     </RouterLink>
 
     <RouterLink class="home-button" :to="{ name: 'learner-home' }" aria-label="학습자 홈">
