@@ -1,0 +1,243 @@
+// 훈련 세션 composable
+//
+// 모듈 단위 단일 상태(singleton)를 사용합니다.
+// 여러 컴포넌트(뷰, 헤더, 진행 바, 액티비티)가 동일한 세션 상태를 공유하도록 하여
+// 진행도/선택/저장 상태가 화면 어디서나 일관되게 표시되도록 합니다.
+//
+// 본 파일은 UI 상태/목업 저장 로직만 담당합니다.
+// 실제 평가/진단/커리큘럼 자동 생성은 수행하지 않습니다.
+
+import { computed, reactive, ref } from 'vue'
+import type {
+  SavingState,
+  TrainingLesson,
+  TrainingProgressState,
+  TrainingQuestion,
+} from '@/types/training'
+
+// ---- 모듈 단위 공유 상태 ----
+const progressState = reactive<TrainingProgressState>({
+  categoryId: null,
+  lessonId: null,
+  currentQuestionIndex: 0,
+  selectedAnswer: null,
+  attemptCount: 0,
+  hintLevel: 0,
+  completedQuestionIds: [],
+  isCurrentCorrect: null,
+  isCompleted: false,
+  completedAt: null,
+})
+
+const currentLesson = ref<TrainingLesson | null>(null)
+const savingState = reactive<SavingState>({
+  status: 'idle',
+  errorMessage: null,
+  attemptCount: 0,
+})
+
+// 문제별 목업 저장소: 선택한 정답
+const storedAnswers = reactive<Record<string, string | string[]>>({})
+// 문제별 목업 저장소: 녹음 결과(실제 분석 아님)
+const storedRecordings = reactive<
+  Record<string, { isMock: boolean; audioUrl: string | null }>
+>({})
+
+// ---- 계산된 값 ----
+const currentQuestion = computed<TrainingQuestion | null>(() => {
+  if (!currentLesson.value) return null
+  return currentLesson.value.questions[progressState.currentQuestionIndex] ?? null
+})
+
+const totalQuestions = computed(() => currentLesson.value?.questions.length ?? 0)
+const currentQuestionNumber = computed(() => progressState.currentQuestionIndex + 1)
+
+// 진행 바 표시용(0~100). 현재까지 완료한 문제 기준.
+const progressPercent = computed(() => {
+  if (totalQuestions.value === 0) return 0
+  const completed = progressState.completedQuestionIds.length
+  return (completed / totalQuestions.value) * 100
+})
+
+const canSubmit = computed(() => progressState.selectedAnswer !== null)
+const hasNextQuestion = computed(() =>
+  progressState.currentQuestionIndex < totalQuestions.value - 1,
+)
+const isSaving = computed(() => savingState.status === 'saving')
+
+// ---- 액션 ----
+// 새 레슨 시작: 이전 정답/녹음/진행도를 모두 초기화(이전 답 리셋).
+const startLesson = (lesson: TrainingLesson): void => {
+  currentLesson.value = lesson
+  progressState.categoryId = lesson.categoryId
+  progressState.lessonId = lesson.id
+  progressState.currentQuestionIndex = 0
+  progressState.selectedAnswer = null
+  progressState.attemptCount = 0
+  progressState.hintLevel = 0
+  progressState.completedQuestionIds = []
+  progressState.isCurrentCorrect = null
+  progressState.isCompleted = false
+  progressState.completedAt = null
+
+  savingState.status = 'idle'
+  savingState.errorMessage = null
+  savingState.attemptCount = 0
+
+  Object.keys(storedAnswers).forEach((k) => delete storedAnswers[k])
+  Object.keys(storedRecordings).forEach((k) => delete storedRecordings[k])
+}
+
+const selectAnswer = (answer: string | string[]): void => {
+  if (progressState.isCurrentCorrect === true) return // 이미 맞힌 문제는 잠금
+  progressState.selectedAnswer = answer
+  // 새로 선택하면 이전 피드백(정답/다시시도) 상태를 초기화
+  progressState.isCurrentCorrect = null
+}
+
+// 정답 확인(선택형). 맞추면 해당 문제를 완료로 표시하고 정답을 목업 저장소에 보관.
+const submitAnswer = (): boolean => {
+  const question = currentQuestion.value
+  if (!question || progressState.selectedAnswer === null) return false
+
+  const answer = progressState.selectedAnswer
+  const correctAnswer = question.answer
+  const isCorrect = Array.isArray(correctAnswer)
+    ? Array.isArray(answer) && correctAnswer.every((v, i) => v === answer[i])
+    : answer === correctAnswer
+
+  progressState.attemptCount += 1
+
+  if (isCorrect) {
+    progressState.isCurrentCorrect = true
+    if (!progressState.completedQuestionIds.includes(question.id)) {
+      progressState.completedQuestionIds.push(question.id)
+    }
+    storedAnswers[question.id] = answer
+  } else {
+    progressState.isCurrentCorrect = false
+    // 2회 시도 후에는 1단계 힌트를 자동으로 활성화
+    if (progressState.attemptCount >= 2 && progressState.hintLevel < 1) {
+      progressState.hintLevel = 1
+    }
+  }
+
+  return isCorrect
+}
+
+// 따라 읽기(녹음)는 정답 판별 대신 녹음 완료를 곧 완료로 처리(목업).
+const markRecordingComplete = (payload: {
+  isMock: boolean
+  audioUrl: string | null
+}): void => {
+  const question = currentQuestion.value
+  if (!question) return
+  progressState.isCurrentCorrect = true
+  if (!progressState.completedQuestionIds.includes(question.id)) {
+    progressState.completedQuestionIds.push(question.id)
+  }
+  storedRecordings[question.id] = {
+    isMock: payload.isMock,
+    audioUrl: payload.audioUrl,
+  }
+  storedAnswers[question.id] = question.answer
+}
+
+const showHint = (): void => {
+  progressState.hintLevel = Math.min(progressState.hintLevel + 1, 2)
+}
+
+// 다음 문제로 이동. 마지막 문제면 false 반환(상위에서 완료/저장 처리).
+const nextQuestion = (): boolean => {
+  if (!hasNextQuestion.value) return false
+  progressState.currentQuestionIndex += 1
+  // 문제 이동 시 선택/시도/힌트/정답 상태 초기화
+  progressState.selectedAnswer = null
+  progressState.attemptCount = 0
+  progressState.hintLevel = 0
+  progressState.isCurrentCorrect = null
+  return true
+}
+
+// 목업 결과 저장. 첫 시도는 실패하고 재시도 시 성공하여
+// "저장 실패 → 재시도" 흐름을 보여줍니다. 저장 중에는 입력 잠금(isSaving).
+const saveResult = (): Promise<boolean> => {
+  if (savingState.status === 'saving') return Promise.resolve(false)
+
+  savingState.status = 'saving'
+  savingState.errorMessage = null
+
+  return new Promise<boolean>((resolve) => {
+    const delay = 700
+    setTimeout(() => {
+      // 첫 시도 실패 → 재시도 성공(목업)
+      if (savingState.attemptCount === 0) {
+        savingState.attemptCount += 1
+        savingState.status = 'failed'
+        savingState.errorMessage = '저장에 실패했어요. 다시 시도해 주세요.'
+        resolve(false)
+      } else {
+        savingState.status = 'success'
+        savingState.attemptCount += 1
+        resolve(true)
+      }
+    }, delay)
+  })
+}
+
+const completeLesson = (): void => {
+  progressState.isCompleted = true
+  // 목업 완료 타임스탬프
+  progressState.completedAt = new Date().toISOString()
+}
+
+const resetSession = (): void => {
+  const emptyLesson: TrainingLesson | null = null
+  currentLesson.value = emptyLesson
+  progressState.categoryId = null
+  progressState.lessonId = null
+  progressState.currentQuestionIndex = 0
+  progressState.selectedAnswer = null
+  progressState.attemptCount = 0
+  progressState.hintLevel = 0
+  progressState.completedQuestionIds = []
+  progressState.isCurrentCorrect = null
+  progressState.isCompleted = false
+  progressState.completedAt = null
+
+  savingState.status = 'idle'
+  savingState.errorMessage = null
+  savingState.attemptCount = 0
+
+  Object.keys(storedAnswers).forEach((k) => delete storedAnswers[k])
+  Object.keys(storedRecordings).forEach((k) => delete storedRecordings[k])
+}
+
+export function useTrainingSession() {
+  return {
+    // 상태
+    progressState,
+    currentLesson,
+    currentQuestion,
+    totalQuestions,
+    currentQuestionNumber,
+    progressPercent,
+    savingState,
+    isSaving,
+    storedAnswers,
+    storedRecordings,
+    // 계산
+    canSubmit,
+    hasNextQuestion,
+    // 액션
+    startLesson,
+    selectAnswer,
+    submitAnswer,
+    markRecordingComplete,
+    showHint,
+    nextQuestion,
+    saveResult,
+    completeLesson,
+    resetSession,
+  }
+}
