@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { encouragementStatusLabels } from '@/features/teacher/displayLabels'
 import type {
   AsyncContentState,
@@ -26,12 +26,39 @@ const emit = defineEmits<{
 
 const deliveryDrafts = reactive<Record<number, string>>({})
 const holdReasons = reactive<Record<number, string>>({})
+const activeDeliveryEditorId = ref<number | null>(null)
+const activeHoldMessageId = ref<number | null>(null)
 
 function deliveryTextFor(message: EncouragementMessage) {
   if (deliveryDrafts[message.id] === undefined) {
-    deliveryDrafts[message.id] = message.deliveryText
+    deliveryDrafts[message.id] = message.originalText
   }
   return deliveryDrafts[message.id] ?? ''
+}
+
+function startDeliveryEdit(message: EncouragementMessage) {
+  deliveryDrafts[message.id] = deliveryTextFor(message)
+  activeDeliveryEditorId.value = message.id
+  activeHoldMessageId.value = null
+}
+
+function cancelDeliveryEdit(message: EncouragementMessage) {
+  deliveryDrafts[message.id] = message.originalText
+  activeDeliveryEditorId.value = null
+}
+
+function finishDeliveryEdit() {
+  activeDeliveryEditorId.value = null
+}
+
+function startHold(messageId: number) {
+  activeHoldMessageId.value = messageId
+  activeDeliveryEditorId.value = null
+}
+
+function cancelHold(messageId: number) {
+  holdReasons[messageId] = ''
+  activeHoldMessageId.value = null
 }
 
 function formatDate(value: string) {
@@ -49,27 +76,24 @@ function formatDate(value: string) {
     </p>
 
     <template v-else>
-      <section aria-labelledby="guardian-comment-title">
-        <header class="queue-heading">
-          <div>
-            <h3 id="guardian-comment-title">교수자에게 남긴 의견</h3>
-            <p>교수자만 확인하며 아동에게 전달되지 않습니다.</p>
-          </div>
-        </header>
-
+      <section aria-label="교수자에게 남긴 보호자 의견">
         <p v-if="comments.length === 0" class="queue-state">작성된 보호자 의견이 없습니다.</p>
         <ol v-else class="message-list">
           <li v-for="comment in comments" :key="comment.id">
             <header>
               <div>
                 <strong>{{ comment.author }}</strong>
-                <span>보고서 v{{ comment.reportVersion }} · {{ formatDate(comment.createdAt) }}</span>
+                <span
+                  >보고서 v{{ comment.reportVersion }} · {{ formatDate(comment.createdAt) }}</span
+                >
               </div>
               <em :class="{ 'is-unread': comment.status === 'unread' }">
                 {{ comment.status === 'unread' ? '읽지 않음' : '읽음' }}
               </em>
             </header>
-            <p>{{ comment.text }}</p>
+            <div class="message-body">
+              <p>{{ comment.text }}</p>
+            </div>
             <div class="message-actions">
               <button
                 class="button button--secondary button--small"
@@ -84,21 +108,20 @@ function formatDate(value: string) {
                 :disabled="comment.status === 'read' || busyId === comment.id"
                 @click="emit('markRead', comment.id)"
               >
-                {{ busyId === comment.id ? '처리 중…' : comment.status === 'read' ? '읽음 처리됨' : '읽음 처리' }}
+                {{
+                  busyId === comment.id
+                    ? '처리 중…'
+                    : comment.status === 'read'
+                      ? '읽음 처리됨'
+                      : '읽음 처리'
+                }}
               </button>
             </div>
           </li>
         </ol>
       </section>
 
-      <section aria-labelledby="guardian-encouragement-title">
-        <header class="queue-heading">
-          <div>
-            <h3 id="guardian-encouragement-title">아이에게 전할 응원</h3>
-            <p>교수자 승인 후에만 아동에게 전달됩니다.</p>
-          </div>
-        </header>
-
+      <section aria-label="보호자 응원 승인 목록">
         <p v-if="encouragements.length === 0" class="queue-state">
           승인 대기 중인 보호자 응원이 없습니다.
         </p>
@@ -109,45 +132,90 @@ function formatDate(value: string) {
                 <strong>{{ message.author }}</strong>
                 <span>{{ formatDate(message.createdAt) }}</span>
               </div>
-              <em :class="`is-${message.status}`">{{ encouragementStatusLabels[message.status] }}</em>
+              <em :class="`is-${message.status}`">{{
+                encouragementStatusLabels[message.status]
+              }}</em>
             </header>
 
-            <dl>
-              <div>
-                <dt>보호자 원문</dt>
-                <dd>{{ message.originalText }}</dd>
-              </div>
-              <div>
-                <dt>아동에게 전달할 문장</dt>
-                <dd>
-                  <span class="delivery-audience">공개 범위 · 아동에게 전달</span>
-                  <textarea
-                    class="textarea"
-                    :value="deliveryTextFor(message)"
-                    :disabled="message.status !== 'pending-approval'"
-                    aria-label="아동에게 전달할 최종 문장"
-                    @input="deliveryDrafts[message.id] = ($event.target as HTMLTextAreaElement).value"
-                  ></textarea>
-                </dd>
-              </div>
-            </dl>
+            <div class="message-body">
+              <textarea
+                v-if="activeDeliveryEditorId === message.id"
+                class="textarea"
+                :value="deliveryTextFor(message)"
+                autofocus
+                aria-label="아동에게 전달할 최종 문장"
+                @input="deliveryDrafts[message.id] = ($event.target as HTMLTextAreaElement).value"
+              ></textarea>
+              <p v-else>{{ deliveryTextFor(message) }}</p>
 
-            <div v-if="message.status === 'pending-approval'" class="hold-field">
-              <label :for="`hold-reason-${message.id}`">보류 사유</label>
+              <div v-if="activeDeliveryEditorId === message.id" class="inline-actions">
+                <button
+                  class="button button--secondary button--small"
+                  type="button"
+                  @click="cancelDeliveryEdit(message)"
+                >
+                  취소
+                </button>
+                <button
+                  class="button button--small"
+                  type="button"
+                  :disabled="!deliveryTextFor(message).trim()"
+                  @click="finishDeliveryEdit"
+                >
+                  수정 완료
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-if="message.status === 'pending-approval' && activeHoldMessageId === message.id"
+              class="hold-field"
+            >
               <input
                 :id="`hold-reason-${message.id}`"
                 v-model="holdReasons[message.id]"
                 class="input"
-                placeholder="보류할 때만 내부 사유를 입력합니다."
+                aria-label="보류 사유"
+                placeholder="보류 사유를 입력해 주세요."
               />
+              <div class="inline-actions">
+                <button
+                  class="button button--secondary button--small"
+                  type="button"
+                  @click="cancelHold(message.id)"
+                >
+                  취소
+                </button>
+                <button
+                  class="button button--small"
+                  type="button"
+                  :disabled="!holdReasons[message.id]?.trim() || busyId === message.id"
+                  @click="emit('hold', message.id, holdReasons[message.id] ?? '')"
+                >
+                  {{ busyId === message.id ? '처리 중…' : '보류 확정' }}
+                </button>
+              </div>
             </div>
 
-            <div v-if="message.status === 'pending-approval'" class="message-actions">
+            <div
+              v-if="
+                message.status === 'pending-approval' &&
+                activeDeliveryEditorId !== message.id &&
+                activeHoldMessageId !== message.id
+              "
+              class="message-actions"
+            >
               <button
                 class="button button--secondary button--small"
                 type="button"
-                :disabled="!holdReasons[message.id]?.trim() || busyId === message.id"
-                @click="emit('hold', message.id, holdReasons[message.id] ?? '')"
+                @click="startDeliveryEdit(message)"
+              >
+                수정
+              </button>
+              <button
+                class="button button--secondary button--small"
+                type="button"
+                @click="startHold(message.id)"
               >
                 보류
               </button>
@@ -161,7 +229,9 @@ function formatDate(value: string) {
               </button>
             </div>
 
-            <p v-if="message.holdReason" class="hold-result">내부 보류 사유 · {{ message.holdReason }}</p>
+            <p v-if="message.holdReason" class="hold-result">
+              내부 보류 사유 · {{ message.holdReason }}
+            </p>
           </li>
         </ol>
       </section>
@@ -170,38 +240,131 @@ function formatDate(value: string) {
 </template>
 
 <style scoped>
-.guardian-queue { display: grid; gap: 30px; }
-.queue-heading h3 { margin: 0; font-size: 14px; }
-.queue-heading p { margin: 4px 0 0; color: var(--slate-500); font-size: 11px; }
+.guardian-queue {
+  display: grid;
+  gap: 0;
+}
+.queue-heading h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.queue-heading p {
+  margin: 4px 0 0;
+  color: var(--slate-500);
+  font-size: 11px;
+}
 .message-list,
-.approval-list { display: grid; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--slate-200); list-style: none; }
+.approval-list {
+  display: grid;
+  margin: 12px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--slate-200);
+  list-style: none;
+}
+.message-list {
+  margin-top: 0;
+  border-top: 0;
+}
+.approval-list {
+  margin-top: 0;
+  border-top: 0;
+}
 .message-list > li,
-.approval-list > li { padding: 16px 0; border-bottom: 1px solid var(--slate-200); }
+.approval-list > li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--slate-200);
+}
 .message-list header,
-.approval-list header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.approval-list header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
 .message-list header div,
-.approval-list header div { display: grid; gap: 2px; }
+.approval-list header div {
+  display: grid;
+  gap: 2px;
+}
 .message-list strong,
-.approval-list strong { color: var(--slate-800); font-size: 12px; }
+.approval-list strong {
+  color: var(--slate-800);
+  font-size: 12px;
+}
 .message-list header span,
-.approval-list header span { color: var(--slate-500); font-size: 10px; }
+.approval-list header span {
+  color: var(--slate-500);
+  font-size: 10px;
+}
 .message-list em,
-.approval-list em { padding: 3px 8px; border-radius: 999px; background: var(--slate-100); color: var(--slate-600); font-size: 10px; font-style: normal; font-weight: 700; }
+.approval-list em {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--slate-100);
+  color: var(--slate-600);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
 .message-list em.is-unread,
-.approval-list em.is-pending-approval { background: #fff7ed; color: #b45309; }
-.approval-list em.is-on-hold { background: #fff1f2; color: var(--danger-600); }
-.message-list > li > p { margin: 10px 0 0; color: var(--slate-700); font-size: 12px; line-height: 1.65; }
-.message-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 12px; }
-.approval-list dl { display: grid; gap: 12px; margin: 14px 0 0; }
-.approval-list dl > div { display: grid; gap: 5px; }
-.approval-list dt,
-.hold-field label { color: var(--slate-500); font-size: 10px; font-weight: 700; }
-.approval-list dd { margin: 0; color: var(--slate-700); font-size: 12px; line-height: 1.6; }
-.delivery-audience { display: block; margin-bottom: 5px; color: var(--primary-700); font-size: 10px; font-weight: 700; }
-.approval-list .textarea { min-height: 74px; font-size: 12px; }
-.hold-field { display: grid; gap: 5px; margin-top: 12px; }
-.hold-field .input { height: 36px; font-size: 11px; }
-.hold-result { margin: 10px 0 0; color: var(--danger-600); font-size: 11px; }
-.queue-state { margin: 12px 0 0; padding: 20px 8px; color: var(--slate-500); font-size: 12px; text-align: center; }
-.queue-state.is-error { background: #fff1f2; color: var(--danger-600); }
+.approval-list em.is-pending-approval {
+  background: #fff7ed;
+  color: #b45309;
+}
+.approval-list em.is-on-hold {
+  background: #fff1f2;
+  color: var(--danger-600);
+}
+.message-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 12px;
+}
+.message-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.message-body p {
+  margin: 0;
+  color: var(--slate-700);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.approval-list .textarea {
+  min-height: 74px;
+  font-size: 12px;
+}
+.hold-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+}
+.hold-field .input {
+  height: 36px;
+  font-size: 11px;
+}
+.inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 8px;
+}
+.hold-result {
+  margin: 10px 0 0;
+  color: var(--danger-600);
+  font-size: 11px;
+}
+.queue-state {
+  margin: 12px 0 0;
+  padding: 20px 8px;
+  color: var(--slate-500);
+  font-size: 12px;
+  text-align: center;
+}
+.queue-state.is-error {
+  background: #fff1f2;
+  color: var(--danger-600);
+}
 </style>

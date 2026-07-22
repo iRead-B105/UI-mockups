@@ -3,7 +3,6 @@
 import { computed, ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
-import HistoryToolbar from '@/components/teacher/HistoryToolbar.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
 import { trainingSessions } from '@/features/teacher/mockData'
 
@@ -64,7 +63,9 @@ function downloadRawData() {
     ['낱말 읽기 정확도', `${Math.max(50, session.achievement - 8)}%`],
     ['문장 읽기 정확도', `${Math.max(50, session.achievement - 16)}%`],
   ]
-  const csv = rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
+  const csv = rows
+    .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))
+    .join('\n')
   const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }))
   const link = document.createElement('a')
   link.href = url
@@ -72,25 +73,58 @@ function downloadRawData() {
   link.click()
   URL.revokeObjectURL(url)
 }
+
+function downloadJsonData() {
+  const session = selectedSession.value
+  if (!session) return
+
+  const activities = ['소리 구분', '낱말 읽기', '문장 읽기'].map((name, index) => {
+    const accuracy = Math.max(50, session.achievement - index * 8)
+    return {
+      name,
+      questionCount: 8 + index * 2,
+      durationMinutes: 10 + index * 3,
+      accuracy,
+      status: getLearningStatus(accuracy),
+    }
+  })
+  const json = JSON.stringify(
+    {
+      trainingId: session.id,
+      title: session.title,
+      curriculum: session.curriculum,
+      completedAt: session.date,
+      achievement: session.achievement,
+      status: getLearningStatus(session.achievement),
+      summary: session.summary,
+      activities,
+    },
+    null,
+    2,
+  )
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `training-${session.id}-raw-data.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
   <div class="training-history page-stack">
-    <PageHeader
-      title="훈련 이력"
-      description="훈련 결과와 읽기 속도 변화를 확인합니다."
-    />
-
-    <HistoryToolbar>
-      <div class="field period-field">
-        <label for="training-period">조회 기간</label>
-        <select id="training-period" v-model="period" class="select">
-          <option>최근 30일</option>
-          <option>최근 3개월</option>
-        </select>
-      </div>
-      <template #status>{{ period }} · 훈련 {{ trainingSessions.length }}건</template>
-    </HistoryToolbar>
+    <PageHeader title="훈련 이력" description="훈련 결과와 읽기 속도 변화를 확인합니다.">
+      <template #actions>
+        <div class="header-history-controls" aria-label="이력 조회 조건">
+          <label for="training-period">조회 기간</label>
+          <select id="training-period" v-model="period" class="select">
+            <option>최근 30일</option>
+            <option>최근 3개월</option>
+          </select>
+          <span>{{ period }} · 훈련 {{ trainingSessions.length }}건</span>
+        </div>
+      </template>
+    </PageHeader>
 
     <div class="training-workspace">
       <div class="training-main">
@@ -164,68 +198,299 @@ function downloadRawData() {
             </div>
             <span>
               <b>{{ Math.max(50, (selectedSession?.achievement ?? 0) - index * 8) }}%</b>
-              <small>{{ getLearningStatus(Math.max(50, (selectedSession?.achievement ?? 0) - index * 8)) }}</small>
+              <small>{{
+                getLearningStatus(Math.max(50, (selectedSession?.achievement ?? 0) - index * 8))
+              }}</small>
             </span>
           </article>
         </div>
 
-        <button class="download-button" type="button" @click="downloadRawData">
-          원천 데이터 다운로드
-        </button>
+        <div class="download-actions">
+          <button class="download-button" type="button" @click="downloadRawData">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" />
+            </svg>
+            <span>CSV 저장</span>
+          </button>
+          <button class="download-button" type="button" @click="downloadJsonData">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h7l4 4v14H7zM14 3v5h4m-7 4-2 2 2 2m4-4 2 2-2 2" />
+            </svg>
+            <span>JSON 저장</span>
+          </button>
+        </div>
       </aside>
     </div>
   </div>
 </template>
 
 <style scoped>
-.training-history { gap: 18px; container-type: inline-size; }
-.period-field { width: 150px; }
-.training-workspace { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(380px, .88fr); }
-.training-main { min-width: 0; padding: 2px 24px 18px 0; }
-.training-detail { min-width: 0; padding: 2px 0 18px 24px; border-left: 1px solid var(--slate-200); }
-.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.section-heading h2 { margin: 0; font-size: 17px; }
-.section-heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.session-table { margin-top: 12px; }
+.training-history {
+  gap: 18px;
+  container-type: inline-size;
+}
+.header-history-controls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.header-history-controls label {
+  color: var(--slate-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+.header-history-controls .select {
+  width: 132px;
+}
+.header-history-controls span {
+  margin-left: 3px;
+  padding-left: 12px;
+  border-left: 1px solid var(--slate-200);
+  color: var(--slate-500);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.training-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(380px, 0.88fr);
+}
+.training-main {
+  min-width: 0;
+  padding: 2px 24px 18px 0;
+}
+.training-detail {
+  min-width: 0;
+  padding: 2px 0 18px 24px;
+  border-left: 1px solid var(--slate-200);
+}
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.section-heading p {
+  margin: 5px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.session-table {
+  margin-top: 12px;
+}
 .session-table__head,
-.session-row { display: grid; align-items: center; gap: 14px; grid-template-columns: 120px minmax(0, 1fr) 88px; }
-.session-table__head { padding: 9px 12px; border-bottom: 1px solid var(--slate-300); color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.session-row { position: relative; width: 100%; min-height: 58px; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--slate-200); background: transparent; color: var(--slate-600); text-align: left; }
-.session-row::before { position: absolute; top: 10px; bottom: 10px; left: 0; width: 3px; background: transparent; content: ''; }
-.session-row:hover { background: var(--slate-50); }
-.session-row.active::before { background: var(--primary-600); }
-.session-row > span:first-child { font-size: 12px; }
-.session-row strong { color: var(--slate-800); font-size: 13px; }
-.session-result { display: grid; justify-items: end; gap: 1px; }
-.session-result b { color: var(--slate-800); font-size: 13px; }
-.session-result small { color: var(--slate-500); font-size: 12px; }
-.speed-trend { margin-top: 30px; }
-.trend-summary { display: grid; justify-items: end; gap: 1px; }
-.trend-summary strong { color: var(--slate-900); font-size: 18px; }
-.trend-summary span { color: var(--slate-500); font-size: 12px; }
-.speed-trend :deep(.chart-panel) { padding-top: 3px; }
-.detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-bottom: 10px; }
-.detail-heading > div:first-child > span { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.detail-heading h2 { margin: 5px 0 0; font-size: 18px; line-height: 1.4; }
-.detail-heading p { margin: 4px 0 0; color: var(--slate-500); font-size: 12px; }
-.detail-score { display: grid; flex: 0 0 auto; justify-items: end; gap: 1px; }
-.detail-score strong { color: var(--slate-900); font-size: 20px; }
-.detail-score span { color: var(--slate-500); font-size: 12px; }
-.training-summary { padding: 14px 0 8px; }
-.training-summary > span { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.training-summary p { margin: 6px 0 0; color: var(--slate-700); font-size: 13px; line-height: 1.6; }
-.detail-list { display: grid; }
-.detail-list article { display: grid; min-height: 66px; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--slate-200); grid-template-columns: minmax(0, 1fr) auto; }
-.detail-list strong { color: var(--slate-800); font-size: 13px; }
-.detail-list p { margin: 4px 0 0; color: var(--slate-500); font-size: 12px; }
-.detail-list article > span { display: grid; justify-items: end; gap: 1px; }
-.detail-list article > span b { color: var(--slate-800); font-size: 13px; }
-.detail-list article > span small { color: var(--slate-500); font-size: 12px; }
-.download-button { margin-top: 14px; padding: 6px 0; border: 0; background: transparent; color: var(--primary-700); font-size: 12px; font-weight: 700; }
+.session-row {
+  display: grid;
+  align-items: center;
+  gap: 14px;
+  grid-template-columns: 120px minmax(0, 1fr) 88px;
+}
+.session-table__head {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--slate-300);
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.session-row {
+  position: relative;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--slate-200);
+  background: transparent;
+  color: var(--slate-600);
+  text-align: left;
+}
+.session-row::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  background: transparent;
+  content: '';
+}
+.session-row:hover {
+  background: var(--slate-50);
+}
+.session-row.active::before {
+  background: var(--primary-600);
+}
+.session-row > span:first-child {
+  font-size: 12px;
+}
+.session-row strong {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+.session-result {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.session-result b {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+.session-result small {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.speed-trend {
+  margin-top: 30px;
+}
+.trend-summary {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.trend-summary strong {
+  color: var(--slate-900);
+  font-size: 18px;
+}
+.trend-summary span {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.speed-trend :deep(.chart-panel) {
+  padding-top: 3px;
+}
+.detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 10px;
+}
+.detail-heading > div:first-child > span {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.detail-heading h2 {
+  margin: 5px 0 0;
+  font-size: 18px;
+  line-height: 1.4;
+}
+.detail-heading p {
+  margin: 4px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.detail-score {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 1px;
+}
+.detail-score strong {
+  color: var(--slate-900);
+  font-size: 20px;
+}
+.detail-score span {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.training-summary {
+  padding: 14px 0 8px;
+}
+.training-summary > span {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.training-summary p {
+  margin: 6px 0 0;
+  color: var(--slate-700);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.detail-list {
+  display: grid;
+}
+.detail-list article {
+  display: grid;
+  min-height: 66px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--slate-200);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.detail-list strong {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+.detail-list p {
+  margin: 4px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.detail-list article > span {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.detail-list article > span b {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+.detail-list article > span small {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.download-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.download-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--slate-300);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--primary-700);
+  font-size: 12px;
+  font-weight: 700;
+}
+.download-button:hover {
+  border-color: var(--primary-400);
+  background: var(--primary-50);
+}
+.download-button:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+.download-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
 
 @container (max-width: 1000px) {
-  .training-workspace { grid-template-columns: 1fr; }
-  .training-main { padding-right: 0; }
-  .training-detail { padding: 30px 0 18px; border-left: 0; }
+  .training-workspace {
+    grid-template-columns: 1fr;
+  }
+  .training-main {
+    padding-right: 0;
+  }
+  .training-detail {
+    padding: 30px 0 18px;
+    border-left: 0;
+  }
 }
 </style>

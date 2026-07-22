@@ -24,7 +24,6 @@ const props = withDefaults(
     guardianComments: GuardianComment[]
     noteDraft: string
     encouragementDraft: string
-    teacherName: string
     state?: AsyncContentState
     busyId?: number | null
   }>(),
@@ -50,23 +49,14 @@ const editingNoteId = ref<number | null>(null)
 const editingEncouragementId = ref<number | null>(null)
 
 const pendingGuardianCount = computed(
-  () => props.encouragements.filter(
-    (message) => message.source === 'guardian' && message.status === 'pending-approval',
-  ).length,
+  () =>
+    props.encouragements.filter(
+      (message) => message.source === 'guardian' && message.status === 'pending-approval',
+    ).length,
 )
 const guardianEncouragements = computed(() =>
   props.encouragements.filter((message) => message.source === 'guardian'),
 )
-const activePurpose = computed(() => {
-  if (activeTab.value === 'notes') {
-    return { title: '교수자 내부 기록', audience: 'teacher-only' as const, description: '아동과 보호자에게 공개되지 않습니다.' }
-  }
-  if (activeTab.value === 'encouragements') {
-    return { title: '아동 응원 전달', audience: 'child' as const, description: '캐릭터 말풍선으로 아동에게 전달됩니다.' }
-  }
-  return { title: '보호자 메시지 확인', audience: 'teacher-only' as const, description: '보호자 상담 의견과 승인 대기 응원을 구분해 처리합니다.' }
-})
-
 function hasDraft(tab: CommunicationTab) {
   if (tab === 'notes') return props.noteDraft.trim().length > 0
   if (tab === 'encouragements') return props.encouragementDraft.trim().length > 0
@@ -169,14 +159,6 @@ defineExpose({ openTab })
       </button>
     </div>
 
-    <div class="purpose-strip">
-      <div>
-        <strong>{{ activePurpose.title }}</strong>
-        <span>{{ activePurpose.description }}</span>
-      </div>
-      <b>{{ audienceLabels[activePurpose.audience] }}</b>
-    </div>
-
     <p v-if="state === 'loading'" class="panel-state" aria-live="polite">
       기록과 메시지를 불러오는 중입니다.
     </p>
@@ -209,7 +191,13 @@ defineExpose({ openTab })
             :disabled="!noteDraft.trim() || (busyId !== null && busyId === editingNoteId)"
             @click="saveNote"
           >
-            {{ busyId !== null && busyId === editingNoteId ? '저장 중…' : editingNoteId ? '수정 저장' : '메모 추가' }}
+            {{
+              busyId !== null && busyId === editingNoteId
+                ? '저장 중…'
+                : editingNoteId
+                  ? '수정 저장'
+                  : '메모 추가'
+            }}
           </button>
         </div>
       </div>
@@ -230,7 +218,6 @@ defineExpose({ openTab })
     <div v-else-if="activeTab === 'encouragements'" class="encouragement-panel" role="tabpanel">
       <EncouragementComposer
         :model-value="encouragementDraft"
-        :teacher-name="teacherName"
         :editing="editingEncouragementId !== null"
         :busy="busyId !== null && busyId === editingEncouragementId"
         @update:model-value="emit('update:encouragementDraft', $event)"
@@ -246,15 +233,22 @@ defineExpose({ openTab })
             <header>
               <div>
                 <strong>{{ message.author }}</strong>
-                <span>{{ messageSourceLabels[message.source] }} · {{ formatDate(message.createdAt) }}</span>
+                <span
+                  >{{ messageSourceLabels[message.source] }} ·
+                  {{ formatDate(message.createdAt) }}</span
+                >
               </div>
-              <em :class="`is-${message.status}`">{{ encouragementStatusLabels[message.status] }}</em>
+              <em :class="`is-${message.status}`">{{
+                encouragementStatusLabels[message.status]
+              }}</em>
             </header>
             <p>{{ message.deliveryText }}</p>
             <div class="delivery-flow" aria-label="응원 전달 상태 흐름">
               <span class="is-done">전달 예정</span>
               <i>→</i>
-              <span :class="{ 'is-done': ['delivered', 'seen-by-child'].includes(message.status) }">전달 완료</span>
+              <span :class="{ 'is-done': ['delivered', 'seen-by-child'].includes(message.status) }"
+                >전달 완료</span
+              >
               <i>→</i>
               <span :class="{ 'is-done': message.status === 'seen-by-child' }">
                 {{ message.deliveryStatusPending ? '확인 여부를 불러오는 중' : '아동 확인' }}
@@ -265,7 +259,11 @@ defineExpose({ openTab })
               class="history-actions"
             >
               <button type="button" @click="editEncouragement(message)">수정</button>
-              <button type="button" class="is-danger" @click="emit('deleteEncouragement', message.id)">
+              <button
+                type="button"
+                class="is-danger"
+                @click="emit('deleteEncouragement', message.id)"
+              >
                 삭제
               </button>
             </div>
@@ -300,52 +298,200 @@ defineExpose({ openTab })
 </template>
 
 <style scoped>
-.communication-panel { display: grid; padding-top: 2px; border-top: 1px solid var(--slate-200); }
-.communication-panel__heading { padding: 20px 0 12px; }
-.communication-panel__heading h2 { margin: 0; font-size: 17px; }
-.communication-panel__heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.communication-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--slate-200); }
-.communication-tabs button { position: relative; display: inline-flex; min-height: 42px; align-items: center; gap: 6px; padding: 0 1px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--slate-500); font-size: 12px; font-weight: 700; }
-.communication-tabs button[aria-selected='true'] { border-bottom-color: var(--primary-600); color: var(--primary-700); }
-.communication-tabs em { display: inline-grid; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #fff7ed; color: #b45309; font-size: 10px; font-style: normal; place-items: center; }
-.purpose-strip { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--slate-200); }
-.purpose-strip div { display: grid; gap: 2px; }
-.purpose-strip strong { color: var(--slate-800); font-size: 12px; }
-.purpose-strip span { color: var(--slate-500); font-size: 11px; }
-.purpose-strip b { color: var(--primary-700); font-size: 11px; }
+.communication-panel {
+  display: grid;
+  padding-top: 2px;
+  border-top: 1px solid var(--slate-200);
+}
+.communication-panel__heading {
+  padding: 20px 0 12px;
+}
+.communication-panel__heading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.communication-panel__heading p {
+  margin: 5px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.communication-tabs {
+  display: flex;
+  gap: 22px;
+  border-bottom: 1px solid var(--slate-200);
+}
+.communication-tabs button {
+  position: relative;
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 700;
+}
+.communication-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--primary-600);
+  color: var(--primary-700);
+}
+.communication-tabs em {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #b45309;
+  font-size: 10px;
+  font-style: normal;
+  place-items: center;
+}
 .note-panel,
-.encouragement-panel { display: grid; gap: 24px; padding: 18px 0 4px; }
-.note-editor { display: grid; justify-items: end; gap: 8px; }
-.note-editor label { justify-self: start; color: var(--slate-700); font-size: 12px; font-weight: 700; }
-.note-editor .textarea { min-height: 92px; }
-.note-editor > div { display: flex; gap: 7px; }
+.encouragement-panel {
+  display: grid;
+  gap: 24px;
+  padding: 18px 0 4px;
+}
+.note-editor {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+.note-editor label {
+  justify-self: start;
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 700;
+}
+.note-editor .textarea {
+  min-height: 92px;
+}
+.note-editor > div {
+  display: flex;
+  gap: 7px;
+}
 .note-history,
-.encouragement-history > ol { display: grid; margin: 0; padding: 0; border-top: 1px solid var(--slate-200); list-style: none; }
+.encouragement-history > ol {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--slate-200);
+  list-style: none;
+}
 .note-history li,
-.encouragement-history li { position: relative; padding: 14px 0; border-bottom: 1px solid var(--slate-200); }
-.note-history li > div { display: grid; gap: 2px; }
+.encouragement-history li {
+  position: relative;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--slate-200);
+}
+.note-history li > div {
+  display: grid;
+  gap: 2px;
+}
 .note-history strong,
-.encouragement-history strong { color: var(--slate-800); font-size: 12px; }
+.encouragement-history strong {
+  color: var(--slate-800);
+  font-size: 12px;
+}
 .note-history span,
-.encouragement-history header span { color: var(--slate-500); font-size: 10px; }
+.encouragement-history header span {
+  color: var(--slate-500);
+  font-size: 10px;
+}
 .note-history p,
-.encouragement-history li > p { max-width: 900px; margin: 8px 70px 0 0; color: var(--slate-700); font-size: 12px; line-height: 1.65; }
+.encouragement-history li > p {
+  max-width: 900px;
+  margin: 8px 70px 0 0;
+  color: var(--slate-700);
+  font-size: 12px;
+  line-height: 1.65;
+}
 .note-history button,
-.history-actions button { border: 0; background: transparent; color: var(--primary-700); font-size: 11px; font-weight: 700; }
-.note-history > li > button { position: absolute; top: 14px; right: 0; }
-.encouragement-history { display: grid; gap: 10px; }
-.encouragement-history h3 { margin: 0; font-size: 14px; }
-.encouragement-history header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.encouragement-history header div { display: grid; gap: 2px; }
-.encouragement-history em { padding: 3px 8px; border-radius: 999px; background: var(--slate-100); color: var(--slate-600); font-size: 10px; font-style: normal; font-weight: 700; }
+.history-actions button {
+  border: 0;
+  background: transparent;
+  color: var(--primary-700);
+  font-size: 11px;
+  font-weight: 700;
+}
+.note-history > li > button {
+  position: absolute;
+  top: 14px;
+  right: 0;
+}
+.encouragement-history {
+  display: grid;
+  gap: 10px;
+}
+.encouragement-history h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.encouragement-history header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.encouragement-history header div {
+  display: grid;
+  gap: 2px;
+}
+.encouragement-history em {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--slate-100);
+  color: var(--slate-600);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
 .encouragement-history em.is-pending-approval,
-.encouragement-history em.is-on-hold { background: #fff7ed; color: #b45309; }
-.encouragement-history em.is-seen-by-child { background: #f0fdf4; color: #15803d; }
-.delivery-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; color: var(--slate-400); font-size: 10px; }
-.delivery-flow span.is-done { color: var(--success-600); font-weight: 700; }
-.delivery-flow i { font-style: normal; }
-.history-actions { display: flex; justify-content: flex-end; gap: 4px; }
-.history-actions button.is-danger { color: var(--danger-600); }
-.panel-state { margin: 0; padding: 22px 8px; color: var(--slate-500); font-size: 12px; text-align: center; }
-.panel-state.is-error { background: #fff1f2; color: var(--danger-600); }
+.encouragement-history em.is-on-hold {
+  background: #fff7ed;
+  color: #b45309;
+}
+.encouragement-history em.is-seen-by-child {
+  background: #f0fdf4;
+  color: #15803d;
+}
+.delivery-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--slate-400);
+  font-size: 10px;
+}
+.delivery-flow span.is-done {
+  color: var(--success-600);
+  font-weight: 700;
+}
+.delivery-flow i {
+  font-style: normal;
+}
+.history-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.history-actions button.is-danger {
+  color: var(--danger-600);
+}
+.panel-state {
+  margin: 0;
+  padding: 22px 8px;
+  color: var(--slate-500);
+  font-size: 12px;
+  text-align: center;
+}
+.panel-state.is-error {
+  background: #fff1f2;
+  color: var(--danger-600);
+}
 </style>

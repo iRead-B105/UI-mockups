@@ -60,7 +60,9 @@ const reportSections = [
             />
           </div>
         </div>
-        <p v-if="invalidPeriod" class="report-period__error">종료일은 시작일과 같거나 이후여야 합니다.</p>
+        <p v-if="invalidPeriod" class="report-period__error">
+          종료일은 시작일과 같거나 이후여야 합니다.
+        </p>
       </div>
 
       <div class="report-contents">
@@ -86,10 +88,6 @@ const reportSections = [
 </template>
 
 <style scoped>
-.report-setup {
-  background: var(--white);
-}
-
 .report-setup__header,
 .report-setup__footer {
   display: flex;
