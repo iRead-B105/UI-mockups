@@ -137,7 +137,11 @@ onBeforeUnmount(() => {
   padding: clamp(16px, 3dvh, 32px);
   border: var(--learner-border-width) solid var(--learner-border-color);
   border-radius: var(--learner-radius-card);
-  background: color-mix(in srgb, var(--learner-color-learning) 8%, var(--learner-color-surface));
+  background-color: #fff9dc;
+  background-image: url('../../assets/backgrounds/training-inner-background-flat-vector.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   box-shadow: var(--learner-shadow-floating);
   outline: none;
 }

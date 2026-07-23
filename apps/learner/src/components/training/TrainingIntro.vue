@@ -65,6 +65,15 @@ const questionCount = computed(() => props.lesson.questions.length)
   align-items: center;
   text-align: center;
   gap: var(--learner-space-4);
+  padding: clamp(36px, 5vw, 64px);
+  border: 4px solid rgb(255 255 255 / 90%);
+  border-radius: 36px;
+  background-color: #fff9dc;
+  background-image: url('../../assets/backgrounds/training-inner-background-flat-vector.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  box-shadow: 0 16px 36px rgb(44 91 119 / 20%);
 }
 
 .intro-eyebrow {

@@ -2,14 +2,16 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import LearnerHeader from '../components/layout/LearnerHeader.vue'
+import { useVillageDecoration } from '../composables/useVillageDecoration'
 
 const route = useRoute()
+const { points } = useVillageDecoration()
 const hideHeader = computed(() => route.meta.hideLearnerHeader === true)
 </script>
 
 <template>
   <div class="learner-layout">
-    <LearnerHeader v-if="!hideHeader" user-name="윤정" :stars="route.name === 'growth' ? 1250 : undefined" />
+    <LearnerHeader v-if="!hideHeader" user-name="윤정" :stars="route.name === 'growth' ? points : undefined" />
     <div class="learner-page" :class="{ 'learner-page--full': hideHeader }">
       <RouterView />
     </div>

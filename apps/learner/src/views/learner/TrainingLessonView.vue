@@ -408,7 +408,7 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
 @media (prefers-reduced-motion: reduce) {
   .saving-spinner { animation: none; }
 }
-.lesson-view{background:linear-gradient(180deg,#a9ddff 0%,#d9f1ff 54%,#b9e68c 100%)}
+.lesson-view{background-color:#22c5ed;background-image:url('../../assets/backgrounds/training-outer-background-flat-vector.png');background-position:center;background-size:cover;background-repeat:no-repeat}
 .lesson-topbar{position:absolute;left:50%;top:28px;width:min(calc(100% - 96px),1280px);height:54px;padding:0 18px;transform:translateX(-50%)}
 .topbar-back{background:#fff9df;border:2px solid #ead487;box-shadow:0 5px 12px rgba(71,83,104,.14)}
 .lesson-title{position:absolute;left:50%;display:flex;align-items:baseline;gap:10px;transform:translateX(-50%);font-family:var(--learner-font-display)}
@@ -416,8 +416,45 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
 .lesson-title strong{color:#233d79;font-size:27px;font-weight:900}
 .topbar-progress{left:auto;right:18px;min-width:180px;justify-content:center;padding:14px 20px;border:2px solid #f0dfad;border-radius:999px;background:rgba(255,255,255,.88);box-shadow:0 5px 12px rgba(71,83,104,.12);transform:translateY(-50%)}
 .prog-dot{width:11px;height:11px;background:#e7dec5}.prog-dot.active{background:#f1bd3e}
-.playing{width:min(calc(100% - 56px),1360px);margin:16px auto 22px;padding:82px 26px 24px;border:4px solid rgba(255,255,255,.92);border-radius:36px;background:linear-gradient(180deg,#fff9dc,#fff4c6);box-shadow:0 14px 32px rgba(42,79,122,.2)}
+.playing{width:min(calc(100% - 56px),1360px);margin:16px auto 22px;padding:82px 26px 24px}
 .question-scroll{overflow:hidden;align-items:stretch;padding:0}
+.lesson-view :deep(.activity),.lesson-view :deep(.battle){background-color:#fff9dc!important;background-image:url('../../assets/backgrounds/training-inner-background-flat-vector.png')!important;background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
+/*
+ * 학습자가 직접 읽고 조작하는 글자·낱말·문장만 읽기 전용 글꼴을 사용한다.
+ * 화면 제목, 진행 상태, 메뉴와 주요 버튼은 각 활동의 display 글꼴을 유지한다.
+ */
+.lesson-view :deep(.instruction-main),
+.lesson-view :deep(.slot-label),
+.lesson-view :deep(.result-syllable),
+.lesson-view :deep(.result-placeholder),
+.lesson-view :deep(.sentence-card),
+.lesson-view :deep(.word-card strong),
+.lesson-view :deep(.drag-ghost),
+.lesson-view :deep(.resume-message),
+.lesson-view :deep(.speech-glyph),
+.lesson-view :deep(.target-word),
+.lesson-view :deep(.player-slot),
+.lesson-view :deep(.hangul-tile),
+.lesson-view :deep(.build-slot),
+.lesson-view :deep(.result-card),
+.lesson-view :deep(.letter-chip),
+.lesson-view :deep(.word-choice strong),
+.lesson-view :deep(.chunk),
+.lesson-view :deep(.chip),
+.lesson-view :deep(.sentence-target),
+.lesson-view :deep(.sentence-card strong),
+.lesson-view :deep(.placed-card),
+.lesson-view :deep(.chunk-text),
+.lesson-view :deep(.sound-slot),
+.lesson-view :deep(.result-word),
+.lesson-view :deep(.sound-card),
+.lesson-view :deep(.text-choice),
+.lesson-view :deep(.sound-unit),
+.lesson-view :deep(.target-card),
+.lesson-view :deep(.replacement-card),
+.lesson-view :deep(.part-card) {
+  font-family: var(--learner-font-reading);
+}
 @media(max-width:900px){.lesson-topbar{width:calc(100% - 52px);top:20px}.lesson-title span{display:none}.lesson-title strong{font-size:22px}.topbar-progress{min-width:auto;padding-inline:12px}.playing{width:calc(100% - 28px);margin-block:10px;padding:72px 14px 14px}}
 @media(max-height:800px){.lesson-topbar{top:12px}.playing{position:absolute;left:50%;right:auto;top:5px;bottom:10px;width:min(calc(100% - 56px),1360px);height:auto;margin:0;padding:72px 20px 16px;transform:translateX(-50%)}.question-scroll{min-height:0}.lesson-view :deep(.guide){width:250px;bottom:-24%}}
 @media(max-width:1400px){.lesson-view :deep(.guide){display:none}}

@@ -65,6 +65,11 @@ const formattedTime = computed(() => {
   place-items: center;
   padding: var(--learner-page-padding);
   overflow: hidden;
+  background-color: #22c5ed;
+  background-image: url('../../assets/backgrounds/training-outer-background-flat-vector.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .cloud {
@@ -88,7 +93,11 @@ const formattedTime = computed(() => {
   text-align: center;
   border: var(--learner-border-width) solid var(--learner-border-color);
   border-radius: var(--learner-radius-card);
-  background: color-mix(in srgb, var(--learner-color-learning) 12%, var(--learner-color-surface));
+  background-color: #fff9dc;
+  background-image: url('../../assets/backgrounds/training-inner-background-flat-vector.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   box-shadow: var(--learner-shadow-floating);
 }
 

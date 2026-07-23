@@ -2,11 +2,11 @@
 import { ref } from 'vue'
 import RegionLabel from './RegionLabel.vue'
 import { mainMapMenu, type MainMapMenuItem } from '../data/mainMapMenu'
-import islandMain from '../assets/map/island-main-fixed.png'
-import growthMap from '../assets/map/island-growth-fixed.png'
-import gameMap from '../assets/map/island-game-fixed.png'
-import letterMap from '../assets/map/island-letter-fixed.png'
-import challengeMap from '../assets/map/island-challenge-fixed.png'
+import islandMain from '../assets/map/island-hover-base.png'
+import growthMap from '../assets/map/island-hover-growth.png'
+import gameMap from '../assets/map/island-hover-story.png'
+import letterMap from '../assets/map/island-hover-training.png'
+import challengeMap from '../assets/map/island-hover-skill.png'
 
 const emit = defineEmits<{
   select: [id: MainMapMenuItem['id']]
@@ -32,7 +32,15 @@ const setActivePart = (id: MainMapMenuItem['id'] | null) => {
     <div class="cloud cloud-right"></div>
 
     <img class="island-main" :src="islandMain" alt="네 가지 학습 지역으로 이루어진 아이리드 섬" />
-    <img v-for="part in parts" v-show="activePart === part.id" :key="part.id" class="part-image" :class="`part-${part.id}`" :src="part.src" alt="" />
+    <img
+      v-for="part in parts"
+      v-show="activePart === part.id"
+      :key="part.id"
+      class="part-image"
+      :class="`part-${part.id}`"
+      :src="part.src"
+      alt=""
+    />
 
     <button
       v-for="part in parts"
@@ -61,5 +69,5 @@ const setActivePart = (id: MainMapMenuItem['id'] | null) => {
 </template>
 
 <style scoped>
-.map-stage{position:relative;width:min(1260px,94vw,calc((100vh - 86px) * 1.78));aspect-ratio:3/2;margin:auto}.island-main,.part-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}.island-main{z-index:3}.part-image{z-index:7;animation:region-lift var(--learner-duration-normal) var(--learner-easing-standard) both;filter:drop-shadow(0 15px 8px #31527838) brightness(1.04)}@keyframes region-lift{from{transform:translateY(0) scale(1)}to{transform:translateY(-1.1%) scale(1.025)}}.part-growth{transform-origin:28% 51%}.part-game{transform-origin:51% 31%}.part-letter{transform-origin:72% 49%}.part-challenge{transform-origin:51% 70%}.part-hit{position:absolute;z-index:8;inset:0;width:100%;height:100%;border:0;outline:none;background:transparent;cursor:pointer}.hit-growth{clip-path:polygon(5% 25%,36% 21%,47% 48%,38% 76%,20% 92%,5% 73%)}.hit-game{clip-path:polygon(28% 12%,69% 12%,72% 37%,60% 55%,44% 58%,30% 46%)}.hit-letter{clip-path:polygon(63% 27%,89% 27%,96% 51%,88% 74%,67% 77%,57% 52%)}.hit-challenge{clip-path:polygon(28% 50%,57% 52%,73% 72%,67% 91%,47% 97%,24% 86%,17% 68%)}.part-hit:focus-visible{box-shadow:inset 0 0 0 5px #fff}.cloud{position:absolute;z-index:1;width:11%;height:5%;border-radius:999px;background:#fff;opacity:.92}.cloud::before,.cloud::after{content:'';position:absolute;bottom:0;border-radius:50%;background:#fff}.cloud::before{left:13%;width:50%;height:160%}.cloud::after{right:12%;width:42%;height:115%}.cloud-left{left:-5%;top:18%}.cloud-right{right:-4%;top:13%;transform:scale(.85)}@media(max-width:820px){.map-stage{width:min(1150px,138vw);left:-18vw}}
+.map-stage{position:relative;width:min(1260px,94vw,calc((100vh - 86px) * 1.78));aspect-ratio:3/2;margin:auto}.island-main,.part-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}.island-main{z-index:3}.part-image{z-index:4;animation:region-pop var(--learner-duration-normal) var(--learner-easing-standard) both;filter:drop-shadow(0 12px 7px rgba(39,77,101,.2))}@keyframes region-pop{from{opacity:.75;transform:translateY(0) scale(1)}to{opacity:1;transform:translateY(-.7%) scale(1.022)}}.part-growth{transform-origin:27% 49%}.part-game{transform-origin:51% 27%}.part-letter{transform-origin:75% 49%}.part-challenge{transform-origin:51% 72%}.part-hit{position:absolute;z-index:8;inset:0;width:100%;height:100%;border:0;outline:none;background:transparent;cursor:pointer}.hit-growth{clip-path:polygon(5% 25%,36% 21%,47% 48%,38% 76%,20% 92%,5% 73%)}.hit-game{clip-path:polygon(28% 12%,69% 12%,72% 37%,60% 55%,44% 58%,30% 46%)}.hit-letter{clip-path:polygon(63% 27%,89% 27%,96% 51%,88% 74%,67% 77%,57% 52%)}.hit-challenge{clip-path:polygon(28% 50%,57% 52%,73% 72%,67% 91%,47% 97%,24% 86%,17% 68%)}.part-hit:focus-visible{box-shadow:inset 0 0 0 5px #fff}.cloud{position:absolute;z-index:1;width:11%;height:5%;border-radius:999px;background:#fff;opacity:.92}.cloud::before,.cloud::after{content:'';position:absolute;bottom:0;border-radius:50%;background:#fff}.cloud::before{left:13%;width:50%;height:160%}.cloud::after{right:12%;width:42%;height:115%}.cloud-left{left:-5%;top:18%}.cloud-right{right:-4%;top:13%;transform:scale(.85)}@media(max-width:820px){.map-stage{width:min(1150px,138vw);left:-18vw}}@media(prefers-reduced-motion:reduce){.part-image{animation:none}}
 </style>

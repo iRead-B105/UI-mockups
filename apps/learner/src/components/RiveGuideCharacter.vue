@@ -11,8 +11,8 @@ const props = withDefaults(
     // 학습 화면(컴패니언 모드)에서 토끼가 말풍선으로 띄울 응원/피드백 메시지.
     // 이 값을 넘기면 activeMenu 기반 로직 대신 이 메시지를 그대로 보여줍니다.
     message?: string
-    // 컴패니언 모드 기분. 'cheer' 면 손을 흔들며 환호합니다.
-    mood?: 'idle' | 'cheer'
+    // 컴패니언 모드 동작. reading은 책 읽는 자세, cheer는 손을 흔드는 환호 동작입니다.
+    mood?: 'idle' | 'reading' | 'cheer'
   }>(),
   { activeMenu: null, mood: 'idle' },
 )
@@ -77,7 +77,10 @@ const playAnimation = (name: BunnyAnimation) => loadAnimation(name)
 const playBookMotion = () => {
   playAnimation('idle to Pose 1')
   poseTimer = setTimeout(() => {
-    if (!hovered.value && (props.activeMenu === 'letter' || props.activeMenu === 'challenge')) {
+    const shouldKeepReading = isCompanion.value
+      ? props.mood === 'reading'
+      : props.activeMenu === 'letter' || props.activeMenu === 'challenge'
+    if (!hovered.value && shouldKeepReading) {
       playAnimation('Pose 1 loop')
     }
   }, 1400)
@@ -154,8 +157,9 @@ const startGpuCompositor = () => {
 
 const playMenuMotion = () => {
   if (hovered.value) return
-  // 학습 화면(컴패니언)에서는 메뉴 이동이 없으므로 기본 대기 자세
-  if (isCompanion.value) return playAnimation('Idle Loop')
+  if (isCompanion.value) {
+    return props.mood === 'reading' ? playBookMotion() : playAnimation('Idle Loop')
+  }
   if (props.activeMenu === 'growth' || props.activeMenu === 'game') return playAnimation('WALK')
   if (props.activeMenu === 'letter' || props.activeMenu === 'challenge') return playBookMotion()
   playAnimation('Idle Loop')
@@ -186,7 +190,7 @@ const leave = () => {
 
 watch(() => props.activeMenu, playMenuMotion)
 
-// 학습 화면에서 기분이 'cheer' 로 바뀌면 손을 흔들며 환호합니다.
+// 컴패니언 상태에 따라 책 읽기, 대기, 환호 모션을 전환합니다.
 watch(
   () => props.mood,
   (m) => {
@@ -197,6 +201,8 @@ watch(
       poseTimer = setTimeout(() => {
         if (!hovered.value) playAnimation('Idle Loop')
       }, 1500)
+    } else if (m === 'reading') {
+      playBookMotion()
     } else {
       playAnimation('Idle Loop')
     }
@@ -204,7 +210,7 @@ watch(
 )
 
 onMounted(() => {
-  loadAnimation('Idle Loop')
+  playMenuMotion()
 })
 
 onBeforeUnmount(() => {

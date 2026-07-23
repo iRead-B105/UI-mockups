@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'PeachMarket';
+  src: url('./fonts/PeachMarket-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   /* 학습자 브랜드 색상 */
   --learner-color-primary: #3e66e9;
@@ -36,7 +44,7 @@
 
   /* 학습자 글꼴 */
   --learner-font-display: 'Arial Rounded MT Bold', 'Noto Sans KR', sans-serif;
-  --learner-font-reading: 'Noto Sans KR', 'Pretendard', sans-serif;
+  --learner-font-reading: 'PeachMarket', 'Noto Sans KR', 'Pretendard', sans-serif;
   --learner-font-weight-regular: 500;
   --learner-font-weight-bold: 700;
   --learner-font-weight-heavy: 900;

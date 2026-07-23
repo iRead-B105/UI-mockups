@@ -81,14 +81,29 @@ const handleCloseModal = () => {
   height: 100%;
   overflow-y: auto;
   padding: var(--learner-space-8) var(--learner-page-padding) var(--learner-space-12);
+  background-color: #22c5ed;
+  background-image: url('../../assets/backgrounds/training-outer-background-flat-vector.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .home-content {
+  width: min(100%, var(--learner-content-width));
   max-width: var(--learner-content-width);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--learner-space-10);
+  padding: clamp(28px, 4vw, 56px);
+  border: 4px solid rgb(255 255 255 / 88%);
+  border-radius: 36px;
+  background-color: #fff9dc;
+  background-image: url('../../assets/backgrounds/training-inner-background-flat-vector.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  box-shadow: 0 16px 36px rgb(44 91 119 / 20%);
 }
 
 .home-heading {
@@ -121,5 +136,6 @@ const handleCloseModal = () => {
 }
 @media (max-width: 560px) {
   .category-grid { grid-template-columns: 1fr; }
+  .home-content { padding: 24px 18px; }
 }
 </style>
