@@ -2,7 +2,6 @@
 import type {
   CurriculumItem,
   EncouragementMessage,
-  GuardianComment,
   LessonMaterial,
   LearningEvent,
   LearningRecord,
@@ -656,34 +655,6 @@ export const encouragementMessages: EncouragementMessage[] = [
     seenAt: '2026-07-17 18:03',
     createdAt: '2026-07-17 16:40',
     updatedAt: '2026-07-17 18:03',
-  },
-  {
-    id: 302,
-    studentId: 1,
-    source: 'guardian',
-    audience: 'child',
-    status: 'pending-approval',
-    author: '이OO 보호자',
-    originalText: '요즘 스스로 책을 펼치는 모습이 대견해. 천천히 해도 괜찮아!',
-    deliveryText: '스스로 책을 펼치는 모습이 정말 대견해. 천천히 해도 괜찮아!',
-    deliveryTiming: 'next-login',
-    createdAt: '2026-07-20 20:14',
-    updatedAt: '2026-07-20 20:14',
-  },
-]
-
-export const guardianComments: GuardianComment[] = [
-  {
-    id: 401,
-    studentId: 1,
-    source: 'guardian',
-    audience: 'teacher-only',
-    status: 'unread',
-    author: '이OO 보호자',
-    reportVersion: 1,
-    text: '집에서도 소리 내어 읽는 시간이 늘었습니다. 다음 단계에서 집에서 도울 방법이 있을까요?',
-    createdAt: '2026-07-20 20:09',
-    updatedAt: '2026-07-20 20:09',
   },
 ]
 

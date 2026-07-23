@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EncouragementComposer from '@/components/teacher/EncouragementComposer.vue'
-import GuardianMessageQueue from '@/components/teacher/GuardianMessageQueue.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -16,17 +15,15 @@ import {
 import type {
   AsyncContentState,
   EncouragementMessage,
-  GuardianComment,
   TeacherNote,
 } from '@/features/teacher/types'
 
-type CommunicationTab = 'notes' | 'encouragements' | 'guardian'
+type CommunicationTab = 'notes' | 'encouragements'
 
 const props = withDefaults(
   defineProps<{
     notes: TeacherNote[]
     encouragements: EncouragementMessage[]
-    guardianComments: GuardianComment[]
     noteDraft: string
     encouragementDraft: string
     state?: AsyncContentState
@@ -41,10 +38,6 @@ const emit = defineEmits<{
   saveNote: [noteId: number | null, text: string]
   sendEncouragement: [messageId: number | null, timing: 'immediate' | 'next-login']
   deleteEncouragement: [messageId: number]
-  markGuardianRead: [commentId: number]
-  addGuardianCommentToNote: [commentId: number]
-  approveGuardianEncouragement: [messageId: number, deliveryText: string]
-  holdGuardianEncouragement: [messageId: number, reason: string]
 }>()
 
 const activeTab = ref<CommunicationTab>('notes')
@@ -53,15 +46,6 @@ const switchDialogOpen = ref(false)
 const editingNoteId = ref<number | null>(null)
 const editingEncouragementId = ref<number | null>(null)
 
-const pendingGuardianCount = computed(
-  () =>
-    props.encouragements.filter(
-      (message) => message.source === 'guardian' && message.status === 'pending-approval',
-    ).length,
-)
-const guardianEncouragements = computed(() =>
-  props.encouragements.filter((message) => message.source === 'guardian'),
-)
 function hasDraft(tab: CommunicationTab) {
   if (tab === 'notes') return props.noteDraft.trim().length > 0
   if (tab === 'encouragements') return props.encouragementDraft.trim().length > 0
@@ -143,18 +127,14 @@ defineExpose({ openTab })
       <TabsList variant="line" class="communication-tabs" aria-label="기록과 소통 유형">
         <TabsTrigger value="notes">교수자 내부 메모</TabsTrigger>
         <TabsTrigger value="encouragements">아동에게 전할 응원</TabsTrigger>
-        <TabsTrigger value="guardian">
-          보호자 메시지
-          <Badge v-if="pendingGuardianCount" variant="secondary">{{ pendingGuardianCount }}</Badge>
-        </TabsTrigger>
       </TabsList>
     </Tabs>
 
     <p v-if="state === 'loading'" class="panel-state" aria-live="polite">
-      기록과 메시지를 불러오는 중입니다.
+      기록과 응원을 불러오는 중입니다.
     </p>
     <p v-else-if="state === 'error'" class="panel-state is-error" role="alert">
-      기록과 메시지를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.
+      기록과 응원을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.
     </p>
 
     <div v-else-if="activeTab === 'notes'" class="note-panel" role="tabpanel">
@@ -265,19 +245,6 @@ defineExpose({ openTab })
         </ol>
       </section>
     </div>
-
-    <GuardianMessageQueue
-      v-else
-      role="tabpanel"
-      :comments="guardianComments"
-      :encouragements="guardianEncouragements"
-      :state="state"
-      :busy-id="busyId"
-      @mark-read="emit('markGuardianRead', $event)"
-      @add-comment-to-note="emit('addGuardianCommentToNote', $event)"
-      @approve="(id, text) => emit('approveGuardianEncouragement', id, text)"
-      @hold="(id, reason) => emit('holdGuardianEncouragement', id, reason)"
-    />
 
     <ConfirmDialog
       :open="switchDialogOpen"
@@ -463,11 +430,6 @@ defineExpose({ openTab })
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
-}
-.encouragement-history em.is-pending-approval,
-.encouragement-history em.is-on-hold {
-  background: #fff7ed;
-  color: #b45309;
 }
 .encouragement-history em.is-seen-by-child {
   background: #f0fdf4;

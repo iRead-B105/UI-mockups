@@ -13,7 +13,6 @@ import { chartColors } from '@/features/teacher/chartTheme'
 import { learningEventTypeLabels } from '@/features/teacher/displayLabels'
 import {
   encouragementMessages as initialEncouragements,
-  guardianComments as initialGuardianComments,
   learningEvents as initialLearningEvents,
   learningRecords,
   recommendedCurriculum,
@@ -23,13 +22,12 @@ import {
 } from '@/features/teacher/mockData'
 import type {
   EncouragementMessage,
-  GuardianComment,
   LearningEvent,
   TeacherNote,
 } from '@/features/teacher/types'
 
 type CommunicationDraft = { note: string; encouragement: string }
-type CommunicationPanelExpose = { openTab: (tab: 'notes' | 'encouragements' | 'guardian') => void }
+type CommunicationPanelExpose = { openTab: (tab: 'notes' | 'encouragements') => void }
 
 const route = useRoute()
 const currentStudent = computed(
@@ -40,9 +38,6 @@ const eventItems = ref<LearningEvent[]>(initialLearningEvents.map((event) => ({ 
 const noteItems = ref<TeacherNote[]>(initialTeacherNotes.map((note) => ({ ...note })))
 const encouragementItems = ref<EncouragementMessage[]>(
   initialEncouragements.map((message) => ({ ...message })),
-)
-const guardianCommentItems = ref<GuardianComment[]>(
-  initialGuardianComments.map((message) => ({ ...message })),
 )
 const draftsByStudent = reactive<Record<number, CommunicationDraft>>(
   Object.fromEntries(students.map((student) => [student.id, { note: '', encouragement: '' }])),
@@ -66,36 +61,15 @@ const currentNotes = computed(() =>
 const currentEncouragements = computed(() =>
   encouragementItems.value.filter((message) => message.studentId === currentStudent.value.id),
 )
-const currentGuardianComments = computed(() =>
-  guardianCommentItems.value.filter((message) => message.studentId === currentStudent.value.id),
-)
 const reviewCount = computed(
   () => currentEvents.value.filter((event) => event.status !== 'reviewed').length,
 )
-const unreadGuardianCount = computed(
-  () => currentGuardianComments.value.filter((message) => message.status === 'unread').length,
-)
-const pendingGuardianEncouragementCount = computed(
-  () =>
-    currentEncouragements.value.filter(
-      (message) => message.source === 'guardian' && message.status === 'pending-approval',
-    ).length,
-)
-const totalActionCount = computed(
-  () => reviewCount.value + unreadGuardianCount.value + pendingGuardianEncouragementCount.value,
-)
+const totalActionCount = computed(() => reviewCount.value)
 const oldestActionLabel = computed(() => {
-  const dates = [
-    ...currentEvents.value
-      .filter((event) => event.status !== 'reviewed')
-      .map((event) => event.occurredAt),
-    ...currentGuardianComments.value
-      .filter((message) => message.status === 'unread')
-      .map((message) => message.createdAt),
-    ...currentEncouragements.value
-      .filter((message) => message.source === 'guardian' && message.status === 'pending-approval')
-      .map((message) => message.createdAt),
-  ].sort()
+  const dates = currentEvents.value
+    .filter((event) => event.status !== 'reviewed')
+    .map((event) => event.occurredAt)
+    .sort()
   const oldest = dates[0]
   if (!oldest) return ''
   const [date = ''] = oldest.split(' ')
@@ -229,49 +203,6 @@ function deleteEncouragement(messageId: number) {
   notify('전달 전 응원을 삭제했습니다.')
 }
 
-function markGuardianRead(commentId: number) {
-  guardianCommentItems.value = guardianCommentItems.value.map((comment) =>
-    comment.id === commentId
-      ? { ...comment, status: 'read', readAt: '2026-07-21 14:32', updatedAt: '2026-07-21 14:32' }
-      : comment,
-  )
-  notify('보호자 의견을 읽음 처리했습니다.')
-}
-
-function addGuardianCommentToNote(commentId: number) {
-  const comment = guardianCommentItems.value.find((item) => item.id === commentId)
-  if (!comment) return
-  const prefix = noteDraft.value ? `${noteDraft.value}\n` : ''
-  noteDraft.value = `${prefix}[보호자 상담 참고] ${comment.text}`
-  communicationPanel.value?.openTab('notes')
-}
-
-function approveGuardianEncouragement(messageId: number, deliveryText: string) {
-  encouragementItems.value = encouragementItems.value.map((message) =>
-    message.id === messageId
-      ? {
-          ...message,
-          deliveryText,
-          status: 'scheduled',
-          scheduledAt: '다음 로그인',
-          approvedBy: '이OO 선생님',
-          approvedAt: '2026-07-21 14:35',
-          updatedAt: '2026-07-21 14:35',
-        }
-      : message,
-  )
-  notify('보호자 응원이 승인되어 다음 로그인 때 전달됩니다.')
-}
-
-function holdGuardianEncouragement(messageId: number, reason: string) {
-  encouragementItems.value = encouragementItems.value.map((message) =>
-    message.id === messageId
-      ? { ...message, status: 'on-hold', holdReason: reason, updatedAt: '2026-07-21 14:35' }
-      : message,
-  )
-  notify('보호자 응원을 보류하고 내부 사유를 기록했습니다.')
-}
-
 const levelChart: EChartsOption = {
   tooltip: { trigger: 'axis', valueFormatter: (value) => `${value}%` },
   grid: { left: 48, right: 24, top: 36, bottom: 34 },
@@ -371,15 +302,12 @@ const levelChart: EChartsOption = {
       <div class="action-summary" :class="{ 'is-complete': totalActionCount === 0 }">
         <div v-if="totalActionCount > 0">
           <strong>확인할 항목 {{ totalActionCount }}건</strong>
-          <span>
-            학습 이벤트 {{ reviewCount }}건 · 읽지 않은 보호자 의견 {{ unreadGuardianCount }}건 ·
-            승인 대기 응원 {{ pendingGuardianEncouragementCount }}건
-          </span>
+          <span>학습 이벤트 {{ reviewCount }}건</span>
           <small>{{ oldestActionLabel }}</small>
         </div>
         <div v-else>
           <strong>현재 확인할 항목이 없습니다.</strong>
-          <span>학습 이벤트와 보호자 메시지를 모두 확인했습니다.</span>
+          <span>모든 학습 이벤트를 확인했습니다.</span>
         </div>
       </div>
     </Card>
@@ -433,15 +361,10 @@ const levelChart: EChartsOption = {
         v-model:encouragement-draft="encouragementDraft"
         :notes="currentNotes"
         :encouragements="currentEncouragements"
-        :guardian-comments="currentGuardianComments"
         :busy-id="busyId"
         @save-note="saveNote"
         @send-encouragement="sendEncouragement"
         @delete-encouragement="deleteEncouragement"
-        @mark-guardian-read="markGuardianRead"
-        @add-guardian-comment-to-note="addGuardianCommentToNote"
-        @approve-guardian-encouragement="approveGuardianEncouragement"
-        @hold-guardian-encouragement="holdGuardianEncouragement"
       />
     </div>
   </div>

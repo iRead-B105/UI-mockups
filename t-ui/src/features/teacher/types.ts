@@ -78,9 +78,9 @@ export interface RecommendedCurriculumItem {
   material?: LessonMaterial
 }
 
-export type Audience = 'teacher-only' | 'child' | 'guardian'
+export type Audience = 'teacher-only' | 'child'
 
-export type MessageSource = 'teacher' | 'guardian'
+export type MessageSource = 'teacher'
 
 export type AsyncContentState = 'loading' | 'ready' | 'error'
 
@@ -94,11 +94,9 @@ export type LearningEventType =
 export type LearningEventStatus = 'needs-review' | 'reviewed' | 'follow-up-needed'
 
 export type EncouragementStatus =
-  | 'pending-approval'
   | 'scheduled'
   | 'delivered'
   | 'seen-by-child'
-  | 'on-hold'
   | 'archived'
 
 export type ReportStatus = 'draft' | 'published' | 'shared' | 'share-ended'
@@ -158,17 +156,7 @@ export interface EncouragementMessage extends MessageBase<EncouragementStatus> {
   scheduledAt?: string
   deliveredAt?: string
   seenAt?: string
-  approvedBy?: string
-  approvedAt?: string
-  holdReason?: string
   deliveryStatusPending?: boolean
-}
-
-export interface GuardianComment extends MessageBase<'unread' | 'read' | 'archived'> {
-  author: string
-  reportVersion: number
-  text: string
-  readAt?: string
 }
 
 export interface ReportVersion {

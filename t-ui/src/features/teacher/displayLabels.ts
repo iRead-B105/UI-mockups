@@ -11,12 +11,10 @@ import type {
 export const audienceLabels = {
   'teacher-only': '교수자만 확인',
   child: '아동에게 전달',
-  guardian: '보호자에게 공유',
 } satisfies Record<Audience, string>
 
 export const messageSourceLabels = {
   teacher: '교수자',
-  guardian: '보호자',
 } satisfies Record<MessageSource, string>
 
 export const learningEventTypeLabels = {
@@ -34,11 +32,9 @@ export const learningEventStatusLabels = {
 } satisfies Record<LearningEventStatus, string>
 
 export const encouragementStatusLabels = {
-  'pending-approval': '승인 대기',
   scheduled: '전달 예정',
   delivered: '전달 완료',
   'seen-by-child': '아동 확인',
-  'on-hold': '보류',
   archived: '보관',
 } satisfies Record<EncouragementStatus, string>
 

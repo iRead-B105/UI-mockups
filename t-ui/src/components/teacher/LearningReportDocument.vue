@@ -2,7 +2,6 @@
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
 import GazeAnalysisPanel from '@/components/teacher/GazeAnalysisPanel.vue'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import type { Student } from '@/features/teacher/types'
 
@@ -13,13 +12,11 @@ defineProps<{
   versionLabel: string
   teacherOpinion: string
   editable: boolean
-  internalMemoAvailable: boolean
   trendChart: EChartsOption
 }>()
 
 const emit = defineEmits<{
   'update:teacherOpinion': [value: string]
-  importInternalMemo: []
 }>()
 
 const summaryItems = [
@@ -159,12 +156,6 @@ function formatDate(value: string) {
           <h2 id="opinion-title">교수자 의견</h2>
           <p class="screen-only">보호자에게 전달할 학습 결과와 다음 지도 계획입니다.</p>
         </div>
-      </div>
-      <div v-if="editable && internalMemoAvailable" class="opinion-import screen-only">
-        <span>내부 메모는 자동으로 공개되지 않습니다.</span>
-        <Button variant="outline" size="sm" type="button" @click="emit('importInternalMemo')">
-          내부 메모에서 불러오기
-        </Button>
       </div>
       <Textarea
         v-if="editable"
@@ -393,19 +384,6 @@ function formatDate(value: string) {
   min-height: 124px;
   border-radius: 3px;
   line-height: 1.7;
-}
-
-.opinion-import {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 8px;
-}
-
-.opinion-import span {
-  color: var(--slate-500);
-  font-size: 10px;
 }
 
 .report-opinion__print,

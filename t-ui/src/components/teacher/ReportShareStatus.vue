@@ -7,11 +7,9 @@ withDefaults(
     versionLabel: string
     publishedAt?: string
     shareLink: ShareLink | null
-    guardianCommentCreated: boolean
-    guardianEncouragementStatus?: string
     state?: AsyncContentState
   }>(),
-  { publishedAt: undefined, guardianEncouragementStatus: undefined, state: 'ready' },
+  { publishedAt: undefined, state: 'ready' },
 )
 
 function valueOrEmpty(value: string | undefined, emptyLabel: string) {
@@ -39,8 +37,6 @@ function valueOrEmpty(value: string | undefined, emptyLabel: string) {
       </div>
       <div><dt>최초 열람</dt><dd>{{ valueOrEmpty(shareLink?.firstViewedAt, '아직 열람하지 않음') }}</dd></div>
       <div><dt>최근 열람</dt><dd>{{ valueOrEmpty(shareLink?.lastViewedAt, '아직 열람하지 않음') }}</dd></div>
-      <div><dt>보호자 의견</dt><dd>{{ guardianCommentCreated ? '작성된 의견 있음' : '작성된 의견 없음' }}</dd></div>
-      <div><dt>아동 응원</dt><dd>{{ guardianEncouragementStatus || '작성된 응원 없음' }}</dd></div>
       <div><dt>PDF 저장</dt><dd>{{ valueOrEmpty(shareLink?.pdfSavedAt, '저장 기록 없음') }}</dd></div>
       <div>
         <dt>보호자 확인</dt>

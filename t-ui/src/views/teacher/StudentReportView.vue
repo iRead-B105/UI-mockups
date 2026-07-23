@@ -76,7 +76,6 @@ const reportVersionLabel = computed(() => {
 const guardianPreviewUrl = computed(() =>
   pageState.value === 'shared' ? '/shared-report/demo-8K2P' : undefined,
 )
-const guardianCommentCreated = computed(() => Boolean(currentShareLink.value?.firstViewedAt))
 const dialogTitle = computed(() => {
   if (dialogKind.value === 'publish') return '보고서를 발행할까요?'
   if (dialogKind.value === 'revoke') return '공유 링크를 폐기할까요?'
@@ -261,10 +260,6 @@ function viewHistory() {
   shareStatusElement.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
-function importInternalMemo() {
-  const imported = '받침이 포함된 문장을 읽을 때 속도가 흔들리는 경향이 있어 반복 연습이 필요합니다.'
-  teacherOpinion.value = `${teacherOpinion.value.trim()}\n\n${imported}`.trim()
-}
 </script>
 
 <template>
@@ -339,9 +334,7 @@ function importInternalMemo() {
         :end-date="endDate"
         :version-label="reportVersionLabel"
         :editable="isEditable"
-        :internal-memo-available="true"
         :trend-chart="trendChart"
-        @import-internal-memo="importInternalMemo"
       >
         <template #actions>
           <ReportActionPanel
@@ -370,7 +363,6 @@ function importInternalMemo() {
               :version-label="reportVersionLabel"
               :published-at="publishedAt"
               :share-link="currentShareLink"
-              :guardian-comment-created="guardianCommentCreated"
             />
           </div>
         </template>

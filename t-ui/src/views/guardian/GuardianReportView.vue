@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import GazeAnalysisPanel from '@/components/teacher/GazeAnalysisPanel.vue'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 
 const route = useRoute()
-const feedback = ref('')
-const submittedFeedback = ref('')
-const sending = ref(false)
 const reportToken = computed(() => String(route.params.token ?? ''))
-const remaining = computed(() => 500 - feedback.value.length)
 const sharedReport = computed(() =>
   reportToken.value === 'demo-8K2P'
     ? {
@@ -25,15 +18,6 @@ const sharedReport = computed(() =>
       },
 )
 
-async function submitFeedback() {
-  const message = feedback.value.trim()
-  if (!message || sending.value) return
-  sending.value = true
-  await new Promise((resolve) => window.setTimeout(resolve, 420))
-  submittedFeedback.value = message
-  feedback.value = ''
-  sending.value = false
-}
 </script>
 
 <template>
@@ -115,40 +99,6 @@ async function submitFeedback() {
         </section>
       </article>
 
-      <section class="guardian-feedback" aria-labelledby="feedback-title">
-        <header>
-          <div>
-            <span>교수자에게만 전달됩니다</span>
-            <h2 id="feedback-title">보고서 피드백 작성</h2>
-            <p>가정에서 관찰한 변화나 다음 상담에서 확인하고 싶은 내용을 남겨 주세요.</p>
-          </div>
-        </header>
-
-        <div v-if="submittedFeedback" class="feedback-complete" role="status">
-          <strong>피드백을 전달했습니다.</strong>
-          <p>{{ submittedFeedback }}</p>
-          <Button variant="outline" size="sm" type="button" @click="submittedFeedback = ''">
-            추가 피드백 작성
-          </Button>
-        </div>
-
-        <form v-else @submit.prevent="submitFeedback">
-          <Label for="guardian-feedback">보호자 피드백</Label>
-          <Textarea
-            id="guardian-feedback"
-            v-model="feedback"
-            class="textarea"
-            maxlength="500"
-            placeholder="예: 집에서도 소리 내어 읽는 시간이 늘었습니다. 다음 단계에서 도울 방법이 궁금합니다."
-          />
-          <div class="feedback-actions">
-            <span>{{ remaining }}자 남음</span>
-            <Button type="submit" :disabled="!feedback.trim() || sending">
-              {{ sending ? '전달 중…' : '피드백 전달' }}
-            </Button>
-          </div>
-        </form>
-      </section>
     </main>
 
     <footer class="guardian-footer">
@@ -220,8 +170,7 @@ main {
   color: var(--primary-700);
   font-weight: 700;
 }
-.guardian-document,
-.guardian-feedback {
+.guardian-document {
   padding: 38px 44px;
   border: 1px solid var(--slate-200);
   background: var(--white);
@@ -326,53 +275,6 @@ thead th {
   margin: 0;
   color: var(--slate-700);
   line-height: 1.8;
-}
-.guardian-feedback {
-  padding: 28px 32px;
-}
-.guardian-feedback header span {
-  color: var(--primary-600);
-  font-size: 10px;
-  font-weight: 800;
-}
-.guardian-feedback h2 {
-  margin: 3px 0 0;
-  font-size: 19px;
-}
-.guardian-feedback header p {
-  margin: 4px 0 0;
-  color: var(--slate-500);
-  font-size: 12px;
-}
-.guardian-feedback form {
-  display: grid;
-  gap: 9px;
-  margin-top: 20px;
-}
-.guardian-feedback form label {
-  color: var(--slate-700);
-  font-size: 12px;
-  font-weight: 700;
-}
-.feedback-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.feedback-actions span {
-  color: var(--slate-500);
-  font-size: 10px;
-}
-.feedback-complete {
-  margin-top: 20px;
-  padding: 18px;
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-}
-.feedback-complete p {
-  margin: 5px 0 14px;
-  color: #166534;
 }
 .guardian-footer {
   display: flex;
