@@ -30,7 +30,7 @@ const reportSections = [
     <header class="report-setup__header">
       <div>
         <h2 id="report-setup-title">보고서 설정</h2>
-        <p>{{ studentName }} 학생의 조회 기간을 정해 보고서를 만듭니다.</p>
+        <p>{{ studentName }} 아동의 조회 기간을 정해 보고서를 만듭니다.</p>
       </div>
     </header>
 

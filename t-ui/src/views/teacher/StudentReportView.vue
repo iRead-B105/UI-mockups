@@ -29,7 +29,7 @@ const publishedAt = ref<string>()
 const expiresAt = ref('2026-08-20')
 const busyAction = ref<string | null>(null)
 const teacherOpinion = ref(
-  '학생은 최근 4주 동안 읽기 정확도와 유창성에서 꾸준한 향상을 보였습니다. 다음 학습에서는 낯선 낱말의 의미를 문맥으로 추론하는 활동을 강화할 예정입니다.',
+  '아동은 최근 4주 동안 읽기 정확도와 유창성에서 꾸준한 향상을 보였습니다. 다음 학습에서는 낯선 낱말의 의미를 문맥으로 추론하는 활동을 강화할 예정입니다.',
 )
 const currentShareLink = ref<ShareLink | null>(null)
 const shareHistory = ref<ShareLink[]>([])
@@ -50,7 +50,7 @@ const dialogTitle = computed(() => {
 })
 const dialogMessage = computed(() => {
   if (dialogKind.value === 'publish') {
-    return `${currentStudent.value.name} 학생 · ${startDate.value} ~ ${endDate.value}\n보호자에게 표시될 학생 정보와 교수자 의견을 확인했습니다. 발행하면 이 버전의 내용이 고정됩니다.`
+    return `${currentStudent.value.name} 아동 · ${startDate.value} ~ ${endDate.value}\n보호자에게 표시될 아동 정보와 교수자 의견을 확인했습니다. 발행하면 이 버전의 내용이 고정됩니다.`
   }
   if (dialogKind.value === 'revoke') {
     return '폐기 즉시 보호자는 현재 주소로 보고서를 열 수 없습니다. 보고서 버전과 열람 이력은 보관됩니다.'
@@ -213,7 +213,7 @@ function importInternalMemo() {
     <PageHeader
       v-if="pageState === 'setting'"
       class="print-hidden"
-      title="보고서 만들기"
+      title="보고서"
       description="학습 기록을 정리해 보호자 공유용 보고서를 만듭니다."
     />
 

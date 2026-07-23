@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
       type="button"
       :aria-expanded="isOpen"
       aria-haspopup="dialog"
-      aria-label="학생 변경"
+      aria-label="아동 변경"
       @click="toggle"
     >
       <img
@@ -125,9 +125,9 @@ onBeforeUnmount(() => {
       <span class="student-switcher__chevron" aria-hidden="true">⌄</span>
     </button>
 
-    <section v-if="isOpen" class="student-switcher__popover" role="dialog" aria-label="학생 변경">
+    <section v-if="isOpen" class="student-switcher__popover" role="dialog" aria-label="아동 변경">
       <header>
-        <strong>학생 변경</strong>
+        <strong>아동 변경</strong>
         <span>{{ students.length }}명</span>
       </header>
 
@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
             <span
               v-if="student.id === currentStudent.id"
               class="student-option__check"
-              aria-label="현재 학생"
+              aria-label="현재 아동"
               >✓</span
             >
           </button>
@@ -169,7 +169,7 @@ onBeforeUnmount(() => {
         </template>
 
         <template v-else>
-          <p class="student-switcher__section-label">최근 본 학생</p>
+          <p class="student-switcher__section-label">최근 본 아동</p>
           <button
             v-for="student in recentStudents"
             :key="`recent-${student.id}`"
@@ -190,14 +190,14 @@ onBeforeUnmount(() => {
             <span
               v-if="student.id === currentStudent.id"
               class="student-option__check"
-              aria-label="현재 학생"
+              aria-label="현재 아동"
               >✓</span
             >
           </button>
 
           <template v-if="remainingStudents.length">
             <p class="student-switcher__section-label student-switcher__section-label--all">
-              전체 학생
+              전체 아동
             </p>
             <button
               v-for="student in remainingStudents"
@@ -220,7 +220,7 @@ onBeforeUnmount(() => {
       </div>
 
       <button class="student-switcher__manage" type="button" @click="manageStudents">
-        전체 학습자 목록에서 관리
+        전체 아동 목록에서 관리
       </button>
     </section>
   </div>

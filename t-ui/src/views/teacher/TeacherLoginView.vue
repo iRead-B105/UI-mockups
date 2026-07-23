@@ -4,19 +4,12 @@ import { RouterLink, useRouter } from 'vue-router'
 
 const router = useRouter()
 const form = reactive({ loginId: '', password: '' })
-const helpMessage = ref('')
 const showPassword = ref(false)
 
 function login() {
   router.push('/teacher/dashboard')
 }
 
-function showHelp(type: 'id' | 'password') {
-  helpMessage.value =
-    type === 'id'
-      ? '아이디 찾기 기능은 현재 목업 화면으로 제공됩니다.'
-      : '비밀번호 찾기 기능은 현재 목업 화면으로 제공됩니다.'
-}
 </script>
 
 <template>
@@ -61,11 +54,10 @@ function showHelp(type: 'id' | 'password') {
         </div>
 
         <div class="login-help-links">
-          <button type="button" @click="showHelp('id')">아이디 찾기</button>
+          <RouterLink to="/find-id">아이디 찾기</RouterLink>
           <span aria-hidden="true"></span>
-          <button type="button" @click="showHelp('password')">비밀번호 찾기</button>
+          <RouterLink to="/reset-password">비밀번호 찾기</RouterLink>
         </div>
-        <p v-if="helpMessage" class="login-help-message" role="status">{{ helpMessage }}</p>
 
         <button class="button login-submit" type="submit">로그인</button>
         <p class="login-signup-link">
@@ -167,16 +159,15 @@ function showHelp(type: 'id' | 'password') {
   margin-top: 14px;
 }
 
-.login-help-links button {
+.login-help-links a {
   padding: 0;
-  border: 0;
-  background: transparent;
   color: var(--slate-500);
   font-size: 12px;
+  text-decoration: none;
 }
 
-.login-help-links button:hover,
-.login-help-links button:focus-visible {
+.login-help-links a:hover,
+.login-help-links a:focus-visible {
   color: var(--slate-800);
   text-decoration: underline;
 }
@@ -184,14 +175,6 @@ function showHelp(type: 'id' | 'password') {
 .login-help-links span {
   width: 1px;
   background: var(--slate-200);
-}
-
-.login-help-message {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  background: var(--slate-50);
-  color: var(--slate-600);
-  font-size: 12px;
 }
 
 .login-submit {

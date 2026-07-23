@@ -43,11 +43,11 @@ const emptyStudent: Student = {
 
 const form = reactive<Student>({ ...(props.initialValue ?? emptyStudent) })
 const savedSnapshot = ref(JSON.stringify(form))
-const title = computed(() => (props.mode === 'create' ? '새 학생 등록' : '학생 정보 수정'))
+const title = computed(() => (props.mode === 'create' ? '새 아동 등록' : '아동 정보 관리'))
 const description = computed(() =>
   props.mode === 'create'
-    ? '학생과 보호자 정보를 입력합니다.'
-    : '학생과 보호자 정보를 수정합니다.',
+    ? '아동과 보호자 정보를 입력합니다.'
+    : '아동과 보호자 정보를 수정합니다.',
 )
 const studentInitial = computed(() => form.name.trim().charAt(0) || '학')
 const formChanged = computed(
@@ -89,7 +89,7 @@ function confirmStudentDeletion() {
   <form class="student-form page-stack" @submit.prevent="submitForm">
     <PageHeader :title="title" :description="description" />
 
-    <SettingsSection title="학생 기본 정보" description="학습 관리에 사용하는 정보입니다.">
+    <SettingsSection title="아동 기본 정보" description="학습 관리에 사용하는 정보입니다.">
       <ProfileImageEditor
         input-id="student-photo"
         label="프로필 사진"
@@ -101,8 +101,8 @@ function confirmStudentDeletion() {
 
       <div class="form-grid section-fields">
         <div class="field field--medium">
-          <label for="student-name">학생명</label>
-          <input id="student-name" v-model="form.name" class="input" required placeholder="학생 이름" />
+          <label for="student-name">아동명</label>
+          <input id="student-name" v-model="form.name" class="input" required placeholder="아동 이름" />
         </div>
         <div class="field field--date">
           <label for="student-birth">생년월일</label>
@@ -116,7 +116,7 @@ function confirmStudentDeletion() {
           </select>
         </div>
         <div class="field field--phone">
-          <label for="student-phone">학생 연락처</label>
+          <label for="student-phone">아동 연락처</label>
           <input id="student-phone" v-model="form.phone" class="input" placeholder="010-0000-0000" />
         </div>
         <div class="field form-grid__wide">
@@ -159,26 +159,26 @@ function confirmStudentDeletion() {
     <FormActions
       :saved="saved"
       :disabled="!canSubmit"
-      :save-label="mode === 'create' ? '학생 등록' : '변경 사항 저장'"
-      :saved-message="mode === 'create' ? '학생 정보가 저장되었습니다.' : '변경 사항이 저장되었습니다.'"
+      :save-label="mode === 'create' ? '아동 등록' : '변경 사항 저장'"
+      :saved-message="mode === 'create' ? '아동 정보가 저장되었습니다.' : '변경 사항이 저장되었습니다.'"
       @cancel="router.back()"
     />
 
-    <section v-if="mode === 'edit'" class="danger-zone" aria-label="학생 삭제">
+    <section v-if="mode === 'edit'" class="danger-zone" aria-label="아동 삭제">
       <div>
-        <h2>학생 삭제</h2>
-        <p>학생 목록에서 제외하고 연결된 학습 기록에 더 이상 접근할 수 없게 됩니다.</p>
+        <h2>아동 삭제</h2>
+        <p>아동 목록에서 제외하고 연결된 학습 기록에 더 이상 접근할 수 없게 됩니다.</p>
       </div>
       <button class="button button--danger button--small" type="button" @click="deleteDialogOpen = true">
-        학생 삭제
+        아동 삭제
       </button>
     </section>
 
     <ConfirmDialog
       :open="deleteDialogOpen"
-      title="학생을 삭제할까요?"
-      :message="`${form.name} 학생을 목록에서 삭제합니다. 목업에서는 실제 데이터가 삭제되지 않습니다.`"
-      confirm-label="학생 삭제"
+      title="아동을 삭제할까요?"
+      :message="`${form.name} 아동을 목록에서 삭제합니다. 목업에서는 실제 데이터가 삭제되지 않습니다.`"
+      confirm-label="아동 삭제"
       @cancel="deleteDialogOpen = false"
       @confirm="confirmStudentDeletion"
     />

@@ -288,7 +288,7 @@ defineExpose({ openTab })
     <ConfirmDialog
       :open="switchDialogOpen"
       title="작성 중인 내용이 있습니다"
-      message="입력한 내용은 이 학생의 임시 초안으로 유지됩니다. 다른 탭으로 이동할까요?"
+      message="입력한 내용은 이 아동의 임시 초안으로 유지됩니다. 다른 탭으로 이동할까요?"
       confirm-label="탭 이동"
       tone="primary"
       @cancel="switchDialogOpen = false"

@@ -31,7 +31,7 @@ function signup() {
     <form class="signup-form" @submit.prevent="signup">
       <div class="signup-heading">
         <h1>회원가입</h1>
-        <p>학습자 관리에 사용할 교수자 계정을 만들어 주세요.</p>
+        <p>아동 관리에 사용할 교수자 계정을 만들어 주세요.</p>
       </div>
 
       <section class="signup-fields" aria-label="계정 정보">

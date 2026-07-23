@@ -82,7 +82,7 @@ const isBusy = computed(() => props.busyAction !== null)
       <div class="masked-link">
         <span>공유 주소</span>
         <strong>{{ shareLink?.maskedUrl }}</strong>
-        <small>학생 이름과 연락처가 포함되지 않은 주소입니다.</small>
+        <small>아동 이름과 연락처가 포함되지 않은 주소입니다.</small>
       </div>
       <div class="action-row">
         <div>

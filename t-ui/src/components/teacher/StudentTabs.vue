@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 
 // 메뉴 이름과 라우터의 고유 name을 한 배열로 관리해 template 중복을 줄입니다.
 const tabs = [
-  { label: '메인 홈', name: 'student-overview' },
+  { label: '학습 현황', name: 'student-overview' },
   { label: '커리큘럼', name: 'student-curriculum' },
   { label: '훈련 이력', name: 'student-training-history' },
   { label: '테스트 이력', name: 'student-test-history' },
@@ -14,8 +14,8 @@ const tabs = [
 
 <template>
   <!-- v-for는 tabs 항목 수만큼 링크를 반복 생성하고, key는 각 항목을 구별합니다. -->
-  <nav class="student-tabs" aria-label="학생 관리 메뉴">
-    <!-- 문자열 URL 대신 라우트 name과 학생 id를 주면 라우터가 최종 주소를 조립합니다. -->
+  <nav class="student-tabs" aria-label="아동 관리 메뉴">
+    <!-- 문자열 URL 대신 라우트 name과 아동 id를 주면 라우터가 최종 주소를 조립합니다. -->
     <RouterLink v-for="tab in tabs" :key="tab.name" :to="{ name: tab.name, params: { id: 1 } }">
       {{ tab.label }}
     </RouterLink>

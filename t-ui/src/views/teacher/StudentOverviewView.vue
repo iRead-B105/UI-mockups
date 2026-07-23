@@ -335,7 +335,7 @@ const levelChart: EChartsOption = {
       :message="noticeMessage"
     />
 
-    <section class="student-facts" aria-label="학생 학습 상태 요약">
+    <section class="student-facts" aria-label="아동 학습 상태 요약">
       <dl>
         <div>
           <dt>현재 단계</dt>

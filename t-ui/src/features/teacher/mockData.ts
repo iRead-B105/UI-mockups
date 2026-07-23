@@ -13,7 +13,7 @@ import type {
   TrainingSession,
 } from './types'
 
-// 서버가 연결되지 않은 UI 목업에서 화면을 채우기 위한 가짜 학생 목록입니다.
+// 서버가 연결되지 않은 UI 목업에서 화면을 채우기 위한 가짜 아동 목록입니다.
 // Student[]는 배열의 모든 항목이 Student 설계도를 따라야 한다는 의미입니다.
 export const students: Student[] = [
   {
@@ -60,7 +60,7 @@ export const students: Student[] = [
   },
 ]
 
-// 여러 화면이 같은 학생을 표시하도록 목록의 첫 학생을 현재 선택 학생으로 사용합니다.
+// 여러 화면이 같은 아동을 표시하도록 목록의 첫 아동을 현재 선택 아동으로 사용합니다.
 // 끝의 !는 이 위치에는 값이 반드시 있다고 TypeScript에 알려 주는 표시입니다.
 export const selectedStudent = students[0]!
 

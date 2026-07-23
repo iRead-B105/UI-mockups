@@ -56,7 +56,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 
 <template>
   <aside class="teacher-sidebar">
-    <RouterLink class="sidebar-brand" to="/teacher/dashboard" aria-label="iRead 학습자 목록">
+    <RouterLink class="sidebar-brand" to="/teacher/dashboard" aria-label="iRead 아동 목록">
       <img src="/images/iread-logo.png" alt="iRead" />
     </RouterLink>
 
@@ -74,7 +74,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
           <strong>아동 목록</strong>
         </RouterLink>
         <RouterLink :to="{ name: 'student-overview', params: { id: currentStudent.id } }">
-          <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>메인</strong>
+          <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>학습 현황</strong>
         </RouterLink>
         <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="book" /></span
@@ -94,7 +94,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
         </RouterLink>
         <RouterLink :to="{ name: 'student-edit', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="edit" /></span
-          ><strong>아동 정보 수정</strong>
+          ><strong>아동 정보 관리</strong>
         </RouterLink>
       </nav>
     </div>

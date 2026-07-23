@@ -14,7 +14,7 @@ const comparison = ref('2026-06-21')
 const secondaryComparison = ref('2026-05-30')
 const comparisonCount = ref(1)
 const teacherComment = ref(
-  '김OO 학생은 읽기 정확도와 시선 유지 시간이 향상되었습니다. 낯선 낱말의 첫소리를 추론하는 연습을 다음 커리큘럼에 포함해 주세요.',
+  '김OO 아동은 읽기 정확도와 시선 유지 시간이 향상되었습니다. 낯선 낱말의 첫소리를 추론하는 연습을 다음 커리큘럼에 포함해 주세요.',
 )
 const { visible: commentSaved, show: showCommentSaved } = useTemporaryNotice()
 

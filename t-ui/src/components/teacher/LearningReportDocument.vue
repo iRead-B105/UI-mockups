@@ -46,19 +46,19 @@ function formatDate(value: string) {
 </script>
 
 <template>
-  <article class="learning-report" aria-label="학생 보고서 문서">
+  <article class="learning-report" aria-label="아동 보고서 문서">
     <header class="learning-report__header">
       <div class="learning-report__brand">
         <span><img src="/images/iread-logo.png" alt="iRead" /></span>
       </div>
       <div class="learning-report__title">
-        <h1>{{ student.name }} 학생 학습 보고서</h1>
+        <h1>{{ student.name }} 아동 학습 보고서</h1>
         <span>{{ formatDate(startDate) }} – {{ formatDate(endDate) }}</span>
       </div>
     </header>
 
     <dl class="report-profile">
-      <div><dt>학생</dt><dd>{{ student.name }}</dd></div>
+      <div><dt>아동</dt><dd>{{ student.name }}</dd></div>
       <div><dt>학교 / 나이</dt><dd>{{ student.school }} · {{ student.age }}세</dd></div>
       <div><dt>보고서 기간</dt><dd>{{ formatDate(startDate) }} – {{ formatDate(endDate) }}</dd></div>
       <div><dt>담당 교수자</dt><dd>이OO 선생님</dd></div>

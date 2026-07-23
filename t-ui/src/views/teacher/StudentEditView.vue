@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 등록 화면과 같은 폼을 재사용하되, 수정할 학생의 기존 값을 함께 전달합니다.
+// 등록 화면과 같은 폼을 재사용하되, 수정할 아동의 기존 값을 함께 전달합니다.
 import StudentForm from '@/components/teacher/StudentForm.vue'
 import { selectedStudent } from '@/features/teacher/mockData'
 </script>

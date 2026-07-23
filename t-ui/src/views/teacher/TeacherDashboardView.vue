@@ -112,7 +112,7 @@ function confirmStudentDeletion() {
     <section class="student-list">
       <div class="list-toolbar">
         <div class="list-toolbar__copy">
-          <h1>학습자 목록</h1>
+          <h1>아동 목록</h1>
           <p>담당 아동을 검색하고 학습 현황을 확인합니다.</p>
         </div>
         <div class="filter-row">
@@ -136,7 +136,7 @@ function confirmStudentDeletion() {
             type="button"
             @click="router.push('/teacher/students/new')"
           >
-            ＋ 학생 등록
+            ＋ 아동 등록
           </button>
         </div>
       </div>
@@ -145,7 +145,7 @@ function confirmStudentDeletion() {
         <table>
           <thead>
             <tr>
-              <th>학생</th>
+              <th>아동</th>
               <th>현재 학습</th>
               <th>최근 학습</th>
               <th>이번 주 상태</th>
@@ -197,20 +197,20 @@ function confirmStudentDeletion() {
                   ···
                 </button>
                 <div v-if="openActionMenuId === student.id" class="row-menu">
-                  <button type="button" @click="openStudent(student)">학생 상세</button>
+                  <button type="button" @click="openStudent(student)">아동 상세</button>
                   <button type="button" @click="editStudent(student)">정보 수정</button>
                   <button
                     class="row-menu__danger"
                     type="button"
                     @click="requestStudentDeletion(student)"
                   >
-                    학생 삭제
+                    아동 삭제
                   </button>
                 </div>
               </td>
             </tr>
             <tr v-if="pageStudents.length === 0">
-              <td colspan="6" class="empty-row">검색 조건에 맞는 학생이 없습니다.</td>
+              <td colspan="6" class="empty-row">검색 조건에 맞는 아동이 없습니다.</td>
             </tr>
           </tbody>
         </table>
@@ -235,9 +235,9 @@ function confirmStudentDeletion() {
 
     <ConfirmDialog
       :open="Boolean(studentPendingDeletion)"
-      title="학생을 삭제할까요?"
-      :message="`${studentPendingDeletion?.name ?? ''} 학생의 목업 정보를 목록에서 삭제합니다.`"
-      confirm-label="학생 삭제"
+      title="아동을 삭제할까요?"
+      :message="`${studentPendingDeletion?.name ?? ''} 아동의 목업 정보를 목록에서 삭제합니다.`"
+      confirm-label="아동 삭제"
       @cancel="studentPendingDeletion = undefined"
       @confirm="confirmStudentDeletion"
     />
