@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import IslandMap from '../../components/IslandMap.vue'
-import RiveGuideCharacter from '../../components/RiveGuideCharacter.vue'
+import SpriteGuideCharacter from '../../components/SpriteGuideCharacter.vue'
 import StoryLandModal from '../../components/story/StoryLandModal.vue'
 import type { MainMapMenuItem } from '../../data/mainMapMenu'
 // 메인 섬 페이지 배경: 실사 바다 배경 에셋(리소스 원본 복사)
@@ -40,7 +40,7 @@ const handleSelect = (id: MainMapMenuItem['id']) => {
 <template>
   <main class="learner-home" :style="{ backgroundImage: `url(${seaBackground})` }">
     <IslandMap @select="handleSelect" @hover="activeMenu = $event" />
-    <RiveGuideCharacter :active-menu="activeMenu" />
+    <SpriteGuideCharacter :active-menu="activeMenu" />
     <Transition name="modal">
       <StoryLandModal v-if="showStoryLand" @close="showStoryLand = false" />
     </Transition>

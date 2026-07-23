@@ -5,7 +5,7 @@
 // (향후 자동 커리큘럼 연결 시 이 지점의 goNext/finish 흐름을 서버 세션 기반으로 교체)
 //
 // 본 화면은 "메인 섬 화면"처럼 요소를 최소로 유지합니다.
-// 토끼 캐릭터(RiveGuideCharacter)가 화면에 상주하며 말풍선으로 응원·피드백을 전합니다.
+// 토끼 캐릭터(SpriteGuideCharacter)가 화면에 상주하며 말풍선으로 응원·피드백을 전합니다.
 // 별도의 피드백 배너/무거운 헤더 대신 토끼 한 마리가 역할을 모두 맡습니다.
 
 import { computed, onMounted, ref, type Component } from 'vue'
@@ -14,7 +14,7 @@ import type { TrainingActivityType } from '@/types/training'
 import { getLessonById } from '@/mocks/trainingLessons'
 import { useTrainingSession } from '@/composables/useTrainingSession'
 import TrainingIntro from '@/components/training/TrainingIntro.vue'
-import RiveGuideCharacter from '@/components/RiveGuideCharacter.vue'
+import SpriteGuideCharacter from '@/components/SpriteGuideCharacter.vue'
 import ListenAndSelectActivity from '@/components/training/activities/ListenAndSelectActivity.vue'
 import AudioLetterChoiceActivity from '@/components/training/activities/AudioLetterChoiceActivity.vue'
 import GazeTraceActivity from '@/components/training/activities/GazeTraceActivity.vue'
@@ -214,7 +214,7 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
     </div>
 
     <!-- 토끼(응원/피드백). 인트로·풀이에 상주. 저장 중엔 숨김 -->
-    <RiveGuideCharacter
+    <SpriteGuideCharacter
       v-if="phase !== 'saving' && lesson && lesson.activityType !== 'hangul-battle'"
       :message="companionMessage"
       :mood="companionMood"

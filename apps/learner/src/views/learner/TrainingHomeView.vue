@@ -9,7 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getAllCategories, getCategoryById } from '@/mocks/trainingLookup'
 import TrainingCategoryCard from '@/components/training/TrainingCategoryCard.vue'
 import TrainingLessonModal from '@/components/training/TrainingLessonModal.vue'
-import RiveGuideCharacter from '@/components/RiveGuideCharacter.vue'
+import SpriteGuideCharacter from '@/components/SpriteGuideCharacter.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,7 +71,7 @@ const handleCloseModal = () => {
     />
 
     <!-- 메인 섬 화면의 토끼가 훈련 선택 화면에도 함께 응원 -->
-    <RiveGuideCharacter message="어떤 훈련부터\n해볼까?" />
+    <SpriteGuideCharacter :message="'어떤 훈련부터\n해볼까?'" />
   </main>
 </template>
 
