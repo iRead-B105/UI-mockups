@@ -32,6 +32,10 @@ const handleSelect = (id: MainMapMenuItem['id']) => {
     router.push({ name: 'growth' })
     return
   }
+  if (id === 'challenge') {
+    router.push({ name: 'assessment-intro' })
+    return
+  }
   selected.value = labels[id]
   window.setTimeout(() => { selected.value = null }, 1800)
 }

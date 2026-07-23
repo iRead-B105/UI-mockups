@@ -12,6 +12,7 @@ import { computed, onMounted, ref, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { TrainingActivityType } from '@/types/training'
 import { getLessonById } from '@/mocks/trainingLessons'
+import { findTrainingDisplayLesson } from '@/mocks/trainingDisplayCatalog'
 import { useTrainingSession } from '@/composables/useTrainingSession'
 import TrainingIntro from '@/components/training/TrainingIntro.vue'
 import RiveGuideCharacter from '@/components/RiveGuideCharacter.vue'
@@ -40,6 +41,13 @@ const categoryId = computed(() => String(route.params.categoryId ?? ''))
 const lessonId = computed(() => String(route.params.lessonId ?? ''))
 
 const lesson = computed(() => getLessonById(lessonId.value))
+const displayLesson = computed(() => {
+  if (!lesson.value) return null
+  const metadata = findTrainingDisplayLesson(lessonId.value)
+  return metadata
+    ? { ...lesson.value, title: metadata.title, description: metadata.description }
+    : lesson.value
+})
 // 구현된 액티비티 컴포넌트만 매핑. 준비 중 유형은 여기 없으며(도달 불가),
 // 향후 추가 시 이 맵에만 등록하면 됩니다.
 const activityComponents: Partial<Record<TrainingActivityType, Component>> = {
@@ -176,7 +184,7 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
         </svg>
       </button>
       <div class="lesson-title">
-        <strong>{{ lesson.title }}</strong>
+        <strong>{{ displayLesson?.title }}</strong>
       </div>
       <div
         v-if="phase === 'playing'"
@@ -196,7 +204,7 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
     <!-- 인트로 -->
     <TrainingIntro
       v-if="phase === 'intro' && lesson"
-      :lesson="lesson"
+      :lesson="displayLesson ?? lesson"
       @start="startPlaying"
     />
 

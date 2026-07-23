@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { TrainingCategory } from '@/types/training'
+import type {
+  TrainingDisplayCategory,
+  TrainingDisplayCategoryId,
+} from '@/mocks/trainingDisplayCatalog'
 
 const props = defineProps<{
-  category: TrainingCategory
+  category: TrainingDisplayCategory
 }>()
 
 const emit = defineEmits<{
-  select: [categoryId: TrainingCategory['id']]
+  select: [categoryId: TrainingDisplayCategoryId]
 }>()
 
 const isSelected = computed(() => false) // 확장 가능

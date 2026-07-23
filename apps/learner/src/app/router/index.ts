@@ -1,20 +1,29 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { isValidCategoryId, isPlayableLesson } from '../../mocks/trainingLookup'
+import {
+  isLearnerVisibleLesson,
+  isValidTrainingDisplayCategoryId,
+} from '../../mocks/trainingDisplayCatalog'
 import { useTrainingSession } from '../../composables/useTrainingSession'
+import { useAssessmentSession } from '../../features/assessment/composables/useAssessmentSession'
 
 // 훈련 라우트 ID 검증 가드. 무효한 카테고리/레슨은 /learner/training 으로 돌려보냅니다.
 const redirectTrainingHome = `/learner/training`
 
 const validateCategory: RouteRecordRaw['beforeEnter'] = (to) => {
   const categoryId = String(to.params.categoryId ?? '')
-  if (!isValidCategoryId(categoryId)) return redirectTrainingHome
+  if (!isValidTrainingDisplayCategoryId(categoryId)) return redirectTrainingHome
   return true
 }
 
 const validateLesson: RouteRecordRaw['beforeEnter'] = (to) => {
   const categoryId = String(to.params.categoryId ?? '')
   const lessonId = String(to.params.lessonId ?? '')
-  if (!isValidCategoryId(categoryId) || !isPlayableLesson(categoryId, lessonId)) {
+  if (
+    !isValidCategoryId(categoryId)
+    || !isPlayableLesson(categoryId, lessonId)
+    || !isLearnerVisibleLesson(categoryId, lessonId)
+  ) {
     return redirectTrainingHome
   }
   return true
@@ -23,7 +32,11 @@ const validateLesson: RouteRecordRaw['beforeEnter'] = (to) => {
 const validateComplete: RouteRecordRaw['beforeEnter'] = (to) => {
   const categoryId = String(to.params.categoryId ?? '')
   const lessonId = String(to.params.lessonId ?? '')
-  if (!isValidCategoryId(categoryId) || !isPlayableLesson(categoryId, lessonId)) {
+  if (
+    !isValidCategoryId(categoryId)
+    || !isPlayableLesson(categoryId, lessonId)
+    || !isLearnerVisibleLesson(categoryId, lessonId)
+  ) {
     return redirectTrainingHome
   }
   // 완료된 세션이 아니면 인트로(레슨)로 보냄
@@ -35,6 +48,21 @@ const validateComplete: RouteRecordRaw['beforeEnter'] = (to) => {
   if (!completed) {
     return { name: 'training-lesson', params: { categoryId, lessonId } }
   }
+  return true
+}
+
+const validateAssessmentSession: RouteRecordRaw['beforeEnter'] = () => {
+  const { load } = useAssessmentSession()
+  const assessmentSession = load()
+  if (!assessmentSession) return { name: 'assessment-intro' }
+  if (assessmentSession.status === 'completed') return { name: 'assessment-complete' }
+  return true
+}
+
+const validateAssessmentComplete: RouteRecordRaw['beforeEnter'] = () => {
+  const { load } = useAssessmentSession()
+  const assessmentSession = load()
+  if (assessmentSession?.status !== 'completed') return { name: 'assessment-intro' }
   return true
 }
 
@@ -60,6 +88,25 @@ const router = createRouter({
           component: () => import('../../views/learner/LearnerHomeView.vue'),
         },
         {
+          path: 'assessment',
+          name: 'assessment-intro',
+          component: () => import('../../views/learner/AssessmentIntroView.vue'),
+        },
+        {
+          path: 'assessment/session',
+          name: 'assessment-session',
+          component: () => import('../../views/learner/AssessmentSessionView.vue'),
+          beforeEnter: validateAssessmentSession,
+          meta: { hideLearnerHeader: true },
+        },
+        {
+          path: 'assessment/complete',
+          name: 'assessment-complete',
+          component: () => import('../../views/learner/AssessmentCompleteView.vue'),
+          beforeEnter: validateAssessmentComplete,
+          meta: { hideLearnerHeader: true },
+        },
+        {
           path: 'stories',
           name: 'story-selection',
           component: () => import('../../views/learner/StorySelectionView.vue'),
@@ -70,7 +117,7 @@ const router = createRouter({
           component: () => import('../../views/learner/StoryReaderView.vue'),
         },
         {
-          // 훈련 선택 홈: 4개 대분류
+          // 훈련 선택 홈: 3개 대분류
           path: 'training',
           name: 'training-home',
           component: () => import('../../views/learner/TrainingHomeView.vue'),

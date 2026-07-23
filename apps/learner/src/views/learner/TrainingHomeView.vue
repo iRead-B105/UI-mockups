@@ -1,12 +1,16 @@
 <script setup lang="ts">
-// 훈련 선택 홈: 4개 대분류 카드 + 서브메뉴 모달
+// 훈련 선택 홈: 3개 대분류 카드 + 세부 훈련 모달
 // 메인 제목/부제는 기획서에 지정된 문구를 그대로 사용합니다.
 // 서브메뉴는 기존 모달 패턴(TrainingLessonModal)으로 띄우며,
 // 모달의 열림 여부는 라우트 파라미터(:categoryId)로 제어합니다.
 
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getAllCategories, getCategoryById } from '@/mocks/trainingLookup'
+import {
+  findTrainingDisplayLessonInCategory,
+  getAllTrainingDisplayCategories,
+  getTrainingDisplayCategoryById,
+} from '@/mocks/trainingDisplayCatalog'
 import TrainingCategoryCard from '@/components/training/TrainingCategoryCard.vue'
 import TrainingLessonModal from '@/components/training/TrainingLessonModal.vue'
 import RiveGuideCharacter from '@/components/RiveGuideCharacter.vue'
@@ -14,7 +18,7 @@ import RiveGuideCharacter from '@/components/RiveGuideCharacter.vue'
 const route = useRoute()
 const router = useRouter()
 
-const categories = getAllCategories()
+const categories = getAllTrainingDisplayCategories()
 
 // 라우트 파라미터로 선택된 카테고리(없으면 목록 상태)
 const activeCategoryId = computed(() => {
@@ -22,7 +26,9 @@ const activeCategoryId = computed(() => {
   return typeof raw === 'string' ? raw : ''
 })
 const activeCategory = computed(() =>
-  activeCategoryId.value ? getCategoryById(activeCategoryId.value) : null,
+  activeCategoryId.value
+    ? getTrainingDisplayCategoryById(activeCategoryId.value)
+    : null,
 )
 const isModalOpen = computed(() => activeCategory.value !== null)
 
@@ -33,10 +39,13 @@ const handleCategorySelect = (categoryId: string) => {
 
 const handleLessonSelect = (lessonId: string) => {
   if (!activeCategoryId.value) return
+  const lesson = findTrainingDisplayLessonInCategory(activeCategoryId.value, lessonId)
+  if (!lesson) return
   // 준비된 레슨 선택 → 레슨 화면(인트로)으로 이동
   void router.push({
     name: 'training-lesson',
-    params: { categoryId: activeCategoryId.value, lessonId },
+    // 평가·기록과 연결되는 기존 카테고리 ID는 변경하지 않습니다.
+    params: { categoryId: lesson.categoryId, lessonId },
   })
 }
 
@@ -127,7 +136,7 @@ const handleCloseModal = () => {
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--learner-space-6);
 }
 

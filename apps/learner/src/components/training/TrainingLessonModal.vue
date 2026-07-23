@@ -1,16 +1,16 @@
 <script setup lang="ts">
 // 훈련 서브메뉴 모달
 // 기존 모달 패턴(StoryLandModal 참고)을 따릅니다.
-// 한 카테고리의 레슨 목록(5개)을 보여주고, 준비 중 레슨 선택 시
+// 한 대분류 안의 세부 훈련별 레슨 목록을 보여주고, 준비 중 레슨 선택 시
 // "이 훈련은 준비하고 있어요." 메시지를 표시합니다.
 
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import type { TrainingCategory } from '@/types/training'
+import type { TrainingDisplayCategory } from '@/mocks/trainingDisplayCatalog'
 import TrainingLessonCard from './TrainingLessonCard.vue'
 
 const props = defineProps<{
   open: boolean
-  category: TrainingCategory | null
+  category: TrainingDisplayCategory | null
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +47,9 @@ watch(
 )
 
 const handleNotReady = (lessonId: string) => {
-  const lesson = props.category?.lessons.find((l) => l.id === lessonId)
+  const lesson = props.category?.sections
+    .flatMap((section) => section.lessons)
+    .find((item) => item.id === lessonId)
   notReadyMessage.value = lesson
     ? `${lesson.title}은(는) 준비하고 있어요.`
     : '이 훈련은 준비하고 있어요.'
@@ -95,15 +97,22 @@ onBeforeUnmount(() => {
           </header>
 
           <div class="modal-body">
-            <ul class="lesson-list">
-              <li v-for="lesson in category.lessons" :key="lesson.id">
-                <TrainingLessonCard
-                  :lesson="lesson"
-                  @select="emit('select', $event)"
-                  @not-ready="handleNotReady"
-                />
-              </li>
-            </ul>
+            <section
+              v-for="section in category.sections"
+              :key="section.id"
+              class="lesson-section"
+            >
+              <h3 class="section-title">{{ section.title }}</h3>
+              <ul class="lesson-list">
+                <li v-for="lesson in section.lessons" :key="lesson.id">
+                  <TrainingLessonCard
+                    :lesson="lesson"
+                    @select="emit('select', $event)"
+                    @not-ready="handleNotReady"
+                  />
+                </li>
+              </ul>
+            </section>
 
             <Transition name="toast">
               <p v-if="notReadyMessage" class="not-ready-toast" role="status">
@@ -129,7 +138,7 @@ onBeforeUnmount(() => {
 }
 
 .lesson-modal-panel {
-  width: min(94dvw, 720px);
+  width: min(94dvw, 860px);
   max-height: min(92dvh, 820px);
   display: flex;
   flex-direction: column;
@@ -210,7 +219,21 @@ onBeforeUnmount(() => {
   padding-top: var(--learner-space-5);
   display: flex;
   flex-direction: column;
+  gap: var(--learner-space-7);
+}
+
+.lesson-section {
+  display: flex;
+  flex-direction: column;
   gap: var(--learner-space-3);
+}
+
+.section-title {
+  margin: 0;
+  color: var(--learner-color-text);
+  font-family: var(--learner-font-display);
+  font-size: var(--learner-font-size-body-large);
+  font-weight: var(--learner-font-weight-heavy);
 }
 
 .lesson-list {

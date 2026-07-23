@@ -6,6 +6,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getLessonById } from '@/mocks/trainingLessons'
+import { findTrainingDisplayLesson } from '@/mocks/trainingDisplayCatalog'
 import { useTrainingSession } from '@/composables/useTrainingSession'
 import TrainingComplete from '@/components/training/TrainingComplete.vue'
 
@@ -17,6 +18,9 @@ const lessonId = computed(() => String(route.params.lessonId ?? ''))
 const categoryId = computed(() => String(route.params.categoryId ?? ''))
 
 const lesson = computed(() => getLessonById(lessonId.value))
+const lessonTitle = computed(
+  () => findTrainingDisplayLesson(lessonId.value)?.title ?? lesson.value?.title ?? '',
+)
 
 // 마지막 문제의 완료 피드백 문구(없으면 기본 문구)
 const completionMessage = computed(() => {
@@ -58,7 +62,7 @@ const handleHome = () => {
 <template>
   <TrainingComplete
     v-if="lesson"
-    :lesson-title="lesson.title"
+    :lesson-title="lessonTitle"
     :completed-at="session.progressState.completedAt"
     :completion-message="completionMessage"
     @retry="handleRetry"
