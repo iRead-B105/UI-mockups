@@ -78,7 +78,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
         </RouterLink>
         <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="book" /></span
-          ><strong>커리큘럼</strong>
+          ><strong>커리큘럼 관리</strong>
         </RouterLink>
         <RouterLink :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="chart" /></span

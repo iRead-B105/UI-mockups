@@ -89,7 +89,7 @@ function confirmStudentDeletion() {
   <form class="student-form page-stack" @submit.prevent="submitForm">
     <PageHeader :title="title" :description="description" />
 
-    <SettingsSection title="아동 기본 정보" description="학습 관리에 사용하는 정보입니다.">
+    <SettingsSection title="아동 정보" description="학습 관리에 사용하는 정보입니다.">
       <ProfileImageEditor
         input-id="student-photo"
         label="프로필 사진"

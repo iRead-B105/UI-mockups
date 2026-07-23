@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router'
 // 메뉴 이름과 라우터의 고유 name을 한 배열로 관리해 template 중복을 줄입니다.
 const tabs = [
   { label: '학습 현황', name: 'student-overview' },
-  { label: '커리큘럼', name: 'student-curriculum' },
+  { label: '커리큘럼 관리', name: 'student-curriculum' },
   { label: '훈련 이력', name: 'student-training-history' },
   { label: '테스트 이력', name: 'student-test-history' },
   { label: '보고서', name: 'student-report' },
