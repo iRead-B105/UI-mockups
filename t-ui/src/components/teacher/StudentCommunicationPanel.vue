@@ -3,6 +3,11 @@ import { computed, ref } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EncouragementComposer from '@/components/teacher/EncouragementComposer.vue'
 import GuardianMessageQueue from '@/components/teacher/GuardianMessageQueue.vue'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import {
   audienceLabels,
   encouragementStatusLabels,
@@ -131,33 +136,19 @@ defineExpose({ openTab })
       </div>
     </header>
 
-    <div class="communication-tabs" role="tablist" aria-label="기록과 소통 유형">
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="activeTab === 'notes'"
-        @click="requestTab('notes')"
-      >
-        교수자 내부 메모
-      </button>
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="activeTab === 'encouragements'"
-        @click="requestTab('encouragements')"
-      >
-        아동에게 전할 응원
-      </button>
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="activeTab === 'guardian'"
-        @click="requestTab('guardian')"
-      >
-        보호자 메시지
-        <em v-if="pendingGuardianCount">{{ pendingGuardianCount }}</em>
-      </button>
-    </div>
+    <Tabs
+      :model-value="activeTab"
+      @update:model-value="(value) => requestTab(value as CommunicationTab)"
+    >
+      <TabsList variant="line" class="communication-tabs" aria-label="기록과 소통 유형">
+        <TabsTrigger value="notes">교수자 내부 메모</TabsTrigger>
+        <TabsTrigger value="encouragements">아동에게 전할 응원</TabsTrigger>
+        <TabsTrigger value="guardian">
+          보호자 메시지
+          <Badge v-if="pendingGuardianCount" variant="secondary">{{ pendingGuardianCount }}</Badge>
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
 
     <p v-if="state === 'loading'" class="panel-state" aria-live="polite">
       기록과 메시지를 불러오는 중입니다.
@@ -168,25 +159,26 @@ defineExpose({ openTab })
 
     <div v-else-if="activeTab === 'notes'" class="note-panel" role="tabpanel">
       <div class="note-editor">
-        <label for="internal-note">{{ editingNoteId ? '내부 메모 수정' : '내부 메모 추가' }}</label>
-        <textarea
+        <Label for="internal-note">{{ editingNoteId ? '내부 메모 수정' : '내부 메모 추가' }}</Label>
+        <Textarea
           id="internal-note"
           class="textarea"
           :value="noteDraft"
           placeholder="학습 지도와 상담에 필요한 내부 기록을 작성합니다."
           @input="emit('update:noteDraft', ($event.target as HTMLTextAreaElement).value)"
-        ></textarea>
+        />
         <div>
-          <button
+          <Button
             v-if="editingNoteId || noteDraft"
-            class="button button--secondary button--small"
+            variant="outline"
+            size="sm"
             type="button"
             @click="cancelNoteEdit"
           >
             취소
-          </button>
-          <button
-            class="button button--small"
+          </Button>
+          <Button
+            size="sm"
             type="button"
             :disabled="!noteDraft.trim() || (busyId !== null && busyId === editingNoteId)"
             @click="saveNote"
@@ -198,7 +190,7 @@ defineExpose({ openTab })
                   ? '수정 저장'
                   : '메모 추가'
             }}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -210,7 +202,7 @@ defineExpose({ openTab })
             <span>{{ formatDate(note.updatedAt) }} · {{ audienceLabels[note.audience] }}</span>
           </div>
           <p>{{ note.text }}</p>
-          <button type="button" @click="editNote(note)">수정</button>
+          <Button variant="link" size="sm" type="button" @click="editNote(note)">수정</Button>
         </li>
       </ol>
     </div>
@@ -238,9 +230,9 @@ defineExpose({ openTab })
                   {{ formatDate(message.createdAt) }}</span
                 >
               </div>
-              <em :class="`is-${message.status}`">{{
-                encouragementStatusLabels[message.status]
-              }}</em>
+              <Badge variant="secondary" :class="`is-${message.status}`">
+                {{ encouragementStatusLabels[message.status] }}
+              </Badge>
             </header>
             <p>{{ message.deliveryText }}</p>
             <div class="delivery-flow" aria-label="응원 전달 상태 흐름">
@@ -258,14 +250,16 @@ defineExpose({ openTab })
               v-if="message.source === 'teacher' && message.status === 'scheduled'"
               class="history-actions"
             >
-              <button type="button" @click="editEncouragement(message)">수정</button>
-              <button
+              <Button variant="link" size="sm" type="button" @click="editEncouragement(message)">수정</Button>
+              <Button
+                variant="link"
+                size="sm"
                 type="button"
                 class="is-danger"
                 @click="emit('deleteEncouragement', message.id)"
               >
                 삭제
-              </button>
+              </Button>
             </div>
           </li>
         </ol>
@@ -300,11 +294,14 @@ defineExpose({ openTab })
 <style scoped>
 .communication-panel {
   display: grid;
-  padding-top: 2px;
-  border-top: 1px solid var(--slate-200);
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
 }
 .communication-panel__heading {
-  padding: 20px 0 12px;
+  padding: 0 0 12px;
 }
 .communication-panel__heading h2 {
   margin: 0;
@@ -317,38 +314,55 @@ defineExpose({ openTab })
 }
 .communication-tabs {
   display: flex;
-  gap: 22px;
-  border-bottom: 1px solid var(--slate-200);
-}
-.communication-tabs button {
-  position: relative;
-  display: inline-flex;
-  min-height: 42px;
-  align-items: center;
+  width: 100%;
+  min-height: 43px;
+  justify-content: flex-start;
   gap: 6px;
-  padding: 0 1px;
+  padding: 0;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   background: transparent;
-  color: var(--slate-500);
+}
+.communication-tabs :deep([data-slot='tabs-trigger']) {
+  min-height: 42px;
+  flex: 0 0 auto;
+  gap: 7px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--muted-foreground);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 650;
+  box-shadow: none;
 }
-.communication-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--primary-600);
-  color: var(--primary-700);
+.communication-tabs :deep([data-slot='tabs-trigger']:hover) {
+  background: var(--interactive-hover-background);
+  color: var(--active-selection-foreground);
 }
-.communication-tabs em {
-  display: inline-grid;
+.communication-tabs :deep([data-slot='tabs-trigger'][data-active]) {
+  background: transparent;
+  color: var(--active-selection-foreground);
+  box-shadow: none;
+}
+.communication-tabs :deep([data-slot='tabs-trigger'][data-active]::after) {
+  bottom: -1px;
+  height: 2px;
+  background: var(--primary-600);
+  opacity: 1;
+}
+.communication-tabs :deep([data-slot='badge']) {
   min-width: 18px;
   height: 18px;
+  justify-content: center;
   padding: 0 5px;
-  border-radius: 999px;
-  background: #fff7ed;
-  color: #b45309;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
   font-size: 10px;
-  font-style: normal;
-  place-items: center;
+}
+.communication-tabs :deep([data-slot='tabs-trigger'][data-active] [data-slot='badge']) {
+  background: var(--primary-600);
+  color: var(--primary-foreground);
 }
 .note-panel,
 .encouragement-panel {

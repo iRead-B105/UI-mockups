@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const router = useRouter()
 const form = reactive({ loginId: '', password: '' })
@@ -28,12 +30,12 @@ function login() {
         <div class="login-fields">
           <div class="field">
             <label for="login-id">아이디</label>
-            <input id="login-id" v-model="form.loginId" class="input" required placeholder="아이디 입력" />
+            <Input id="login-id" v-model="form.loginId" class="input" required placeholder="아이디 입력" />
           </div>
           <div class="field">
             <label for="login-password">비밀번호</label>
             <div class="password-input">
-              <input
+              <Input
                 id="login-password"
                 v-model="form.password"
                 class="input"
@@ -41,14 +43,16 @@ function login() {
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="비밀번호 입력"
               />
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 type="button"
                 :aria-label="showPassword ? '비밀번호 숨기기' : '비밀번호 보기'"
                 :aria-pressed="showPassword"
                 @click="showPassword = !showPassword"
               >
                 {{ showPassword ? '숨기기' : '보기' }}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -59,7 +63,7 @@ function login() {
           <RouterLink to="/reset-password">비밀번호 찾기</RouterLink>
         </div>
 
-        <button class="button login-submit" type="submit">로그인</button>
+        <Button class="login-submit" type="submit">로그인</Button>
         <p class="login-signup-link">
           아직 계정이 없으신가요? <RouterLink to="/signup">회원가입</RouterLink>
         </p>
@@ -73,13 +77,18 @@ function login() {
   display: grid;
   min-height: 100vh;
   padding: 64px 48px 52px;
-  background: var(--white);
+  background: var(--background);
   place-items: start center;
 }
 
 .login-shell {
   display: grid;
   width: min(420px, 100%);
+  padding: 38px 40px 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
   justify-items: stretch;
 }
 
@@ -201,6 +210,16 @@ function login() {
 
   .login-logo {
     margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .login-page {
+    padding: 28px 18px;
+  }
+
+  .login-shell {
+    padding: 30px 22px;
   }
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SaveToast from '@/components/common/SaveToast.vue'
+import { Button } from '@/components/ui/button'
 
 withDefaults(
   defineProps<{
@@ -23,8 +24,8 @@ defineEmits<{
   <footer class="form-actions">
     <SaveToast :visible="saved" :message="savedMessage" inline />
     <div class="form-actions__buttons">
-      <button class="button button--secondary" type="button" @click="$emit('cancel')">취소</button>
-      <button class="button" type="submit" :disabled="disabled">{{ saveLabel }}</button>
+      <Button variant="outline" type="button" @click="$emit('cancel')">취소</Button>
+      <Button type="submit" :disabled="disabled">{{ saveLabel }}</Button>
     </div>
   </footer>
 </template>
@@ -32,14 +33,13 @@ defineEmits<{
 <style scoped>
 .form-actions {
   display: flex;
-  width: min(100%, 620px);
-  min-height: 66px;
+  width: 100%;
+  min-height: 44px;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   margin-left: auto;
-  padding: 14px 0 18px;
-  border-top: 1px solid var(--slate-300);
+  padding: 0;
 }
 
 .form-actions__buttons {

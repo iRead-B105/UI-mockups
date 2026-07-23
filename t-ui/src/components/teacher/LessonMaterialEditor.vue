@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import type { CurriculumItem, LessonContentItem, LessonContentType } from '@/features/teacher/types'
 
 const props = defineProps<{
@@ -62,8 +74,7 @@ function removePreviewItem() {
   if (previewItem.value) removeContentItem(previewItem.value.id)
 }
 
-function moveContentItemTo(index: number, event: Event) {
-  const targetIndex = Number((event.target as HTMLSelectElement).value)
+function moveContentItemTo(index: number, targetIndex: number) {
   if (
     !Number.isInteger(targetIndex) ||
     targetIndex < 0 ||
@@ -94,8 +105,9 @@ function showNextPreview() {
   )
 }
 
-function updateContentType(item: LessonContentItem, event: Event) {
-  item.type = (event.target as HTMLSelectElement).value as LessonContentType
+function updateContentType(item: LessonContentItem, value: unknown) {
+  if (typeof value !== 'string') return
+  item.type = value as LessonContentType
 }
 
 function save() {
@@ -118,49 +130,46 @@ function discardChanges() {
   emit('cancel')
 }
 
-function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && !discardConfirmOpen.value) requestClose()
-}
-
-onMounted(() => {
-  document.body.style.overflow = 'hidden'
-  document.addEventListener('keydown', handleKeydown)
-})
-
-onBeforeUnmount(() => {
-  document.body.style.overflow = ''
-  document.removeEventListener('keydown', handleKeydown)
-})
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="material-editor-backdrop" @click.self="requestClose">
-      <section
-        class="material-editor"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="material-editor-title"
-      >
+  <Dialog :open="true" @update:open="(open) => !open && requestClose()">
+    <DialogContent
+      class="!max-w-none !gap-0 !overflow-hidden !bg-transparent !p-0 !ring-0"
+      :style="{
+        width: 'min(1180px, calc(100vw - 48px))',
+        height: 'min(820px, calc(100vh - 48px))',
+        maxWidth: '1180px',
+      }"
+      :show-close-button="false"
+      @escape-key-down.prevent="requestClose"
+    >
+      <div class="material-editor">
         <header class="editor-header">
           <div class="editor-header__copy">
             <div class="editor-title-line">
               <div>
                 <span>아동별 교안 · {{ item.order }}단계 · {{ item.category }}</span>
-                <h2 id="material-editor-title">{{ draft.title }}</h2>
+                <DialogTitle as-child>
+                  <h2 id="material-editor-title">{{ draft.title }}</h2>
+                </DialogTitle>
               </div>
-              <span v-if="hasChanges" class="unsaved-badge">저장되지 않은 변경</span>
+              <Badge v-if="hasChanges" variant="secondary" class="unsaved-badge">
+                저장되지 않은 변경
+              </Badge>
             </div>
           </div>
           <div class="editor-header__actions">
-            <button
+            <Button
               class="modal-close"
+              variant="ghost"
+              size="icon"
               type="button"
               aria-label="교안 편집 닫기"
               @click="requestClose"
             >
               ×
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -177,13 +186,20 @@ onBeforeUnmount(() => {
               <div class="field-grid">
                 <label class="field">
                   <span>훈련명</span>
-                  <input v-model.trim="draft.title" class="input" required />
+                  <Input v-model.trim="draft.title" class="input" required />
                 </label>
                 <label class="field">
                   <span>영역</span>
-                  <select v-model="draft.category" class="select">
-                    <option v-for="category in categories" :key="category">{{ category }}</option>
-                  </select>
+                  <Select v-model="draft.category">
+                    <SelectTrigger class="select !w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="category in categories" :key="category" :value="category">
+                        {{ category }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </label>
               </div>
             </section>
@@ -196,23 +212,27 @@ onBeforeUnmount(() => {
                   <p>낱말, 읽기 문장, 질문의 내용과 정답·힌트를 편집합니다.</p>
                 </div>
                 <div class="content-section-actions">
-                  <button class="add-content-button" type="button" @click="addContentItem">
+                  <Button variant="secondary" size="sm" class="add-content-button" type="button" @click="addContentItem">
                     ＋ 자료 추가
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     class="delete-content-button"
                     type="button"
                     :disabled="!previewItem"
                     @click="removePreviewItem"
                   >
                     현재 자료 삭제
-                  </button>
+                  </Button>
                 </div>
               </header>
 
               <div class="content-editor-stage">
-                <button
+                <Button
                   v-if="draft.material.contentItems.length"
+                  variant="default"
+                  size="icon"
                   class="material-page-button material-page-button--previous"
                   type="button"
                   :disabled="previewIndex === 0"
@@ -222,7 +242,7 @@ onBeforeUnmount(() => {
                   <svg aria-hidden="true" viewBox="0 0 24 24">
                     <path d="m15 18-6-6 6-6" />
                   </svg>
-                </button>
+                </Button>
 
                 <div class="content-editor-list">
                   <template
@@ -235,52 +255,64 @@ onBeforeUnmount(() => {
                           >자료 {{ index + 1 }} / {{ draft.material.contentItems.length }}</strong
                         >
                         <div class="content-header-actions">
-                          <label class="content-order-select">
+                          <div class="content-order-select">
                             <span>배치 순서</span>
-                            <select :value="index" @change="moveContentItemTo(index, $event)">
-                              <option
+                            <Select
+                              :model-value="String(index)"
+                              @update:model-value="moveContentItemTo(index, Number($event))"
+                            >
+                              <SelectTrigger size="sm" class="!w-[52px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                              <SelectItem
                                 v-for="(_, orderIndex) in draft.material.contentItems"
                                 :key="orderIndex"
-                                :value="orderIndex"
+                                :value="String(orderIndex)"
                               >
                                 {{ orderIndex + 1 }}
-                              </option>
-                            </select>
-                          </label>
+                              </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </header>
                       <div class="content-field-grid">
                         <label class="field">
                           <span>자료 유형</span>
-                          <select
-                            class="select"
-                            :value="contentItem.type"
-                            @change="updateContentType(contentItem, $event)"
+                          <Select
+                            :model-value="contentItem.type"
+                            @update:model-value="updateContentType(contentItem, $event)"
                           >
-                            <option value="word">낱말</option>
-                            <option value="sentence">읽기 문장</option>
-                            <option value="question">질문</option>
-                          </select>
+                            <SelectTrigger class="select !w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="word">낱말</SelectItem>
+                              <SelectItem value="sentence">읽기 문장</SelectItem>
+                              <SelectItem value="question">질문</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </label>
                         <label class="field">
                           <span>활동 이름</span>
-                          <input v-model.trim="contentItem.label" class="input" required />
+                          <Input v-model.trim="contentItem.label" class="input" required />
                         </label>
                         <label class="field field--full">
                           <span>아동에게 제시할 내용</span>
-                          <textarea
+                          <Textarea
                             v-model.trim="contentItem.content"
                             class="textarea textarea--content"
                             required
-                          ></textarea>
+                          />
                         </label>
                         <label class="field">
                           <span>정답 또는 학습 기준</span>
-                          <textarea v-model.trim="contentItem.answer" class="textarea"></textarea>
+                          <Textarea v-model.trim="contentItem.answer" class="textarea" />
                         </label>
                         <label class="field">
                           <span>힌트</span>
-                          <textarea v-model.trim="contentItem.hint" class="textarea"></textarea>
+                          <Textarea v-model.trim="contentItem.hint" class="textarea" />
                         </label>
                       </div>
                     </article>
@@ -297,19 +329,23 @@ onBeforeUnmount(() => {
                   role="group"
                   aria-label="편집할 학습 자료 선택"
                 >
-                  <button
+                  <Button
                     v-for="(_, index) in draft.material.contentItems"
                     :key="index"
+                    variant="ghost"
+                    size="icon"
                     type="button"
                     :class="{ active: previewIndex === index }"
                     :aria-label="`${index + 1}번 자료 편집`"
                     :aria-current="previewIndex === index ? 'true' : undefined"
                     @click="previewIndex = index"
-                  ></button>
+                  />
                 </div>
 
-                <button
+                <Button
                   v-if="draft.material.contentItems.length"
+                  variant="default"
+                  size="icon"
                   class="material-page-button material-page-button--next"
                   type="button"
                   :disabled="previewIndex === draft.material.contentItems.length - 1"
@@ -319,7 +355,7 @@ onBeforeUnmount(() => {
                   <svg aria-hidden="true" viewBox="0 0 24 24">
                     <path d="m9 18 6-6-6-6" />
                   </svg>
-                </button>
+                </Button>
               </div>
             </section>
           </form>
@@ -379,14 +415,14 @@ onBeforeUnmount(() => {
         </div>
 
         <footer class="editor-actions">
-          <button class="button button--secondary" type="button" @click="requestClose">취소</button>
-          <button class="button" type="submit" form="lesson-material-form" :disabled="!hasChanges">
+          <Button variant="outline" type="button" @click="requestClose">취소</Button>
+          <Button type="submit" form="lesson-material-form" :disabled="!hasChanges">
             교안 저장
-          </button>
+          </Button>
         </footer>
-      </section>
-    </div>
-  </Teleport>
+      </div>
+    </DialogContent>
+  </Dialog>
 
   <ConfirmDialog
     :open="discardConfirmOpen"
@@ -411,8 +447,8 @@ onBeforeUnmount(() => {
 }
 .material-editor {
   display: flex;
-  width: min(1180px, 100%);
-  height: min(820px, calc(100vh - 48px));
+  width: 100%;
+  height: 100%;
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
@@ -686,7 +722,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--primary-600);
   border-radius: 10px;
   background: var(--primary-600);
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--primary) 22%, transparent);
   color: var(--white);
   place-items: center;
   transform: translateY(-50%);
@@ -707,7 +743,7 @@ onBeforeUnmount(() => {
 .material-page-button:hover:not(:disabled) {
   border-color: var(--primary-700);
   background: var(--primary-700);
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.28);
+  box-shadow: 0 8px 20px color-mix(in oklch, var(--primary) 28%, transparent);
 }
 .material-page-button:disabled {
   border-color: var(--slate-200);
@@ -872,7 +908,7 @@ onBeforeUnmount(() => {
   gap: 15px;
   padding: 18px;
   border-radius: 11px;
-  background: linear-gradient(145deg, #f5f3ff, #fafaff);
+  background: linear-gradient(145deg, var(--primary-50), var(--background));
   text-align: center;
 }
 .preview-content > span {
@@ -1010,3 +1046,5 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+                    variant="ghost"
+                    size="icon"

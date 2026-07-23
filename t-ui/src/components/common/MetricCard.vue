@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Card } from '@/components/ui/card'
+
 // defineProps는 부모가 이 카드에 반드시 전달해야 할 데이터를 TypeScript로 선언합니다.
 defineProps<{
   label: string
@@ -11,7 +13,7 @@ defineProps<{
 
 <template>
   <!-- :class는 tone 값으로 metric-card--sky 같은 CSS 클래스 이름을 동적으로 만듭니다. -->
-  <article class="metric-card surface" :class="`metric-card--${tone ?? 'primary'}`">
+  <Card class="metric-card surface" :class="`metric-card--${tone ?? 'primary'}`">
     <!-- slot은 부모가 카드 안에 아이콘이나 문자를 자유롭게 넣을 수 있는 빈 자리입니다. -->
     <div class="metric-card__icon"><slot /></div>
     <div>
@@ -19,7 +21,7 @@ defineProps<{
       <strong>{{ value }}</strong>
       <span>{{ description }}</span>
     </div>
-  </article>
+  </Card>
 </template>
 
 <style scoped>
@@ -46,12 +48,12 @@ defineProps<{
 
 .metric-card--sky .metric-card__icon {
   /* tone="sky"가 전달된 카드만 하늘색 계열로 덮어씁니다. */
-  background: #e0f2fe;
-  color: var(--sky-500);
+  background: color-mix(in oklch, var(--primary) 14%, white);
+  color: var(--primary-700);
 }
 
 .metric-card--warning .metric-card__icon {
-  background: #fff7ed;
+  background: color-mix(in oklch, var(--chart-3) 18%, white);
   color: var(--warning-500);
 }
 

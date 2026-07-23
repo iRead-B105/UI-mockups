@@ -4,7 +4,7 @@ import type { AsyncContentState, ShareLink } from '@/features/teacher/types'
 
 withDefaults(
   defineProps<{
-    version: number
+    versionLabel: string
     publishedAt?: string
     shareLink: ShareLink | null
     guardianCommentCreated: boolean
@@ -31,7 +31,7 @@ function valueOrEmpty(value: string | undefined, emptyLabel: string) {
       공유 현황을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.
     </p>
     <dl v-else>
-      <div><dt>보고서 버전</dt><dd>v{{ version }} · {{ valueOrEmpty(publishedAt, '아직 발행하지 않음') }}</dd></div>
+      <div><dt>보고서 버전</dt><dd>{{ versionLabel }} · {{ valueOrEmpty(publishedAt, '아직 발행하지 않음') }}</dd></div>
       <div>
         <dt>공유 링크</dt>
         <dd v-if="shareLink">{{ shareLinkStatusLabels[shareLink.status] }} · {{ shareLink.expiresAt }}까지</dd>

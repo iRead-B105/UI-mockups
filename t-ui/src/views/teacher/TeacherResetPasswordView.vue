@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const step = ref<1 | 2 | 3>(1)
 const identity = reactive({ loginId: '', email: '' })
@@ -52,11 +54,11 @@ function resetPassword() {
           <form class="recovery-form" @submit.prevent="verifyIdentity">
             <div class="field">
               <label for="reset-id">아이디</label>
-              <input id="reset-id" v-model.trim="identity.loginId" class="input" required placeholder="아이디 입력" />
+              <Input id="reset-id" v-model.trim="identity.loginId" class="input" required placeholder="아이디 입력" />
             </div>
             <div class="field">
               <label for="reset-email">이메일</label>
-              <input
+              <Input
                 id="reset-email"
                 v-model.trim="identity.email"
                 class="input"
@@ -65,7 +67,7 @@ function resetPassword() {
                 placeholder="example@iread.co.kr"
               />
             </div>
-            <button class="button recovery-submit" type="submit">본인 확인</button>
+            <Button class="recovery-submit" type="submit">본인 확인</Button>
           </form>
         </template>
 
@@ -80,7 +82,7 @@ function resetPassword() {
             <div class="field">
               <label for="new-password">새 비밀번호</label>
               <div class="password-input">
-                <input
+                <Input
                   id="new-password"
                   v-model="password.newPassword"
                   class="input"
@@ -89,14 +91,14 @@ function resetPassword() {
                   :type="showPassword ? 'text' : 'password'"
                   placeholder="새 비밀번호 입력"
                 />
-                <button type="button" @click="showPassword = !showPassword">
+                <Button variant="ghost" size="sm" type="button" @click="showPassword = !showPassword">
                   {{ showPassword ? '숨기기' : '보기' }}
-                </button>
+                </Button>
               </div>
             </div>
             <div class="field">
               <label for="password-confirmation">새 비밀번호 확인</label>
-              <input
+              <Input
                 id="password-confirmation"
                 v-model="password.confirmation"
                 class="input"
@@ -106,8 +108,10 @@ function resetPassword() {
               />
             </div>
             <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
-            <button class="button recovery-submit" type="submit">비밀번호 변경</button>
-            <button class="text-button" type="button" @click="step = 1">이전 단계</button>
+            <Button class="recovery-submit" type="submit">비밀번호 변경</Button>
+            <Button variant="link" class="text-button" type="button" @click="step = 1">
+              이전 단계
+            </Button>
           </form>
         </template>
 
@@ -116,7 +120,9 @@ function resetPassword() {
           <p class="recovery-eyebrow">변경 완료</p>
           <h1 id="reset-password-title">비밀번호가 변경되었어요</h1>
           <p>새 비밀번호로 로그인해 주세요.</p>
-          <RouterLink class="button login-button" to="/login">로그인하기</RouterLink>
+          <Button as-child class="login-button">
+            <RouterLink to="/login">로그인하기</RouterLink>
+          </Button>
         </div>
       </div>
 
@@ -157,10 +163,10 @@ function resetPassword() {
 
 .recovery-card {
   padding: 40px;
-  border: 1px solid var(--slate-200);
-  border-radius: 18px;
-  background: var(--white);
-  box-shadow: 0 12px 36px rgb(15 23 42 / 8%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
 }
 
 .stepper {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const router = useRouter()
 const errorMessage = ref('')
@@ -37,23 +39,23 @@ function signup() {
       <section class="signup-fields" aria-label="계정 정보">
         <div class="field">
           <label for="signup-id">아이디</label>
-          <input id="signup-id" v-model="form.loginId" class="input" required placeholder="로그인에 사용할 아이디" />
+          <Input id="signup-id" v-model="form.loginId" class="input" required placeholder="로그인에 사용할 아이디" />
         </div>
 
         <div class="field">
           <label for="signup-email">이메일</label>
-          <input id="signup-email" v-model="form.email" class="input" required type="email" placeholder="example@email.com" />
+          <Input id="signup-email" v-model="form.email" class="input" required type="email" placeholder="example@email.com" />
         </div>
 
         <div class="field">
           <label for="signup-password">비밀번호</label>
-          <input id="signup-password" v-model="form.password" class="input" required minlength="8" type="password" placeholder="8자 이상 입력" />
+          <Input id="signup-password" v-model="form.password" class="input" required minlength="8" type="password" placeholder="8자 이상 입력" />
           <p class="field-help">8자 이상의 비밀번호를 입력해 주세요.</p>
         </div>
 
         <div class="field">
           <label for="signup-password-confirm">비밀번호 확인</label>
-          <input id="signup-password-confirm" v-model="form.passwordConfirm" class="input" required type="password" placeholder="비밀번호 다시 입력" />
+          <Input id="signup-password-confirm" v-model="form.passwordConfirm" class="input" required type="password" placeholder="비밀번호 다시 입력" />
         </div>
       </section>
 
@@ -62,17 +64,17 @@ function signup() {
       <section class="signup-fields" aria-label="교수자 정보">
         <div class="field">
           <label for="signup-name">이름</label>
-          <input id="signup-name" v-model="form.name" class="input" required placeholder="교수자 이름" />
+          <Input id="signup-name" v-model="form.name" class="input" required placeholder="교수자 이름" />
         </div>
 
         <div class="field">
           <label for="signup-organization">소속기관</label>
-          <input id="signup-organization" v-model="form.organization" class="input" required placeholder="소속 기관명" />
+          <Input id="signup-organization" v-model="form.organization" class="input" required placeholder="소속 기관명" />
         </div>
       </section>
 
       <p v-if="errorMessage" class="signup-error" role="alert">{{ errorMessage }}</p>
-      <button class="button signup-submit" type="submit">회원가입</button>
+      <Button class="signup-submit" type="submit">회원가입</Button>
       <p class="signup-login-link">
         이미 계정이 있으신가요? <RouterLink to="/login">로그인</RouterLink>
       </p>
@@ -81,11 +83,23 @@ function signup() {
 </template>
 
 <style scoped>
-.signup-page { min-height: 100vh; padding: 32px 48px 72px; background: var(--white); }
+.signup-page {
+  min-height: 100vh;
+  padding: 32px 48px 72px;
+  background: var(--background);
+}
 .signup-header { display: flex; height: 68px; align-items: center; justify-content: center; margin: 0 auto 26px; }
 .signup-header > a { display: grid; width: 132px; height: 68px; overflow: hidden; place-items: center; }
 .signup-header img { width: 108px; height: 62px; max-width: none; object-fit: contain; transform: scale(1.85); }
-.signup-form { width: min(500px, 100%); margin: 0 auto; }
+.signup-form {
+  width: min(500px, 100%);
+  margin: 0 auto;
+  padding: 38px 40px 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
 .signup-heading { margin-bottom: 34px; }
 .signup-heading h1 { margin: 0 0 7px; font-size: 30px; }
 .signup-heading p { margin: 0; color: var(--slate-500); }
@@ -97,4 +111,9 @@ function signup() {
 .signup-submit { width: 100%; min-height: 50px; margin-top: 30px; }
 .signup-login-link { margin: 22px 0 0; color: var(--slate-500); text-align: center; }
 .signup-login-link a { color: var(--primary-600); font-weight: 800; }
+
+@media (max-width: 560px) {
+  .signup-page { padding: 24px 18px 48px; }
+  .signup-form { padding: 30px 22px; }
+}
 </style>

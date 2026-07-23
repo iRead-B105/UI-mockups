@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
+
 defineProps<{
   title: string
   description?: string
@@ -6,25 +8,26 @@ defineProps<{
 </script>
 
 <template>
-  <section class="settings-section" :aria-label="title">
-    <header class="settings-section__header">
+  <Card class="settings-section" :aria-label="title">
+    <CardHeader class="settings-section__header">
       <div>
         <h2>{{ title }}</h2>
-        <p v-if="description">{{ description }}</p>
+        <CardDescription v-if="description">{{ description }}</CardDescription>
       </div>
       <slot name="actions" />
-    </header>
-    <div class="settings-section__content"><slot /></div>
-  </section>
+    </CardHeader>
+    <CardContent class="settings-section__content"><slot /></CardContent>
+  </Card>
 </template>
 
 <style scoped>
 .settings-section {
   display: grid;
-  align-items: start;
-  column-gap: 40px;
-  padding: 22px 0 26px;
-  grid-template-columns: minmax(180px, 1fr) minmax(0, 620px);
+  gap: 0;
+  overflow: visible;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: var(--card);
 }
 
 .settings-section + .settings-section {
@@ -36,7 +39,8 @@ defineProps<{
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 0;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
 }
 
 .settings-section__header h2 {
@@ -45,7 +49,7 @@ defineProps<{
   font-size: 17px;
 }
 
-.settings-section__header p {
+.settings-section__header :deep([data-slot='card-description']) {
   margin: 3px 0 0;
   color: var(--slate-500);
   font-size: 12px;
@@ -53,12 +57,14 @@ defineProps<{
 
 .settings-section__content {
   min-width: 0;
+  padding: 20px;
 }
 
 @media (max-width: 900px) {
-  .settings-section {
-    row-gap: 20px;
-    grid-template-columns: 1fr;
+  .settings-section__header,
+  .settings-section__content {
+    padding-right: 16px;
+    padding-left: 16px;
   }
 }
 </style>

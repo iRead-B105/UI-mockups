@@ -4,6 +4,8 @@ import {
   learningEventStatusLabels,
   learningEventTypeLabels,
 } from '@/features/teacher/displayLabels'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type {
   AsyncContentState,
   LearningEvent,
@@ -74,9 +76,10 @@ function formatDate(value: string) {
 
     <ol v-else class="learning-records">
       <li v-for="record in records" :key="record.id">
-        <button
+        <Button
           class="learning-record"
           :class="{ 'is-selected': selectedEventId === record.eventId }"
+          variant="ghost"
           type="button"
           :disabled="!record.eventId"
           @click="selectRecord(record)"
@@ -89,15 +92,16 @@ function formatDate(value: string) {
             </small>
           </span>
           <span class="learning-record__result">
-            <em
+            <Badge
               v-if="eventFor(record)?.status === 'needs-review'"
+              variant="secondary"
               class="status-chip is-warning"
             >
               확인 필요
-            </em>
+            </Badge>
             <b>{{ record.score === undefined ? '진행 중' : `${record.score}%` }}</b>
           </span>
-        </button>
+        </Button>
       </li>
     </ol>
 
@@ -107,9 +111,9 @@ function formatDate(value: string) {
           <span>학습 이벤트 상세</span>
           <h3>{{ learningEventTypeLabels[selectedEvent.type] }}</h3>
         </div>
-        <em class="status-chip" :class="`is-${selectedEvent.status}`">
+        <Badge variant="secondary" class="status-chip" :class="`is-${selectedEvent.status}`">
           {{ learningEventStatusLabels[selectedEvent.status] }}
-        </em>
+        </Badge>
       </header>
 
       <dl>
@@ -159,41 +163,42 @@ function formatDate(value: string) {
       </p>
 
       <div class="event-detail__actions">
-        <button
-          class="button button--secondary button--small"
+        <Button
+          variant="outline"
+          size="sm"
           type="button"
           @click="emit('addToNote', selectedEvent.id)"
         >
           내부 메모에 추가
-        </button>
-        <button
-          class="button button--small"
+        </Button>
+        <Button
+          size="sm"
           type="button"
           :disabled="selectedEvent.status === 'reviewed'"
           @click="emit('review', selectedEvent.id)"
         >
           {{ selectedEvent.status === 'reviewed' ? '확인 완료됨' : '확인 완료' }}
-        </button>
+        </Button>
       </div>
     </article>
   </section>
 </template>
 
 <style scoped>
-.learning-events { min-width: 0; }
+.learning-events { display: grid; min-width: 0; gap: 14px; }
 .learning-events__heading { display: flex; justify-content: space-between; gap: 16px; }
 .learning-events__heading h2 { margin: 0; font-size: 17px; }
 .learning-events__heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.learning-records { display: grid; margin: 12px 0 0; padding: 0; list-style: none; }
-.learning-records li { border-bottom: 1px solid var(--slate-200); }
-.learning-record { display: grid; width: 100%; min-height: 66px; align-items: start; gap: 12px; padding: 12px 2px; border: 0; background: transparent; color: inherit; grid-template-columns: minmax(0, 1fr) auto; text-align: left; }
+.learning-records { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.learning-records li { min-width: 0; }
+.learning-record { display: grid; width: 100%; min-height: 66px; align-items: center; gap: 14px; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--content-background); color: inherit; grid-template-columns: minmax(0, 1fr) 68px; text-align: left; }
 .learning-record:not(:disabled):hover,
-.learning-record.is-selected { background: var(--slate-50); }
+.learning-record.is-selected { border-color: color-mix(in oklch, var(--primary-600) 28%, var(--border)); background: var(--interactive-hover-background); }
 .learning-record:disabled { cursor: default; }
-.learning-record strong { display: block; color: var(--slate-800); font-size: 13px; line-height: 1.45; }
-.learning-record small { display: block; margin-top: 4px; color: var(--slate-500); font-size: 12px; }
-.learning-record__result { display: grid; justify-items: end; gap: 6px; }
-.learning-record__result b { color: var(--slate-700); font-size: 12px; }
+.learning-record strong { display: -webkit-box; overflow: hidden; color: var(--slate-800); font-size: 13px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.learning-record small { display: block; margin-top: 5px; color: var(--slate-500); font-size: 11px; line-height: 1.45; }
+.learning-record__result { display: grid; min-width: 0; align-content: center; justify-items: end; gap: 6px; }
+.learning-record__result b { color: var(--slate-800); font-size: 13px; font-weight: 700; }
 .status-chip { display: inline-flex; width: max-content; align-items: center; padding: 3px 8px; border-radius: 999px; background: var(--slate-100); color: var(--slate-600); font-size: 10px; font-style: normal; font-weight: 700; }
 .status-chip.is-warning,
 .status-chip.is-needs-review,

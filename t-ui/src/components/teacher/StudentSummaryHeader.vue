@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 아동 상세 페이지 위쪽에서 공통으로 보이는 아동 요약 정보와 수정/삭제 동작입니다.
 import { useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
 import { selectedStudent } from '@/features/teacher/mockData'
 
 const router = useRouter()
@@ -45,16 +46,17 @@ function deleteStudent() {
     </dl>
     <div class="student-summary__actions">
       <!-- 클릭 시 수정 화면 주소를 이동 기록에 추가합니다. -->
-      <button
-        class="button button--secondary button--small"
+      <Button
+        variant="outline"
+        size="sm"
         type="button"
         @click="router.push('/teacher/students/1/edit')"
       >
         정보 수정
-      </button>
-      <button class="button button--danger button--small" type="button" @click="deleteStudent">
+      </Button>
+      <Button variant="destructive" size="sm" type="button" @click="deleteStudent">
         아동 삭제
-      </button>
+      </Button>
     </div>
   </section>
 </template>

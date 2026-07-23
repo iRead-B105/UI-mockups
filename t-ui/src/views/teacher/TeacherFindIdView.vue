@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const form = reactive({ name: '', email: '' })
 const found = ref(false)
@@ -34,11 +36,11 @@ function tryAgain() {
           <form class="recovery-form" @submit.prevent="findId">
             <div class="field">
               <label for="find-name">이름</label>
-              <input id="find-name" v-model.trim="form.name" class="input" required placeholder="이름 입력" />
+              <Input id="find-name" v-model.trim="form.name" class="input" required placeholder="이름 입력" />
             </div>
             <div class="field">
               <label for="find-email">이메일</label>
-              <input
+              <Input
                 id="find-email"
                 v-model.trim="form.email"
                 class="input"
@@ -47,7 +49,7 @@ function tryAgain() {
                 placeholder="example@iread.co.kr"
               />
             </div>
-            <button class="button recovery-submit" type="submit">아이디 확인</button>
+            <Button class="recovery-submit" type="submit">아이디 확인</Button>
           </form>
         </template>
 
@@ -58,10 +60,16 @@ function tryAgain() {
           <p><strong>{{ form.name }}</strong> 님의 회원 정보와 일치하는 아이디입니다.</p>
           <div class="found-id" aria-label="마스킹된 아이디">iread_t***</div>
           <div class="recovery-actions">
-            <RouterLink class="button" to="/login">로그인하기</RouterLink>
-            <RouterLink class="button button-secondary" to="/reset-password">비밀번호 재설정</RouterLink>
+            <Button as-child>
+              <RouterLink to="/login">로그인하기</RouterLink>
+            </Button>
+            <Button as-child variant="outline">
+              <RouterLink to="/reset-password">비밀번호 재설정</RouterLink>
+            </Button>
           </div>
-          <button class="text-button" type="button" @click="tryAgain">다른 정보로 다시 찾기</button>
+          <Button variant="link" class="text-button" type="button" @click="tryAgain">
+            다른 정보로 다시 찾기
+          </Button>
         </div>
       </div>
 
@@ -102,10 +110,10 @@ function tryAgain() {
 
 .recovery-card {
   padding: 40px;
-  border: 1px solid var(--slate-200);
-  border-radius: 18px;
-  background: var(--white);
-  box-shadow: 0 12px 36px rgb(15 23 42 / 8%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
 }
 
 .recovery-heading {

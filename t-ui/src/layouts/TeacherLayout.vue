@@ -18,7 +18,7 @@ import TeacherSidebar from '@/components/teacher/TeacherSidebar.vue'
   display: grid;
   min-height: 100vh;
   align-items: start;
-  background: var(--slate-50);
+  background: var(--content-background);
   grid-template-columns: 224px minmax(0, 1fr);
 }
 
@@ -26,5 +26,6 @@ import TeacherSidebar from '@/components/teacher/TeacherSidebar.vue'
   min-height: 100vh;
   min-width: 0;
   padding: 28px 36px 48px;
+  background: var(--content-background);
 }
 </style>
