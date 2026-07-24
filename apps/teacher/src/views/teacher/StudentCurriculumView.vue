@@ -27,7 +27,18 @@ const nextRecommendationId = ref(Math.max(0, ...recommendations.value.map((item)
 const { visible: saved, show: showSaved } = useTemporaryNotice()
 
 function loadStudentCurriculum(id: number) {
-  curriculumItems.value = clone(studentCurricula[id] ?? studentCurricula[1] ?? [])
+  const catalog = studentCurricula[1] ?? []
+  const studentItems = studentCurricula[id] ?? []
+  curriculumItems.value = clone(
+    catalog.map((catalogItem) => {
+      const studentItem = studentItems.find((item) => item.id === catalogItem.id)
+      return {
+        ...catalogItem,
+        studentId: id,
+        achievement: studentItem?.achievement ?? catalogItem.achievement,
+      }
+    }),
+  )
   recommendations.value = clone(recommendedCurricula[id] ?? recommendedCurricula[1] ?? []).map(
     (recommendation) => {
       const source = curriculumItems.value.find((item) => item.id === recommendation.trainingId)
@@ -167,9 +178,7 @@ function saveLessonMaterial(item: CurriculumItem) {
     >
       <template #actions>
         <SaveToast :visible="saved" inline message="교안 및 커리큘럼 변경 사항이 저장되었습니다." />
-        <Button type="button" :disabled="!hasChanges" @click="saveChanges">
-          변경 사항 저장
-        </Button>
+        <Button type="button" :disabled="!hasChanges" @click="saveChanges"> 변경 사항 저장 </Button>
       </template>
     </PageHeader>
 
@@ -305,11 +314,23 @@ function saveLessonMaterial(item: CurriculumItem) {
               </div>
               <div v-if="editRecommendations" class="recommendation-actions">
                 <div class="count-control" aria-label="시행 횟수 조절">
-                  <Button variant="outline" size="icon-sm" type="button" aria-label="횟수 줄이기" @click="updateCount(item, -1)">
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    type="button"
+                    aria-label="횟수 줄이기"
+                    @click="updateCount(item, -1)"
+                  >
                     −
                   </Button>
                   <b>{{ item.count }}회</b>
-                  <Button variant="outline" size="icon-sm" type="button" aria-label="횟수 늘리기" @click="updateCount(item, 1)">
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    type="button"
+                    aria-label="횟수 늘리기"
+                    @click="updateCount(item, 1)"
+                  >
                     ＋
                   </Button>
                 </div>
@@ -420,7 +441,7 @@ function saveLessonMaterial(item: CurriculumItem) {
   display: grid;
   align-items: center;
   gap: 12px;
-  grid-template-columns: 46px 86px minmax(0, 1fr) 94px;
+  grid-template-columns: 46px 120px minmax(0, 1fr) 88px;
 }
 .curriculum-table__head {
   min-height: 40px;
@@ -434,7 +455,9 @@ function saveLessonMaterial(item: CurriculumItem) {
 .curriculum-row {
   position: relative;
   width: 100%;
+  height: auto;
   min-height: 58px;
+  align-items: start;
   padding: 10px 14px;
   border: 0;
   border-bottom: 1px solid var(--slate-200);
@@ -464,8 +487,18 @@ function saveLessonMaterial(item: CurriculumItem) {
 .curriculum-row.active strong {
   color: var(--active-selection-foreground);
 }
+.curriculum-row > b,
+.curriculum-row > span,
+.curriculum-row > strong {
+  padding-top: 2px;
+}
+.curriculum-row > strong {
+  line-height: 1.5;
+  white-space: normal;
+}
 .achievement {
   display: grid;
+  align-self: start;
   justify-items: end;
   gap: 1px;
 }
@@ -484,16 +517,16 @@ function saveLessonMaterial(item: CurriculumItem) {
 .selected-training__identity {
   display: flex;
   min-width: 0;
-  align-items: baseline;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 12px;
-  white-space: nowrap;
 }
 .selected-training__identity strong {
-  overflow: hidden;
+  flex: 1 1 100%;
   color: var(--slate-900);
   font-size: 15px;
-  text-overflow: ellipsis;
+  line-height: 1.5;
 }
 .selected-training__identity span {
   flex: 0 0 auto;
@@ -738,4 +771,4 @@ function saveLessonMaterial(item: CurriculumItem) {
   }
 }
 </style>
-            variant="ghost"
+variant="ghost"

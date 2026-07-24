@@ -1,9 +1,8 @@
 <script setup lang="ts">
-// 검사 날짜를 고르고 두 검사 결과를 비교하며 내부 검사 해석 메모를 기록하는 화면입니다.
+// 검사 날짜를 고르고 두 검사 결과를 비교하는 화면입니다.
 import { computed, ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
-import SaveToast from '@/components/common/SaveToast.vue'
 import GazeAnalysisPanel from '@/components/teacher/GazeAnalysisPanel.vue'
 import HistoryToolbar from '@/components/teacher/HistoryToolbar.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
@@ -11,8 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 import { chartColors } from '@/features/teacher/chartTheme'
 
 // 입력 요소와 연결할 값은 ref로 만들어 변경 사항이 화면에 즉시 반영되게 합니다.
@@ -20,10 +17,6 @@ const testDate = ref('2026-07-14')
 const comparison = ref('2026-06-21')
 const secondaryComparison = ref('2026-05-30')
 const comparisonCount = ref(1)
-const teacherComment = ref(
-  '김OO 아동은 읽기 정확도와 시선 유지 시간이 향상되었습니다. 낯선 낱말의 첫소리를 추론하는 연습을 다음 커리큘럼에 포함해 주세요.',
-)
-const { visible: commentSaved, show: showCommentSaved } = useTemporaryNotice()
 
 // computed를 사용해 관련 값이 바뀔 때 차트 설정도 다시 만들 수 있게 합니다.
 const testChart = computed<EChartsOption>(() => ({
@@ -58,12 +51,14 @@ const testChart = computed<EChartsOption>(() => ({
       itemStyle: { color: chartColors.green, borderRadius: [5, 5, 0, 0] },
     },
     ...(comparisonCount.value > 1
-      ? [{
-          name: '추가 비교',
-          type: 'bar' as const,
-          data: [42, 51, 44, 61, 55, 52],
-          itemStyle: { color: chartColors.amber, borderRadius: [5, 5, 0, 0] },
-        }]
+      ? [
+          {
+            name: '추가 비교',
+            type: 'bar' as const,
+            data: [42, 51, 44, 61, 55, 52],
+            itemStyle: { color: chartColors.amber, borderRadius: [5, 5, 0, 0] },
+          },
+        ]
       : []),
     {
       name: '검사 평균',
@@ -86,10 +81,7 @@ const testChart = computed<EChartsOption>(() => ({
 
 <template>
   <div class="test-history page-stack">
-    <PageHeader
-      title="테스트 이력"
-      description="검사 결과를 비교하고 교수자용 해석 메모를 기록합니다."
-    />
+    <PageHeader title="테스트 이력" description="검사 결과를 비교해 변화 추이를 확인합니다." />
 
     <Card class="toolbar-card">
       <HistoryToolbar>
@@ -159,25 +151,14 @@ const testChart = computed<EChartsOption>(() => ({
       title="선택 검사 시선 분석"
       description="시선 체류 시간, 되돌아보기 횟수와 읽기 이탈 구간을 선택 검사 기준으로 표시합니다."
     />
-
-    <Card class="teacher-comment">
-      <header class="section-heading">
-          <div>
-            <h2>검사 해석 메모</h2>
-            <p>공개 범위 · 교수자만 확인</p>
-          </div>
-        <div class="comment-actions">
-          <SaveToast :visible="commentSaved" inline message="검사 해석 메모가 저장되었습니다." />
-          <Button type="button" @click="showCommentSaved">메모 저장</Button>
-        </div>
-      </header>
-      <Textarea v-model="teacherComment" class="textarea" aria-label="교수자 내부 검사 해석 메모" />
-    </Card>
   </div>
 </template>
 
 <style scoped>
-.test-history { gap: 20px; container-type: inline-size; }
+.test-history {
+  gap: 20px;
+  container-type: inline-size;
+}
 .toolbar-card {
   gap: 0;
   padding: 0;
@@ -186,35 +167,112 @@ const testChart = computed<EChartsOption>(() => ({
   background: transparent;
   box-shadow: none;
 }
-.toolbar-card :deep(.history-toolbar) { min-height: 76px; padding: 14px 0; border-bottom: 0; }
-.toolbar-card :deep(.history-toolbar__status) { align-self: flex-end; padding-bottom: 3px; }
-.date-field { width: 166px; }
-.add-comparison { min-height: 40px; }
-.add-comparison:disabled { border-color: var(--slate-200); background: var(--slate-100); color: var(--slate-400); cursor: default; opacity: 1; transform: none; }
-.test-results { display: grid; align-items: stretch; gap: 20px; grid-template-columns: minmax(0, 1fr) 320px; }
+.toolbar-card :deep(.history-toolbar) {
+  min-height: 76px;
+  padding: 14px 0;
+  border-bottom: 0;
+}
+.toolbar-card :deep(.history-toolbar__status) {
+  align-self: flex-end;
+  padding-bottom: 3px;
+}
+.date-field {
+  width: 166px;
+}
+.add-comparison {
+  min-height: 40px;
+}
+.add-comparison:disabled {
+  border-color: var(--slate-200);
+  background: var(--slate-100);
+  color: var(--slate-400);
+  cursor: default;
+  opacity: 1;
+  transform: none;
+}
+.test-results {
+  display: grid;
+  align-items: stretch;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
 .result-chart,
-.result-summary,
-.teacher-comment { border-radius: var(--radius-lg); }
-.result-chart { min-width: 0; gap: 10px; padding: 20px; }
-.result-summary { min-width: 0; gap: 0; padding: 20px; }
-.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.section-heading h2 { margin: 0; font-size: 17px; }
-.section-heading p { margin: 5px 0 0; color: var(--slate-500); font-size: 12px; }
-.result-chart :deep(.chart-panel) { padding-top: 2px; }
-.summary-heading { padding-bottom: 8px; }
-.summary-heading > span { color: var(--slate-500); font-size: 12px; font-weight: 600; }
-.summary-heading > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 6px; }
-.summary-heading strong { color: var(--slate-900); font-size: 28px; }
-.summary-heading small { color: var(--slate-600); font-size: 12px; font-weight: 600; }
-.result-summary dl { display: grid; gap: 8px; margin: 16px 0 0; }
+.result-summary {
+  border-radius: var(--radius-lg);
+}
+.result-chart {
+  min-width: 0;
+  gap: 10px;
+  padding: 20px;
+}
+.result-summary {
+  min-width: 0;
+  gap: 0;
+  padding: 20px;
+}
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.section-heading p {
+  margin: 5px 0 0;
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.result-chart :deep(.chart-panel) {
+  padding-top: 2px;
+}
+.summary-heading {
+  padding-bottom: 8px;
+}
+.summary-heading > span {
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.summary-heading > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.summary-heading strong {
+  color: var(--slate-900);
+  font-size: 28px;
+}
+.summary-heading small {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 600;
+}
+.result-summary dl {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+}
 .result-summary dl > div {
   padding: 11px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: color-mix(in oklch, var(--muted) 32%, transparent);
 }
-.result-summary dt { color: var(--slate-500); font-size: 12px; }
-.result-summary dd { margin: 5px 0 0; color: var(--slate-800); font-size: 13px; font-weight: 700; }
+.result-summary dt {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+.result-summary dd {
+  margin: 5px 0 0;
+  color: var(--slate-800);
+  font-size: 13px;
+  font-weight: 700;
+}
 .test-history :deep(.gaze-analysis) {
   padding: 20px;
   border: 1px solid var(--border);
@@ -222,19 +280,33 @@ const testChart = computed<EChartsOption>(() => ({
   background: var(--card);
   box-shadow: var(--shadow-sm);
 }
-.teacher-comment { display: grid; gap: 13px; padding: 20px; }
-.comment-actions { display: flex; align-items: center; gap: 8px; }
-.teacher-comment .textarea { min-height: 108px; }
-
 @container (max-width: 850px) {
-  .test-results { grid-template-columns: 1fr; }
-  .result-summary { display: grid; align-items: start; gap: 28px; grid-template-columns: 220px minmax(0, 1fr); }
-  .summary-heading > div { display: grid; justify-items: start; }
-  .result-summary dl { margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .test-results {
+    grid-template-columns: 1fr;
+  }
+  .result-summary {
+    display: grid;
+    align-items: start;
+    gap: 28px;
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .summary-heading > div {
+    display: grid;
+    justify-items: start;
+  }
+  .result-summary dl {
+    margin: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @container (max-width: 720px) {
-  .result-summary { gap: 24px; grid-template-columns: 1fr; }
-  .result-summary dl { grid-template-columns: 1fr; }
+  .result-summary {
+    gap: 24px;
+    grid-template-columns: 1fr;
+  }
+  .result-summary dl {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

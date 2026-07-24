@@ -47,7 +47,6 @@ const currentShareLink = ref<ShareLink | null>(null)
 const selectedReportId = ref<number>()
 const reportQuery = ref('')
 const shareHistory = ref<ShareLink[]>([])
-const previousShareMessage = ref('')
 const dialogKind = ref<DialogKind | null>(null)
 const shareStatusElement = ref<HTMLElement | null>(null)
 const { visible: draftSaved, show: showDraftSaved } = useTemporaryNotice()
@@ -84,7 +83,7 @@ const dialogTitle = computed(() => {
 })
 const dialogMessage = computed(() => {
   if (dialogKind.value === 'publish') {
-    return `${currentStudent.value.name} 아동 · ${startDate.value} ~ ${endDate.value}\n보호자에게 표시될 아동 정보와 교수자 의견을 확인했습니다. 발행하면 이 버전의 내용이 고정됩니다.`
+    return '발행하면 이 버전의 내용이 고정됩니다.'
   }
   if (dialogKind.value === 'revoke') {
     return '폐기 즉시 보호자는 현재 주소로 보고서를 열 수 없습니다. 보고서 버전과 열람 이력은 보관됩니다.'
@@ -97,11 +96,37 @@ const trendChart: EChartsOption = {
   tooltip: { trigger: 'axis' },
   legend: { data: ['읽기 정확도', '읽기 유창성'], top: 5, textStyle: { fontSize: 10 } },
   grid: { left: 42, right: 18, top: 42, bottom: 30 },
-  xAxis: { type: 'category', data: ['6/15', '6/20', '6/25', '6/30', '7/5', '7/10', '7/15'], axisLabel: { fontSize: 9 } },
-  yAxis: { type: 'value', min: 20, max: 100, interval: 20, axisLabel: { formatter: '{value}', fontSize: 9 } },
+  xAxis: {
+    type: 'category',
+    data: ['6/15', '6/20', '6/25', '6/30', '7/5', '7/10', '7/15'],
+    axisLabel: { fontSize: 9 },
+  },
+  yAxis: {
+    type: 'value',
+    min: 20,
+    max: 100,
+    interval: 20,
+    axisLabel: { formatter: '{value}', fontSize: 9 },
+  },
   series: [
-    { name: '읽기 정확도', type: 'line', symbol: 'circle', symbolSize: 7, data: [54, 60, 64, 68, 72, 78, 84], lineStyle: { width: 2.5, color: chartColors.blue }, itemStyle: { color: chartColors.white, borderColor: chartColors.blue, borderWidth: 2 } },
-    { name: '읽기 유창성', type: 'line', symbol: 'circle', symbolSize: 7, data: [42, 49, 56, 61, 66, 70, 76], lineStyle: { width: 2.5, color: chartColors.green }, itemStyle: { color: chartColors.white, borderColor: chartColors.green, borderWidth: 2 } },
+    {
+      name: '읽기 정확도',
+      type: 'line',
+      symbol: 'circle',
+      symbolSize: 7,
+      data: [54, 60, 64, 68, 72, 78, 84],
+      lineStyle: { width: 2.5, color: chartColors.blue },
+      itemStyle: { color: chartColors.white, borderColor: chartColors.blue, borderWidth: 2 },
+    },
+    {
+      name: '읽기 유창성',
+      type: 'line',
+      symbol: 'circle',
+      symbolSize: 7,
+      data: [42, 49, 56, 61, 66, 70, 76],
+      lineStyle: { width: 2.5, color: chartColors.green },
+      itemStyle: { color: chartColors.white, borderColor: chartColors.green, borderWidth: 2 },
+    },
   ],
 }
 
@@ -189,29 +214,6 @@ function confirmDialogAction() {
   }
 }
 
-function createShare() {
-  if (!expiresAt.value) return
-  void runAction('share', () => {
-    if (currentShareLink.value) shareHistory.value.push({ ...currentShareLink.value })
-    currentShareLink.value = {
-      ...activeShareLink,
-      id: Date.now(),
-      reportVersionId: reportVersion.value,
-      status: 'active',
-      maskedUrl: `iread.kr/r/••••••${reportVersion.value}P`,
-      copyValue: `${window.location.origin}/shared-report/demo-${reportVersion.value}P`,
-      expiresAt: expiresAt.value,
-      createdAt: '2026-07-21 15:14',
-      firstViewedAt: undefined,
-      lastViewedAt: undefined,
-      pdfSavedAt: undefined,
-      guardianAuthentication: 'not-attempted',
-    }
-    previousShareMessage.value = ''
-    pageState.value = 'shared'
-  })
-}
-
 async function reissueLink() {
   await runAction('reissue', () => {
     if (currentShareLink.value) {
@@ -239,15 +241,6 @@ async function reissueLink() {
   })
 }
 
-function newDraft() {
-  if (currentShareLink.value?.status === 'active') {
-    previousShareMessage.value = `기존 보고서 ${reportVersionLabel.value}의 공유 링크는 유지됩니다. 새 초안을 발행해도 기존 버전을 덮어쓰지 않습니다.`
-  }
-  reportVersion.value += 1
-  publishedAt.value = undefined
-  pageState.value = 'draft'
-}
-
 async function copyLink() {
   if (!currentShareLink.value) return
   try {
@@ -262,8 +255,13 @@ function viewHistory() {
 }
 
 function importInternalMemo() {
-  const imported = '받침이 포함된 문장을 읽을 때 속도가 흔들리는 경향이 있어 반복 연습이 필요합니다.'
+  const imported =
+    '받침이 포함된 문장을 읽을 때 속도가 흔들리는 경향이 있어 반복 연습이 필요합니다.'
   teacherOpinion.value = `${teacherOpinion.value.trim()}\n\n${imported}`.trim()
+}
+
+function savePdf() {
+  window.print()
 }
 </script>
 
@@ -284,7 +282,9 @@ function importInternalMemo() {
               <CardTitle id="saved-reports-title">저장된 보고서</CardTitle>
               <span>{{ storedReports.length }}개</span>
             </div>
-            <CardDescription>발행일-버전 형식으로 저장된 보고서를 선택해 확인합니다.</CardDescription>
+            <CardDescription
+              >발행일-버전 형식으로 저장된 보고서를 선택해 확인합니다.</CardDescription
+            >
           </div>
           <CardAction>
             <Button variant="outline" size="sm" type="button" @click="startNewReport">
@@ -345,26 +345,24 @@ function importInternalMemo() {
       >
         <template #actions>
           <ReportActionPanel
-            v-model:expires-at="expiresAt"
+            v-if="reportStatus !== 'published'"
             :status="reportStatus"
             :version-label="reportVersionLabel"
             :share-link="currentShareLink"
             :guardian-preview-url="guardianPreviewUrl"
             :busy-action="busyAction"
             :saved="draftSaved"
-            :previous-share-message="previousShareMessage"
             @reset-period="resetPeriod"
             @save-draft="saveDraft"
             @publish="requestPublish"
-            @new-draft="newDraft"
-            @create-share="createShare"
+            @save-pdf="savePdf"
             @copy-link="copyLink"
             @revoke-link="requestRevoke"
             @reissue-link="requestReissue"
             @view-history="viewHistory"
           />
         </template>
-        <template v-if="reportStatus !== 'draft' || currentShareLink" #share-status>
+        <template v-if="currentShareLink" #share-status>
           <div ref="shareStatusElement">
             <ReportShareStatus
               :version-label="reportVersionLabel"
@@ -377,11 +375,24 @@ function importInternalMemo() {
       </LearningReportDocument>
     </ReportPreview>
 
+    <ReportActionPanel
+      v-if="pageState === 'published'"
+      :status="reportStatus"
+      :version-label="reportVersionLabel"
+      :share-link="currentShareLink"
+      :guardian-preview-url="guardianPreviewUrl"
+      :busy-action="busyAction"
+      :saved="draftSaved"
+      @save-pdf="savePdf"
+    />
+
     <ConfirmDialog
       :open="dialogKind !== null"
       :title="dialogTitle"
       :message="dialogMessage"
-      :confirm-label="dialogKind === 'publish' ? '보고서 발행' : dialogKind === 'revoke' ? '링크 폐기' : '재발급'"
+      :confirm-label="
+        dialogKind === 'publish' ? '보고서 발행' : dialogKind === 'revoke' ? '링크 폐기' : '재발급'
+      "
       :tone="dialogKind === 'revoke' ? 'danger' : 'primary'"
       @cancel="dialogKind = null"
       @confirm="confirmDialogAction"
@@ -390,9 +401,19 @@ function importInternalMemo() {
 </template>
 
 <style scoped>
-.report { width: 100%; container-type: inline-size; }
-.report :deep(.report-preview) { padding-top: 4px; }
-.report-start-workspace { display: grid; align-items: stretch; gap: 24px; grid-template-columns: 360px minmax(0, 1fr); }
+.report {
+  width: 100%;
+  container-type: inline-size;
+}
+.report :deep(.report-preview) {
+  padding-top: 4px;
+}
+.report-start-workspace {
+  display: grid;
+  align-items: stretch;
+  gap: 24px;
+  grid-template-columns: 360px minmax(0, 1fr);
+}
 .saved-reports {
   display: grid;
   height: 100%;
@@ -404,26 +425,114 @@ function importInternalMemo() {
   background: var(--card);
   grid-template-rows: auto auto minmax(0, 1fr);
 }
-.saved-reports__header { align-items: start; gap: 16px; padding: 18px; border-bottom: 1px solid var(--border); grid-template-columns: minmax(0, 1fr) auto; }
-.saved-reports__header :deep([data-slot='card-title']) { margin: 0; font-size: 16px; font-weight: 700; }
-.saved-reports__header :deep([data-slot='card-description']) { max-width: 230px; margin-top: 4px; font-size: 11px; line-height: 1.55; }
-.saved-reports__header :deep([data-slot='card-action']) { align-self: start; grid-column: 2; grid-row: 1 / span 2; }
-.saved-reports__title-row { display: flex; align-items: center; gap: 8px; }
-.saved-reports__title-row > span { color: var(--muted-foreground); font-size: 11px; font-weight: 600; }
-.saved-reports__filter { padding: 12px 14px; border-bottom: 1px solid var(--border); }
-.saved-reports__filter :deep(input) { height: 36px; font-size: 12px; }
-.saved-reports__content { min-height: 0; overflow-y: auto; padding: 8px 10px 10px; scrollbar-gutter: stable; }
-.saved-reports ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.saved-report-row { display: grid; width: 100%; min-height: 66px; justify-content: stretch; gap: 14px; padding: 12px; border-radius: var(--radius-sm); grid-template-columns: minmax(0, 1fr) auto; text-align: left; }
-.saved-report-row:hover { background: var(--accent); }
-.saved-report-row__copy { display: grid; min-width: 0; gap: 3px; }
-.saved-report-row__copy strong { color: var(--foreground); font-size: 12px; font-weight: 700; }
-.saved-report-row__copy small { overflow: hidden; color: var(--muted-foreground); font-size: 10px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.saved-report-row :deep([data-slot='badge']) { justify-self: end; white-space: nowrap; }
-.saved-reports__empty { margin: 0; padding: 28px 10px; color: var(--muted-foreground); font-size: 12px; text-align: center; }
-@container (max-width: 850px) {
-  .report-start-workspace { grid-template-columns: 1fr; }
-  .saved-reports { max-height: 420px; }
+.saved-reports__header {
+  align-items: start;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  grid-template-columns: minmax(0, 1fr) auto;
 }
-@media print { .report { display: block; } }
+.saved-reports__header :deep([data-slot='card-title']) {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.saved-reports__header :deep([data-slot='card-description']) {
+  max-width: 230px;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.saved-reports__header :deep([data-slot='card-action']) {
+  align-self: start;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.saved-reports__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.saved-reports__title-row > span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+}
+.saved-reports__filter {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.saved-reports__filter :deep(input) {
+  height: 36px;
+  font-size: 12px;
+}
+.saved-reports__content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px 10px;
+  scrollbar-gutter: stable;
+}
+.saved-reports ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.saved-report-row {
+  display: grid;
+  width: 100%;
+  min-height: 66px;
+  justify-content: stretch;
+  gap: 14px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  grid-template-columns: minmax(0, 1fr) auto;
+  text-align: left;
+}
+.saved-report-row:hover {
+  background: var(--accent);
+}
+.saved-report-row__copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+.saved-report-row__copy strong {
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+.saved-report-row__copy small {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-report-row :deep([data-slot='badge']) {
+  justify-self: end;
+  white-space: nowrap;
+}
+.saved-reports__empty {
+  margin: 0;
+  padding: 28px 10px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-align: center;
+}
+@container (max-width: 850px) {
+  .report-start-workspace {
+    grid-template-columns: 1fr;
+  }
+  .saved-reports {
+    max-height: 420px;
+  }
+}
+@media print {
+  .report {
+    display: block;
+  }
+}
 </style>

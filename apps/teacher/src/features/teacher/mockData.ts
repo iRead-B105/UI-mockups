@@ -146,14 +146,14 @@ function lessonMaterial(
 }
 
 // AI가 학습 행동을 바탕으로 아동마다 서로 다른 순서와 교안 내용을 구성한 목업 데이터입니다.
-export const studentCurricula: Record<number, CurriculumItem[]> = {
+const baseStudentCurricula: Record<number, CurriculumItem[]> = {
   1: [
     {
       id: 1,
       studentId: 1,
-      category: '음운 인식',
+      category: '음운 인식 및 파닉스',
       order: 1,
-      title: '첫소리와 끝소리 구분',
+      title: '글자 따라 보기 (모음, 자음, 음절)',
       achievement: 92,
       material: lessonMaterial(
         '낱말의 첫소리와 끝소리를 듣고 서로 다른 소리를 구별할 수 있다.',
@@ -190,9 +190,10 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 2,
       studentId: 1,
-      category: '음운 인식',
+      category: '음운 인식 및 파닉스',
       order: 2,
-      title: '음절 분리와 합성',
+      title:
+        "소리 듣고 고르기 (자음과 모음, 첫소리 찾기, 같은 첫소리의 낱말 찾기, 받침 소리(종성), 끝소리, 비슷한 소리('ㄱ', 'ㅋ' 등))",
       achievement: 86,
       material: lessonMaterial(
         '낱말을 음절 단위로 나누고 다시 하나의 낱말로 합칠 수 있다.',
@@ -229,9 +230,10 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 3,
       studentId: 1,
-      category: '파닉스',
+      category: '음운 인식 및 파닉스',
       order: 3,
-      title: 'ㄱㄴㄷㄹㅁㅂ 받침 훈련',
+      title:
+        '글자 만들기 (소리 합치기(음절·낱말 합성), 기본 글자 만들기(자음·모음 합성), 받침 글자 만들기, 겹받침 글자 만들기)',
       achievement: 100,
       material: lessonMaterial(
         '대표 받침이 포함된 낱말을 정확한 소리로 읽을 수 있다.',
@@ -268,9 +270,9 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 4,
       studentId: 1,
-      category: '파닉스',
+      category: '음운 인식 및 파닉스',
       order: 4,
-      title: 'ㄲㅆ 받침 훈련',
+      title: '글자 자르기 (받침 빼기(음소 생략형), 음절 빼기(음절 생략형))',
       achievement: 75,
       material: lessonMaterial(
         '겹받침이 포함된 낱말의 대표 소리를 구별하여 읽을 수 있다.',
@@ -307,9 +309,9 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 5,
       studentId: 1,
-      category: '유창성',
+      category: '음운 인식 및 파닉스',
       order: 5,
-      title: '짧은 문장 유창하게 읽기',
+      title: '글자 대치 (음절 바꾸기)',
       achievement: 62,
       material: lessonMaterial(
         '짧은 문장을 의미 단위로 끊어 자연스러운 속도로 읽을 수 있다.',
@@ -339,9 +341,10 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 6,
       studentId: 1,
-      category: '유창성',
+      category: '글 해독 및 문장 이해',
       order: 6,
-      title: '문장 억양과 끊어 읽기',
+      title:
+        '글 해독 (낱말 읽기, 새 낱말 읽기(비단어), 어려운 단어 먼저 읽기, 문장 읽기, 짧은 글 읽기)',
       achievement: 57,
       material: lessonMaterial(
         '문장 부호와 의미에 맞는 억양을 사용하여 글을 읽을 수 있다.',
@@ -370,9 +373,9 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 7,
       studentId: 1,
-      category: '이해력',
+      category: '글 해독 및 문장 이해',
       order: 7,
-      title: '핵심 문장 찾기',
+      title: '문장 완성 및 이해 (문장 전체 조립, 빈칸에 알맞은 단어 넣기, 그림과 문장 연결하기)',
       achievement: 48,
       material: lessonMaterial(
         '짧은 글에서 중심 내용을 나타내는 핵심 문장을 찾을 수 있다.',
@@ -403,9 +406,10 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 8,
       studentId: 1,
-      category: '이해력',
+      category: '유창성',
       order: 8,
-      title: '문맥으로 낱말 뜻 추론',
+      title:
+        '유창하게 읽기 (문장 따라 읽기, 단어 이어 읽기, 끊어 읽기, 같은 문장 다시 읽기, 짧은 이야기 읽기)',
       achievement: 41,
       material: lessonMaterial(
         '낯선 낱말의 뜻을 앞뒤 문장을 이용해 추론할 수 있다.',
@@ -437,9 +441,9 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 1,
       studentId: 2,
-      category: '유창성',
+      category: '음운 인식 및 파닉스',
       order: 1,
-      title: '긴 문장 의미 단위 읽기',
+      title: '글자 따라 보기 (모음, 자음, 음절)',
       achievement: 84,
       material: lessonMaterial(
         '긴 문장을 의미 단위로 구분해 자연스럽게 읽을 수 있다.',
@@ -460,9 +464,10 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 2,
       studentId: 2,
-      category: '이해력',
+      category: '음운 인식 및 파닉스',
       order: 2,
-      title: '인물의 마음 추론',
+      title:
+        "소리 듣고 고르기 (자음과 모음, 첫소리 찾기, 같은 첫소리의 낱말 찾기, 받침 소리(종성), 끝소리, 비슷한 소리('ㄱ', 'ㅋ' 등))",
       achievement: 71,
       material: lessonMaterial(
         '행동과 대사를 근거로 인물의 마음을 설명할 수 있다.',
@@ -485,9 +490,10 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
     {
       id: 3,
       studentId: 2,
-      category: '파닉스',
+      category: '음운 인식 및 파닉스',
       order: 3,
-      title: '겹받침 문장 적용',
+      title:
+        '글자 만들기 (소리 합치기(음절·낱말 합성), 기본 글자 만들기(자음·모음 합성), 받침 글자 만들기, 겹받침 글자 만들기)',
       achievement: 68,
       material: lessonMaterial(
         '겹받침이 포함된 낱말을 문장 안에서 정확하게 읽을 수 있다.',
@@ -508,20 +514,267 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
   ],
 }
 
+interface CurriculumTrainingDefinition {
+  id: number
+  sourceId: number
+  category: string
+  title: string
+}
+
+const curriculumTrainingDefinitions: CurriculumTrainingDefinition[] = [
+  {
+    id: 1,
+    sourceId: 1,
+    category: '음운 인식 및 파닉스',
+    title: '글자 따라 보기 (모음)',
+  },
+  {
+    id: 2,
+    sourceId: 1,
+    category: '음운 인식 및 파닉스',
+    title: '글자 따라 보기 (자음)',
+  },
+  {
+    id: 3,
+    sourceId: 1,
+    category: '음운 인식 및 파닉스',
+    title: '글자 따라 보기 (음절)',
+  },
+  {
+    id: 4,
+    sourceId: 2,
+    category: '음운 인식 및 파닉스',
+    title: '소리 듣고 고르기 (자음과 모음)',
+  },
+  {
+    id: 5,
+    sourceId: 2,
+    category: '음운 인식 및 파닉스',
+    title: '소리 듣고 고르기 (첫소리 찾기)',
+  },
+  {
+    id: 6,
+    sourceId: 2,
+    category: '음운 인식 및 파닉스',
+    title: '소리 듣고 고르기 (같은 첫소리의 낱말 찾기)',
+  },
+  {
+    id: 7,
+    sourceId: 2,
+    category: '음운 인식 및 파닉스',
+    title: '소리 듣고 고르기 (받침 소리(종성), 끝소리)',
+  },
+  {
+    id: 8,
+    sourceId: 2,
+    category: '음운 인식 및 파닉스',
+    title: "소리 듣고 고르기 (비슷한 소리('ㄱ', 'ㅋ' 등))",
+  },
+  {
+    id: 9,
+    sourceId: 3,
+    category: '음운 인식 및 파닉스',
+    title: '글자 만들기 (소리 합치기(음절·낱말 합성))',
+  },
+  {
+    id: 10,
+    sourceId: 3,
+    category: '음운 인식 및 파닉스',
+    title: '글자 만들기 (기본 글자 만들기(자음·모음 합성))',
+  },
+  {
+    id: 11,
+    sourceId: 3,
+    category: '음운 인식 및 파닉스',
+    title: '글자 만들기 (받침 글자 만들기)',
+  },
+  {
+    id: 12,
+    sourceId: 3,
+    category: '음운 인식 및 파닉스',
+    title: '글자 만들기 (겹받침 글자 만들기)',
+  },
+  {
+    id: 13,
+    sourceId: 4,
+    category: '음운 인식 및 파닉스',
+    title: '글자 자르기 (받침 빼기(음소 생략형))',
+  },
+  {
+    id: 14,
+    sourceId: 4,
+    category: '음운 인식 및 파닉스',
+    title: '글자 자르기 (음절 빼기(음절 생략형))',
+  },
+  {
+    id: 15,
+    sourceId: 5,
+    category: '음운 인식 및 파닉스',
+    title: '글자 대치 (음절 바꾸기)',
+  },
+  {
+    id: 16,
+    sourceId: 6,
+    category: '글 해독 및 문장 이해',
+    title: '글 해독 (낱말 읽기)',
+  },
+  {
+    id: 17,
+    sourceId: 6,
+    category: '글 해독 및 문장 이해',
+    title: '글 해독 (새 낱말 읽기(비단어))',
+  },
+  {
+    id: 18,
+    sourceId: 6,
+    category: '글 해독 및 문장 이해',
+    title: '글 해독 (어려운 단어 먼저 읽기)',
+  },
+  {
+    id: 19,
+    sourceId: 6,
+    category: '글 해독 및 문장 이해',
+    title: '글 해독 (문장 읽기)',
+  },
+  {
+    id: 20,
+    sourceId: 6,
+    category: '글 해독 및 문장 이해',
+    title: '글 해독 (짧은 글 읽기)',
+  },
+  {
+    id: 21,
+    sourceId: 7,
+    category: '글 해독 및 문장 이해',
+    title: '문장 완성 및 이해 (문장 전체 조립)',
+  },
+  {
+    id: 22,
+    sourceId: 7,
+    category: '글 해독 및 문장 이해',
+    title: '문장 완성 및 이해 (빈칸에 알맞은 단어 넣기)',
+  },
+  {
+    id: 23,
+    sourceId: 7,
+    category: '글 해독 및 문장 이해',
+    title: '문장 완성 및 이해 (그림과 문장 연결하기)',
+  },
+  {
+    id: 24,
+    sourceId: 8,
+    category: '유창성',
+    title: '유창하게 읽기 (문장 따라 읽기)',
+  },
+  {
+    id: 25,
+    sourceId: 8,
+    category: '유창성',
+    title: '유창하게 읽기 (단어 이어 읽기)',
+  },
+  {
+    id: 26,
+    sourceId: 8,
+    category: '유창성',
+    title: '유창하게 읽기 (끊어 읽기)',
+  },
+  {
+    id: 27,
+    sourceId: 8,
+    category: '유창성',
+    title: '유창하게 읽기 (같은 문장 다시 읽기)',
+  },
+  {
+    id: 28,
+    sourceId: 8,
+    category: '유창성',
+    title: '유창하게 읽기 (짧은 이야기 읽기)',
+  },
+]
+
+function expandStudentCurriculum(studentId: number) {
+  const studentItems = baseStudentCurricula[studentId] ?? []
+  const defaultItems = baseStudentCurricula[1] ?? []
+
+  return curriculumTrainingDefinitions.map((definition, index) => {
+    const source =
+      studentItems.find((item) => item.id === definition.sourceId) ??
+      defaultItems.find((item) => item.id === definition.sourceId) ??
+      defaultItems[0]!
+
+    return {
+      ...source,
+      id: definition.id,
+      studentId,
+      category: definition.category,
+      order: index + 1,
+      title: definition.title,
+      material: {
+        ...source.material,
+        objective: `${definition.title} 활동을 정확하게 수행할 수 있다.`,
+        teacherGuide: `${definition.title} 세부 항목에 집중할 수 있도록 예시를 먼저 제시하고 단계별로 안내합니다.`,
+        childInstruction: `${definition.title} 활동을 차례대로 진행해보세요.`,
+        contentItems: source.material.contentItems.map((item) => ({ ...item })),
+      },
+    }
+  })
+}
+
+export const studentCurricula: Record<number, CurriculumItem[]> = {
+  1: expandStudentCurriculum(1),
+  2: expandStudentCurriculum(2),
+}
+
 // 기존 화면과 다른 목업에서 첫 번째 아동의 목록을 기본값으로 사용할 수 있도록 유지합니다.
 export const curriculumItems = studentCurricula[1]!
 
 // 다음 회차 추천 목록도 아동별로 서로 다른 순서와 횟수를 가집니다.
 export const recommendedCurricula: Record<number, RecommendedCurriculumItem[]> = {
   1: [
-    { id: 1, trainingId: 3, category: '파닉스', title: 'ㄱㄴㄷㄹㅁㅂ 받침 훈련', count: 2 },
-    { id: 2, trainingId: 4, category: '파닉스', title: 'ㄲㅆ 받침 훈련', count: 1 },
-    { id: 3, trainingId: 5, category: '유창성', title: '짧은 문장 유창하게 읽기', count: 1 },
-    { id: 4, trainingId: 7, category: '이해력', title: '핵심 문장 찾기', count: 1 },
+    {
+      id: 1,
+      trainingId: 9,
+      category: '음운 인식 및 파닉스',
+      title: '글자 만들기 (소리 합치기(음절·낱말 합성))',
+      count: 2,
+    },
+    {
+      id: 2,
+      trainingId: 13,
+      category: '음운 인식 및 파닉스',
+      title: '글자 자르기 (받침 빼기(음소 생략형))',
+      count: 1,
+    },
+    {
+      id: 3,
+      trainingId: 15,
+      category: '음운 인식 및 파닉스',
+      title: '글자 대치 (음절 바꾸기)',
+      count: 1,
+    },
+    {
+      id: 4,
+      trainingId: 21,
+      category: '글 해독 및 문장 이해',
+      title: '문장 완성 및 이해 (문장 전체 조립)',
+      count: 1,
+    },
   ],
   2: [
-    { id: 1, trainingId: 2, category: '이해력', title: '인물의 마음 추론', count: 2 },
-    { id: 2, trainingId: 1, category: '유창성', title: '긴 문장 의미 단위 읽기', count: 1 },
+    {
+      id: 1,
+      trainingId: 4,
+      category: '음운 인식 및 파닉스',
+      title: '소리 듣고 고르기 (자음과 모음)',
+      count: 2,
+    },
+    {
+      id: 2,
+      trainingId: 1,
+      category: '음운 인식 및 파닉스',
+      title: '글자 따라 보기 (모음)',
+      count: 1,
+    },
   ],
 }
 
