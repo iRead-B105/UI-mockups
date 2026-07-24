@@ -95,10 +95,13 @@
   --learner-touch-target: 52px;
 
   /* 학습자 레이아웃 */
-  --learner-header-height: clamp(76px, 12.5vh, 108px);
+  /* F11 16:9 전체화면을 기준으로 높이와 너비가 함께 변하는 공통 프레임 */
+  --learner-header-height: clamp(122px, 10.4vw, 188px);
+  --learner-page-height: calc(100dvh - var(--learner-header-height));
   --learner-content-width: 1440px;
   --learner-reading-width: 1080px;
-  --learner-page-padding: clamp(24px, 4vw, 64px);
+  --learner-safe-width: min(94vw, 1600px);
+  --learner-page-padding: clamp(16px, 2.4vmin, 48px);
 
   /* 학습자 애니메이션 */
   --learner-duration-fast: 160ms;

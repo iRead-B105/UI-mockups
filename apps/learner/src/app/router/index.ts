@@ -100,7 +100,7 @@ const router = createRouter({
         {
           path: 'growth',
           name: 'growth',
-          component: () => import('../../views/learner/ChildVillageDashboardView.vue'),
+          component: () => import('../../views/learner/GrowthView.vue'),
         },
       ],
     },

@@ -409,7 +409,7 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
   .saving-spinner { animation: none; }
 }
 .lesson-view{background-color:#22c5ed;background-image:url('../../assets/backgrounds/training-outer-background-flat-vector.png');background-position:center;background-size:cover;background-repeat:no-repeat}
-.lesson-topbar{position:absolute;left:50%;top:28px;width:min(calc(100% - 96px),1280px);height:54px;padding:0 18px;transform:translateX(-50%)}
+.lesson-topbar{position:absolute;left:50%;top:calc(var(--learner-header-height) + 18px);width:min(calc(100% - 96px),1280px);height:54px;padding:0 18px;transform:translateX(-50%)}
 .topbar-back{background:#fff9df;border:2px solid #ead487;box-shadow:0 5px 12px rgba(71,83,104,.14)}
 .lesson-title{position:absolute;left:50%;display:flex;align-items:baseline;gap:10px;transform:translateX(-50%);font-family:var(--learner-font-display)}
 .lesson-title span{color:#8c742c;font-size:15px;font-weight:800}
@@ -419,6 +419,8 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
 .playing{width:min(calc(100% - 56px),1360px);margin:16px auto 22px;padding:82px 26px 24px}
 .question-scroll{overflow:hidden;align-items:stretch;padding:0}
 .lesson-view :deep(.activity),.lesson-view :deep(.battle){background-color:#fff9dc!important;background-image:url('../../assets/backgrounds/training-inner-background-flat-vector.png')!important;background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
+.lesson-view :deep(.guide .bubble){right:10%;bottom:72%;width:clamp(165px,13vw,205px);padding:12px 15px;font-size:clamp(15px,1.15vw,18px)}
+.lesson-view :deep(.guide .bubble::after){right:36px;bottom:-24px;border:14px solid transparent;border-top-color:var(--learner-color-surface);transform:rotate(-8deg)}
 /*
  * 학습자가 직접 읽고 조작하는 글자·낱말·문장만 읽기 전용 글꼴을 사용한다.
  * 화면 제목, 진행 상태, 메뉴와 주요 버튼은 각 활동의 display 글꼴을 유지한다.
@@ -455,7 +457,6 @@ const companionMood = computed<'idle' | 'cheer'>(() =>
 .lesson-view :deep(.part-card) {
   font-family: var(--learner-font-reading);
 }
-@media(max-width:900px){.lesson-topbar{width:calc(100% - 52px);top:20px}.lesson-title span{display:none}.lesson-title strong{font-size:22px}.topbar-progress{min-width:auto;padding-inline:12px}.playing{width:calc(100% - 28px);margin-block:10px;padding:72px 14px 14px}}
-@media(max-height:800px){.lesson-topbar{top:12px}.playing{position:absolute;left:50%;right:auto;top:5px;bottom:10px;width:min(calc(100% - 56px),1360px);height:auto;margin:0;padding:72px 20px 16px;transform:translateX(-50%)}.question-scroll{min-height:0}.lesson-view :deep(.guide){width:250px;bottom:-24%}}
-@media(max-width:1400px){.lesson-view :deep(.guide){display:none}}
+@media(max-width:900px){.lesson-topbar{width:calc(100% - 52px);top:calc(var(--learner-header-height) + 12px)}.lesson-title span{display:none}.lesson-title strong{font-size:22px}.topbar-progress{min-width:auto;padding-inline:12px}.playing{width:calc(100% - 28px);margin-block:10px;padding:72px 14px 14px}}
+@media(max-height:800px){.lesson-topbar{top:calc(var(--learner-header-height) + 9px);height:48px}.playing{position:absolute;left:50%;right:auto;top:calc(var(--learner-header-height) + 4px);bottom:8px;width:min(calc(100% - 56px),1320px);height:auto;margin:0;padding:66px 18px 12px;transform:translateX(-50%)}.question-scroll{min-height:0}}
 </style>

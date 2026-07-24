@@ -13,13 +13,19 @@ const hideHeader = computed(() => route.meta.hideLearnerHeader === true)
   <div class="learner-layout">
     <LearnerHeader v-if="!hideHeader" user-name="윤정" :stars="route.name === 'growth' ? points : undefined" />
     <div class="learner-page" :class="{ 'learner-page--full': hideHeader }">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <component
+          :is="Component"
+          :class="{ 'learner-screen-with-header': !hideHeader }"
+        />
+      </RouterView>
     </div>
   </div>
 </template>
 
 <style scoped>
 .learner-layout {
+  position: relative;
   min-height: 100dvh;
   overflow: hidden;
   background: var(--learner-background);
@@ -28,11 +34,21 @@ const hideHeader = computed(() => route.meta.hideLearnerHeader === true)
 }
 
 .learner-page {
-  height: calc(100dvh - var(--learner-header-height));
+  position: relative;
+  z-index: 0;
+  height: 100dvh;
   min-height: 0;
+  box-sizing: border-box;
+  padding-top: 0;
 }
 
 .learner-page--full {
   height: 100dvh;
+  padding-top: 0;
+}
+
+:deep(.learner-screen-with-header) {
+  box-sizing: border-box;
+  padding-top: var(--learner-header-height) !important;
 }
 </style>

@@ -60,12 +60,13 @@ const questionCount = computed(() => props.lesson.questions.length)
   z-index: 2;
   margin: auto;
   width: min(92%, 620px);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: var(--learner-space-4);
-  padding: clamp(36px, 5vw, 64px);
+  padding: clamp(24px, 4vmin, 56px);
   border: 4px solid rgb(255 255 255 / 90%);
   border-radius: 36px;
   background-color: #fff9dc;

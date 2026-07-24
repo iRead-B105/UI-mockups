@@ -114,10 +114,17 @@ const startGpuCompositor = () => {
       float low = min(color.r, min(color.g, color.b));
       float high = max(color.r, max(color.g, color.b));
       float white = smoothstep(.78, .94, low) * (1. - smoothstep(.08, .18, high - low));
-      color.a *= 1. - white;
+      vec2 leftEyePoint = (uv - vec2(.405, .53)) / vec2(.055, .065);
+      vec2 rightEyePoint = (uv - vec2(.655, .53)) / vec2(.055, .065);
+      float leftEye = 1. - smoothstep(.82, 1., dot(leftEyePoint, leftEyePoint));
+      float rightEye = 1. - smoothstep(.82, 1., dot(rightEyePoint, rightEyePoint));
+      float eyeWhite = max(leftEye, rightEye) * white;
+      color.rgb = mix(color.rgb, vec3(1.), eyeWhite);
+      color.a = max(color.a * (1. - white), eyeWhite);
       float topNeutralArtifact = step(.70, uv.y)
         * (1. - smoothstep(.06, .18, high - low))
-        * smoothstep(.42, .82, low);
+        * smoothstep(.42, .82, low)
+        * (1. - eyeWhite);
       color.a *= 1. - topNeutralArtifact;
       bool fur = color.r > .62 && color.g > .33 && color.b < .58 && color.r > color.g;
       if (fur) {
@@ -236,14 +243,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.guide { position:absolute;z-index:18;right:-1.5%;bottom:-16%;width:clamp(280px,23vw,350px);aspect-ratio:.508;opacity:0;transition:opacity var(--learner-duration-slow);pointer-events:none; }
+.guide { position:fixed;z-index:18;right:-1.2%;bottom:-7%;width:clamp(220px,18.2vw,350px);aspect-ratio:.508;opacity:0;transition:opacity var(--learner-duration-slow);pointer-events:none; }
 .guide.ready { opacity:1; }
 .bunny-hit { position:absolute;z-index:4;right:0;top:25%;width:64%;height:72%;border:0;outline:none;background:transparent;cursor:pointer;pointer-events:auto; }
 .guide:has(.bunny-hit:hover) .bunny { transform:translateY(-5px); }
 .bunny-hit:focus-visible { filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 5px var(--learner-color-primary)); }
 .bunny { position:absolute;z-index:2;inset:0;width:100%;height:100%;pointer-events:none;transition:transform var(--learner-duration-fast); }
 .source { position:absolute;z-index:1;inset:0;width:620px;height:570px;opacity:0;pointer-events:none; }
-.bubble { position:absolute;z-index:3;right:100%;bottom:43%;width:clamp(205px,18vw,270px);padding:var(--learner-space-5);border-radius:var(--learner-radius-large);background:var(--learner-color-surface);color:var(--learner-color-text);font-family:var(--learner-font-display);font-size:clamp(18px,1.65vw,25px);font-weight:var(--learner-font-weight-heavy);line-height:1.35;text-align:center;white-space:pre-line;box-shadow:var(--learner-shadow-card);pointer-events:none; }
+.bubble { position:absolute;z-index:3;right:100%;bottom:43%;width:clamp(190px,15vw,270px);padding:clamp(14px,1.5vw,20px);border-radius:var(--learner-radius-large);background:var(--learner-color-surface);color:var(--learner-color-text);font-family:var(--learner-font-display);font-size:clamp(17px,1.35vw,25px);font-weight:var(--learner-font-weight-heavy);line-height:1.35;text-align:center;white-space:pre-line;box-shadow:var(--learner-shadow-card);pointer-events:none; }
 .bubble::after { content:'';position:absolute;right:-25px;bottom:20px;border:16px solid transparent;border-left-color:var(--learner-color-surface);transform:rotate(16deg); }
 @media (max-width:900px) { .guide{right:-4%;width:280px}.bubble{right:82%} }
 </style>
