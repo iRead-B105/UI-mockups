@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { CheckCircle2 } from '@lucide/vue'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+
 // visible은 표시 여부를 부모가 결정하고, message가 없으면 아래 기본 문구를 사용합니다.
 withDefaults(
   defineProps<{
@@ -19,16 +22,16 @@ withDefaults(
   <!-- Transition은 요소가 생기고 사라질 때 아래 enter/leave CSS 애니메이션을 적용합니다. -->
   <Transition name="save-toast">
     <!-- v-if가 false면 HTML 자체를 제거합니다. role=status는 보조 기술에도 알림을 전달합니다. -->
-    <div
+    <Alert
       v-if="visible"
       class="save-toast"
       :class="{ 'save-toast--inline': inline }"
       role="status"
       aria-live="polite"
     >
-      <span v-if="showIcon" aria-hidden="true">✓</span>
-      {{ message }}
-    </div>
+      <CheckCircle2 v-if="showIcon" class="save-toast__icon" :size="20" aria-hidden="true" />
+      <AlertDescription>{{ message }}</AlertDescription>
+    </Alert>
   </Transition>
 </template>
 
@@ -44,24 +47,17 @@ withDefaults(
   align-items: center;
   gap: 9px;
   padding: 11px 16px;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
-  background: #f0fdf4;
-  color: #166534;
+  border: 1px solid color-mix(in oklch, var(--secondary) 55%, white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  background: color-mix(in oklch, var(--secondary) 18%, white);
+  color: var(--secondary-foreground);
   font-size: 13px;
   font-weight: 700;
 }
 
-.save-toast span {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  background: #16a34a;
-  color: #fff;
-  font-size: 12px;
+.save-toast__icon {
+  color: var(--teal-500);
 }
 
 .save-toast--inline {
@@ -71,12 +67,6 @@ withDefaults(
   border-radius: 7px;
   box-shadow: none;
   font-size: 12px;
-}
-
-.save-toast--inline span {
-  width: 19px;
-  height: 19px;
-  font-size: 11px;
 }
 
 .save-toast-enter-active,

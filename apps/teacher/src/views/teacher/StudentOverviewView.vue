@@ -7,7 +7,9 @@ import SaveToast from '@/components/common/SaveToast.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
 import StudentCommunicationPanel from '@/components/teacher/StudentCommunicationPanel.vue'
 import StudentLearningEvents from '@/components/teacher/StudentLearningEvents.vue'
+import { Card } from '@/components/ui/card'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
+import { chartColors } from '@/features/teacher/chartTheme'
 import { learningEventTypeLabels } from '@/features/teacher/displayLabels'
 import {
   encouragementMessages as initialEncouragements,
@@ -288,30 +290,44 @@ const levelChart: EChartsOption = {
       symbol: 'circle',
       symbolSize: 5,
       data: [66, 69, 67, 70, 72, 71, 78],
-      lineStyle: { width: 3, color: '#4f46e5' },
-      itemStyle: { color: '#4f46e5' },
+      lineStyle: { width: 2.5, color: chartColors.blue },
+      itemStyle: {
+        color: chartColors.blue,
+        borderColor: chartColors.white,
+        borderWidth: 2,
+      },
       markLine: {
         silent: true,
         symbol: 'none',
-        label: { color: '#64748b', fontSize: 10, formatter: '{b}', position: 'insideEndTop' },
+        label: {
+          color: chartColors.secondary,
+          fontSize: 10,
+          fontWeight: 600,
+          formatter: '{b}',
+          position: 'insideEndTop',
+        },
         data: [
           {
             name: '목표 80%',
             yAxis: 80,
-            lineStyle: { color: '#94a3b8', type: 'dashed', width: 1 },
+            lineStyle: { color: chartColors.amber, type: 'dashed', width: 1.5 },
           },
         ],
       },
       markPoint: {
         symbol: 'circle',
         symbolSize: 9,
-        itemStyle: { color: '#4f46e5' },
+        itemStyle: {
+          color: chartColors.blue,
+          borderColor: chartColors.white,
+          borderWidth: 2,
+        },
         label: {
           show: true,
           position: 'top',
           distance: 9,
           formatter: '{b}',
-          color: '#475569',
+          color: chartColors.secondary,
           fontSize: 11,
           fontWeight: 600,
         },
@@ -335,17 +351,21 @@ const levelChart: EChartsOption = {
       :message="noticeMessage"
     />
 
-    <section class="student-facts" aria-label="학생 학습 상태 요약">
+    <Card class="student-facts" aria-label="아동 학습 상태 요약">
       <dl>
         <div>
           <dt>현재 단계</dt>
-          <dd>{{ currentStudent.latestTraining }}</dd>
-          <span>이해력 영역</span>
+          <dd>
+            <strong>{{ currentStudent.latestTraining }}</strong>
+            <span>이해력 영역</span>
+          </dd>
         </div>
         <div>
           <dt>최근 학습</dt>
-          <dd>{{ recentLearningLabel }}</dd>
-          <span>{{ formattedLastLearningDate }}</span>
+          <dd>
+            <strong>{{ recentLearningLabel }}</strong>
+            <span>{{ formattedLastLearningDate }}</span>
+          </dd>
         </div>
       </dl>
       <div class="action-summary" :class="{ 'is-complete': totalActionCount === 0 }">
@@ -362,10 +382,10 @@ const levelChart: EChartsOption = {
           <span>학습 이벤트와 보호자 메시지를 모두 확인했습니다.</span>
         </div>
       </div>
-    </section>
+    </Card>
 
     <section class="learning-analysis">
-      <div class="trend-panel">
+      <Card class="trend-panel">
         <header class="section-heading">
           <div>
             <h2>읽기 정확도</h2>
@@ -387,7 +407,7 @@ const levelChart: EChartsOption = {
             >
           </div>
         </div>
-      </div>
+      </Card>
 
       <aside class="recent-panel">
         <StudentLearningEvents
@@ -429,7 +449,7 @@ const levelChart: EChartsOption = {
 
 <style scoped>
 .overview {
-  gap: 18px;
+  gap: 20px;
   container-type: inline-size;
 }
 .overview > :deep(.save-toast) {
@@ -447,8 +467,12 @@ const levelChart: EChartsOption = {
 .student-facts {
   display: grid;
   align-items: stretch;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--slate-200);
+  gap: 0;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  box-shadow: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .student-facts dl {
@@ -457,10 +481,12 @@ const levelChart: EChartsOption = {
   padding: 0;
 }
 .student-facts dl > div {
-  display: flex;
+  display: grid;
+  width: min(100%, 240px);
   min-width: 0;
-  align-items: center;
-  gap: 10px;
+  align-content: center;
+  justify-self: center;
+  gap: 4px;
   padding-right: 24px;
 }
 .student-facts dl > div + div {
@@ -470,23 +496,31 @@ const levelChart: EChartsOption = {
 }
 .student-facts dt {
   color: var(--slate-500);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 .student-facts dd {
+  display: grid;
+  gap: 2px;
   margin: 0;
-  color: var(--slate-900);
-  font-size: 14px;
-  font-weight: 700;
 }
-.student-facts span {
+.student-facts dd strong {
+  color: var(--slate-900);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+.student-facts dd span {
   color: var(--slate-500);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 500;
 }
 .action-summary {
   display: flex;
   min-width: 0;
   align-items: center;
+  justify-content: center;
   padding-left: 24px;
   border-left: 1px solid var(--slate-200);
 }
@@ -511,17 +545,25 @@ const levelChart: EChartsOption = {
 }
 .learning-analysis {
   display: grid;
-  align-items: start;
-  grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.75fr);
+  align-items: stretch;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.75fr);
 }
 .trend-panel {
   min-width: 0;
-  padding: 2px 24px 16px 0;
+  gap: 0;
+  padding: 20px;
+  border-radius: var(--radius-lg);
 }
 .recent-panel {
+  display: flex;
   min-width: 0;
-  padding: 2px 0 16px 24px;
-  border-left: 1px solid var(--slate-200);
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
   scroll-margin-top: 90px;
 }
 .section-heading {
@@ -564,7 +606,10 @@ const levelChart: EChartsOption = {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
 }
 .analysis-followup > div {
-  padding-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--muted) 28%, transparent);
 }
 .followup-label {
   color: var(--slate-500);
@@ -593,6 +638,15 @@ const levelChart: EChartsOption = {
   font-weight: 700;
   text-decoration: none;
 }
+.history-link {
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
 .next-training a:hover,
 .history-link:hover {
   text-decoration: underline;
@@ -609,9 +663,7 @@ const levelChart: EChartsOption = {
     padding-right: 0;
   }
   .recent-panel {
-    padding: 22px 0 20px;
-    border-left: 0;
-    border-top: 1px solid var(--slate-200);
+    padding: 20px;
   }
 }
 </style>

@@ -12,6 +12,10 @@ import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { ECharts, EChartsOption } from 'echarts'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { twitterChartTheme } from '@/features/teacher/chartTheme'
+
+const chartThemeName = 'iread-twitter'
+echarts.registerTheme(chartThemeName, twitterChartTheme)
 
 // 가져온 기능을 ECharts 엔진에 등록해야 실제 차트를 그릴 수 있습니다.
 echarts.use([
@@ -44,7 +48,7 @@ function renderChart() {
   // 아직 div가 화면에 만들어지지 않았다면 그릴 곳이 없으므로 종료합니다.
   if (!chartElement.value) return
   // ??=는 chart가 없을 때만 새 인스턴스를 만든다는 뜻이라 중복 생성을 방지합니다.
-  chart ??= echarts.init(chartElement.value)
+  chart ??= echarts.init(chartElement.value, chartThemeName)
   // 부모가 전달한 최신 설정으로 차트를 다시 그립니다.
   chart.setOption(props.option, true)
 }

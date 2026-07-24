@@ -1,13 +1,14 @@
 <script setup lang="ts">
-// 학생 상세 페이지 위쪽에서 공통으로 보이는 학생 요약 정보와 수정/삭제 동작입니다.
+// 아동 상세 페이지 위쪽에서 공통으로 보이는 아동 요약 정보와 수정/삭제 동작입니다.
 import { useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
 import { selectedStudent } from '@/features/teacher/mockData'
 
 const router = useRouter()
 
 function deleteStudent() {
   // confirm이 true(확인)일 때만 다음 안내를 보여 줍니다. 목업이라 실제 삭제는 하지 않습니다.
-  if (window.confirm('목업에서 이 학생을 삭제 처리할까요?')) {
+  if (window.confirm('목업에서 이 아동을 삭제 처리할까요?')) {
     window.alert('목업 환경에서는 실제 데이터가 삭제되지 않습니다.')
   }
 }
@@ -45,16 +46,17 @@ function deleteStudent() {
     </dl>
     <div class="student-summary__actions">
       <!-- 클릭 시 수정 화면 주소를 이동 기록에 추가합니다. -->
-      <button
-        class="button button--secondary button--small"
+      <Button
+        variant="outline"
+        size="sm"
         type="button"
         @click="router.push('/teacher/students/1/edit')"
       >
         정보 수정
-      </button>
-      <button class="button button--danger button--small" type="button" @click="deleteStudent">
-        학생 삭제
-      </button>
+      </Button>
+      <Button variant="destructive" size="sm" type="button" @click="deleteStudent">
+        아동 삭제
+      </Button>
     </div>
   </section>
 </template>

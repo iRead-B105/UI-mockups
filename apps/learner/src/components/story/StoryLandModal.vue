@@ -63,7 +63,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   display: grid;
   place-items: center;
   padding: clamp(8px, 1.8dvh, 20px) clamp(12px, 2.5dvw, 36px);
-  background: color-mix(in srgb, var(--learner-color-text) 38%, transparent);
+  background: rgba(23, 38, 80, .36);
 }
 
 .story-panel {
@@ -75,17 +75,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   gap: clamp(8px, 1.7dvh, 20px);
   overflow: hidden;
   padding: clamp(12px, 2.4dvh, 32px) clamp(18px, 3dvw, 40px);
-  border: var(--learner-border-width) solid var(--learner-border-color);
+  border: 5px solid rgba(255, 255, 255, .92);
   border-radius: var(--learner-radius-card);
   outline: none;
-  background: color-mix(in srgb, var(--learner-color-game) 10%, var(--learner-color-surface));
-  box-shadow: var(--learner-shadow-floating);
+  background: linear-gradient(180deg, #fffdf4, #fff4c7);
+  box-shadow: 0 18px 0 rgba(208, 151, 25, .18), var(--learner-shadow-floating);
   color: var(--learner-color-text);
   font-family: var(--learner-font-reading);
 }
 
 .story-heading { display:flex;align-items:center;justify-content:center;gap:clamp(12px,2dvw,var(--learner-space-5)); }
-.story-heading span { width: clamp(42px, 6vw, 84px); height: var(--learner-border-width); border-radius: var(--learner-radius-pill); background: var(--learner-color-primary-light); }
+.story-heading span { width: clamp(42px, 6vw, 84px); height: 6px; border-radius: var(--learner-radius-pill); background: var(--learner-home-story); }
 .story-heading h2 { margin:0;font-family:var(--learner-font-display);font-size:clamp(32px,min(4.2dvw,7dvh),60px);font-weight:var(--learner-font-weight-heavy);line-height:1; }
 
 .story-card {
@@ -96,7 +96,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   max-height: 100%;
   aspect-ratio: 1673 / 940;
   overflow: hidden;
-  border: var(--learner-border-width) solid var(--learner-color-game);
+  border: 5px solid var(--learner-home-story);
   border-radius: var(--learner-radius-card);
   background: var(--learner-color-surface-soft);
   box-shadow: var(--learner-shadow-card);
@@ -160,7 +160,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
   transition: transform var(--learner-duration-fast) var(--learner-easing-standard), box-shadow var(--learner-duration-fast);
 }
 .story-action--mine { background:var(--learner-color-surface);color:var(--learner-color-text); }
-.story-action--new { border-color:var(--learner-color-primary);background:var(--learner-color-primary);color:var(--learner-color-text-inverse); }
+.story-action--new { border-color:#dda41f;background:var(--learner-home-story);color:var(--learner-color-text); }
 .story-action:hover { transform:translateY(-3px);box-shadow:var(--learner-shadow-card); }
 .story-action:active { transform:translateY(0); }
 .story-action:focus-visible { outline:none;box-shadow:var(--learner-shadow-focus); }

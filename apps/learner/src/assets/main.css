@@ -1,7 +1,109 @@
 @import './base.css';
 @import './tokens.css';
 
-:root { color-scheme: light; }
-body { min-width: 320px; min-height: 100vh; background: #8bd8fa; }
-button, canvas { font: inherit; }
-#app { min-height: 100vh; }
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--learner-color-sky-top);
+  color: var(--learner-color-text);
+}
+
+button,
+input,
+select,
+textarea,
+canvas {
+  font: inherit;
+}
+
+button,
+[role='button'] {
+  min-inline-size: var(--learner-touch-target);
+  min-block-size: var(--learner-touch-target);
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--learner-outline-focus);
+  outline-offset: var(--learner-outline-offset);
+}
+
+button:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+[data-learner-emotion='playful'] {
+  --learner-page-background: var(--learner-emotion-playful-background);
+  --learner-page-surface: var(--learner-emotion-playful-surface);
+  --learner-page-accent: var(--learner-emotion-playful-accent);
+}
+
+[data-learner-emotion='calm'] {
+  --learner-page-background: var(--learner-emotion-calm-background);
+  --learner-page-surface: var(--learner-emotion-calm-surface);
+  --learner-page-accent: var(--learner-emotion-calm-accent);
+}
+
+[data-learner-emotion='balanced'] {
+  --learner-page-background: var(--learner-emotion-balanced-background);
+  --learner-page-surface: var(--learner-emotion-balanced-surface);
+  --learner-page-accent: var(--learner-emotion-balanced-accent);
+}
+
+.learner-surface {
+  border: var(--learner-border-width) solid var(--learner-border-color);
+  border-radius: var(--learner-radius-card);
+  background: var(--learner-page-surface, var(--learner-color-surface));
+  box-shadow: var(--learner-shadow-card);
+  color: var(--learner-color-text);
+}
+
+.learner-readable-copy {
+  max-width: var(--learner-readable-line);
+  line-height: 1.65;
+  text-align: left;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

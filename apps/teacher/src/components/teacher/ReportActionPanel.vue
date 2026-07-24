@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import SaveToast from '@/components/common/SaveToast.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { reportStatusLabels } from '@/features/teacher/displayLabels'
 import type { ReportStatus, ShareLink } from '@/features/teacher/types'
 
 const props = defineProps<{
   status: ReportStatus
-  version: number
+  versionLabel: string
   expiresAt: string
   shareLink: ShareLink | null
+  guardianPreviewUrl?: string
   busyAction: string | null
   saved: boolean
   previousShareMessage?: string
@@ -35,7 +38,7 @@ const isBusy = computed(() => props.busyAction !== null)
   <section class="report-actions screen-only" aria-labelledby="report-action-title">
     <header>
       <div>
-        <span>보고서 v{{ version }}</span>
+        <span>보고서 {{ versionLabel }}</span>
         <h3 id="report-action-title">{{ reportStatusLabels[status] }}</h3>
       </div>
       <SaveToast :visible="saved" message="보고서 초안을 저장했습니다." inline />
@@ -45,22 +48,22 @@ const isBusy = computed(() => props.busyAction !== null)
 
     <div v-if="status === 'draft'" class="action-row">
       <div>
-        <button class="button button--secondary" type="button" :disabled="isBusy" @click="emit('resetPeriod')">
+        <Button variant="outline" type="button" :disabled="isBusy" @click="emit('resetPeriod')">
           기간 다시 설정
-        </button>
-        <button class="button button--secondary" type="button" :disabled="isBusy" @click="emit('saveDraft')">
+        </Button>
+        <Button variant="outline" type="button" :disabled="isBusy" @click="emit('saveDraft')">
           {{ busyAction === 'save' ? '저장 중…' : '임시 저장' }}
-        </button>
+        </Button>
       </div>
-      <button class="button" type="button" :disabled="isBusy" @click="emit('publish')">
+      <Button type="button" :disabled="isBusy" @click="emit('publish')">
         보고서 발행
-      </button>
+      </Button>
     </div>
 
     <div v-else-if="status === 'published'" class="published-actions">
       <label class="expiry-field">
         <span>공유 링크 만료일 <b>필수</b></span>
-        <input
+        <Input
           class="input"
           type="date"
           min="2026-07-22"
@@ -69,12 +72,12 @@ const isBusy = computed(() => props.busyAction !== null)
         />
       </label>
       <div class="action-row">
-        <button class="button button--secondary" type="button" :disabled="isBusy" @click="emit('newDraft')">
+        <Button variant="outline" type="button" :disabled="isBusy" @click="emit('newDraft')">
           새 초안 만들기
-        </button>
-        <button class="button" type="button" :disabled="!expiresAt || isBusy" @click="emit('createShare')">
+        </Button>
+        <Button type="button" :disabled="!expiresAt || isBusy" @click="emit('createShare')">
           {{ busyAction === 'share' ? '링크 생성 중…' : '공유 링크 만들기' }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -82,37 +85,40 @@ const isBusy = computed(() => props.busyAction !== null)
       <div class="masked-link">
         <span>공유 주소</span>
         <strong>{{ shareLink?.maskedUrl }}</strong>
-        <small>학생 이름과 연락처가 포함되지 않은 주소입니다.</small>
+        <small>아동 이름과 연락처가 포함되지 않은 주소입니다.</small>
       </div>
       <div class="action-row">
         <div>
-          <button class="button button--secondary" type="button" :disabled="isBusy" @click="emit('copyLink')">
+          <Button variant="outline" type="button" :disabled="isBusy" @click="emit('copyLink')">
             링크 복사
-          </button>
-          <button class="button button--secondary" type="button" @click="emit('viewHistory')">
+          </Button>
+          <Button v-if="guardianPreviewUrl" as-child variant="outline">
+            <a :href="guardianPreviewUrl" target="_blank" rel="noopener">보호자 화면 보기</a>
+          </Button>
+          <Button variant="outline" type="button" @click="emit('viewHistory')">
             공유 현황 보기
-          </button>
+          </Button>
         </div>
-        <button class="button" type="button" @click="manageOpen = !manageOpen">링크 관리</button>
+        <Button type="button" @click="manageOpen = !manageOpen">링크 관리</Button>
       </div>
       <div v-if="manageOpen" class="link-management">
         <p>재발급하면 현재 링크가 즉시 폐기되고 새 주소가 만들어집니다.</p>
         <div>
-          <button class="button button--secondary button--small" type="button" :disabled="isBusy" @click="emit('reissueLink')">
+          <Button variant="outline" size="sm" type="button" :disabled="isBusy" @click="emit('reissueLink')">
             링크 재발급
-          </button>
-          <button class="button button--danger button--small" type="button" :disabled="isBusy" @click="emit('revokeLink')">
+          </Button>
+          <Button variant="destructive" size="sm" type="button" :disabled="isBusy" @click="emit('revokeLink')">
             링크 폐기
-          </button>
+          </Button>
         </div>
       </div>
     </div>
 
     <div v-else class="action-row">
-      <button class="button button--secondary" type="button" @click="emit('viewHistory')">공유 이력 보기</button>
-      <button class="button" type="button" :disabled="isBusy" @click="emit('reissueLink')">
+      <Button variant="outline" type="button" @click="emit('viewHistory')">공유 이력 보기</Button>
+      <Button type="button" :disabled="isBusy" @click="emit('reissueLink')">
         {{ busyAction === 'reissue' ? '재발급 중…' : '링크 재발급' }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>

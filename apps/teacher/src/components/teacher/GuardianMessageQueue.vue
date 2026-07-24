@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { encouragementStatusLabels } from '@/features/teacher/displayLabels'
 import type {
   AsyncContentState,
@@ -87,23 +91,24 @@ function formatDate(value: string) {
                   >보고서 v{{ comment.reportVersion }} · {{ formatDate(comment.createdAt) }}</span
                 >
               </div>
-              <em :class="{ 'is-unread': comment.status === 'unread' }">
+              <Badge variant="secondary" :class="{ 'is-unread': comment.status === 'unread' }">
                 {{ comment.status === 'unread' ? '읽지 않음' : '읽음' }}
-              </em>
+              </Badge>
             </header>
             <div class="message-body">
               <p>{{ comment.text }}</p>
             </div>
             <div class="message-actions">
-              <button
-                class="button button--secondary button--small"
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
                 @click="emit('addCommentToNote', comment.id)"
               >
                 내부 메모 추가
-              </button>
-              <button
-                class="button button--small"
+              </Button>
+              <Button
+                size="sm"
                 type="button"
                 :disabled="comment.status === 'read' || busyId === comment.id"
                 @click="emit('markRead', comment.id)"
@@ -115,7 +120,7 @@ function formatDate(value: string) {
                       ? '읽음 처리됨'
                       : '읽음 처리'
                 }}
-              </button>
+              </Button>
             </div>
           </li>
         </ol>
@@ -132,38 +137,39 @@ function formatDate(value: string) {
                 <strong>{{ message.author }}</strong>
                 <span>{{ formatDate(message.createdAt) }}</span>
               </div>
-              <em :class="`is-${message.status}`">{{
-                encouragementStatusLabels[message.status]
-              }}</em>
+              <Badge variant="secondary" :class="`is-${message.status}`">
+                {{ encouragementStatusLabels[message.status] }}
+              </Badge>
             </header>
 
             <div class="message-body">
-              <textarea
+              <Textarea
                 v-if="activeDeliveryEditorId === message.id"
                 class="textarea"
                 :value="deliveryTextFor(message)"
                 autofocus
                 aria-label="아동에게 전달할 최종 문장"
                 @input="deliveryDrafts[message.id] = ($event.target as HTMLTextAreaElement).value"
-              ></textarea>
+              />
               <p v-else>{{ deliveryTextFor(message) }}</p>
 
               <div v-if="activeDeliveryEditorId === message.id" class="inline-actions">
-                <button
-                  class="button button--secondary button--small"
+                <Button
+                  variant="outline"
+                  size="sm"
                   type="button"
                   @click="cancelDeliveryEdit(message)"
                 >
                   취소
-                </button>
-                <button
-                  class="button button--small"
+                </Button>
+                <Button
+                  size="sm"
                   type="button"
                   :disabled="!deliveryTextFor(message).trim()"
                   @click="finishDeliveryEdit"
                 >
                   수정 완료
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -171,7 +177,7 @@ function formatDate(value: string) {
               v-if="message.status === 'pending-approval' && activeHoldMessageId === message.id"
               class="hold-field"
             >
-              <input
+              <Input
                 :id="`hold-reason-${message.id}`"
                 v-model="holdReasons[message.id]"
                 class="input"
@@ -179,21 +185,22 @@ function formatDate(value: string) {
                 placeholder="보류 사유를 입력해 주세요."
               />
               <div class="inline-actions">
-                <button
-                  class="button button--secondary button--small"
+                <Button
+                  variant="outline"
+                  size="sm"
                   type="button"
                   @click="cancelHold(message.id)"
                 >
                   취소
-                </button>
-                <button
-                  class="button button--small"
+                </Button>
+                <Button
+                  size="sm"
                   type="button"
                   :disabled="!holdReasons[message.id]?.trim() || busyId === message.id"
                   @click="emit('hold', message.id, holdReasons[message.id] ?? '')"
                 >
                   {{ busyId === message.id ? '처리 중…' : '보류 확정' }}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -205,28 +212,30 @@ function formatDate(value: string) {
               "
               class="message-actions"
             >
-              <button
-                class="button button--secondary button--small"
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
                 @click="startDeliveryEdit(message)"
               >
                 수정
-              </button>
-              <button
-                class="button button--secondary button--small"
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
                 @click="startHold(message.id)"
               >
                 보류
-              </button>
-              <button
-                class="button button--small"
+              </Button>
+              <Button
+                size="sm"
                 type="button"
                 :disabled="!deliveryTextFor(message).trim() || busyId === message.id"
                 @click="emit('approve', message.id, deliveryTextFor(message))"
               >
                 {{ busyId === message.id ? '처리 중…' : '승인 및 전달 예약' }}
-              </button>
+              </Button>
             </div>
 
             <p v-if="message.holdReason" class="hold-result">

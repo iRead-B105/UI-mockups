@@ -5,6 +5,8 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SaveToast from '@/components/common/SaveToast.vue'
 import LessonMaterialEditor from '@/components/teacher/LessonMaterialEditor.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 import { recommendedCurricula, studentCurricula } from '@/features/teacher/mockData'
 import type { CurriculumItem, RecommendedCurriculumItem } from '@/features/teacher/types'
@@ -165,14 +167,14 @@ function saveLessonMaterial(item: CurriculumItem) {
     >
       <template #actions>
         <SaveToast :visible="saved" inline message="교안 및 커리큘럼 변경 사항이 저장되었습니다." />
-        <button class="button" type="button" :disabled="!hasChanges" @click="saveChanges">
+        <Button type="button" :disabled="!hasChanges" @click="saveChanges">
           변경 사항 저장
-        </button>
+        </Button>
       </template>
     </PageHeader>
 
     <div class="curriculum-workspace">
-      <section class="curriculum-library">
+      <Card class="curriculum-library">
         <header class="section-heading">
           <div>
             <h2>전체 훈련 목록</h2>
@@ -184,7 +186,7 @@ function saveLessonMaterial(item: CurriculumItem) {
           <div class="curriculum-table__head">
             <span>순서</span><span>카테고리</span><span>훈련명</span><span>달성 상태</span>
           </div>
-          <button
+          <Button
             v-for="item in curriculumItems"
             :key="item.id"
             class="curriculum-row"
@@ -199,11 +201,11 @@ function saveLessonMaterial(item: CurriculumItem) {
               <b>{{ item.achievement }}%</b>
               <small>{{ getAchievementStatus(item.achievement) }}</small>
             </span>
-          </button>
+          </Button>
         </div>
-      </section>
+      </Card>
 
-      <aside class="curriculum-panel">
+      <Card class="curriculum-panel">
         <section class="selected-training">
           <header class="section-heading">
             <h2>선택한 훈련</h2>
@@ -228,14 +230,14 @@ function saveLessonMaterial(item: CurriculumItem) {
             </div>
           </dl>
 
-          <div class="material-access-card">
+          <Card class="material-access-card">
             <p>{{ selectedItem?.material.objective }}</p>
-          </div>
+          </Card>
 
           <div class="selected-training__actions">
-            <button class="button button--secondary" type="button" @click="addSelectedTraining">
+            <Button variant="outline" type="button" @click="addSelectedTraining">
               {{ selectedRecommendation ? '수업 횟수 1회 추가' : '다음 회차에 추가' }}
-            </button>
+            </Button>
             <span v-if="selectedRecommendation" class="inclusion-note">
               현재 {{ selectedRecommendation.count }}회 포함됨
             </span>
@@ -247,7 +249,6 @@ function saveLessonMaterial(item: CurriculumItem) {
             <div>
               <div class="title-line">
                 <h2>다음 회차 순서</h2>
-                <span v-if="hasChanges" class="unsaved-indicator">저장 필요</span>
               </div>
               <p>
                 {{
@@ -257,9 +258,11 @@ function saveLessonMaterial(item: CurriculumItem) {
                 }}
               </p>
             </div>
-            <button
+            <Button
               class="edit-button"
               :class="{ active: editRecommendations }"
+              :variant="editRecommendations ? 'default' : 'outline'"
+              size="sm"
               type="button"
               :aria-pressed="editRecommendations"
               @click="editRecommendations = !editRecommendations"
@@ -272,7 +275,7 @@ function saveLessonMaterial(item: CurriculumItem) {
                 <path d="m13.5 6.5 4 4" />
               </svg>
               <span>{{ editRecommendations ? '수정 완료' : '수정' }}</span>
-            </button>
+            </Button>
           </header>
 
           <div class="recommendation-list">
@@ -302,31 +305,35 @@ function saveLessonMaterial(item: CurriculumItem) {
               </div>
               <div v-if="editRecommendations" class="recommendation-actions">
                 <div class="count-control" aria-label="시행 횟수 조절">
-                  <button type="button" aria-label="횟수 줄이기" @click="updateCount(item, -1)">
+                  <Button variant="outline" size="icon-sm" type="button" aria-label="횟수 줄이기" @click="updateCount(item, -1)">
                     −
-                  </button>
+                  </Button>
                   <b>{{ item.count }}회</b>
-                  <button type="button" aria-label="횟수 늘리기" @click="updateCount(item, 1)">
+                  <Button variant="outline" size="icon-sm" type="button" aria-label="횟수 늘리기" @click="updateCount(item, 1)">
                     ＋
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
                   class="recommendation-material-button"
+                  variant="outline"
+                  size="sm"
                   type="button"
                   draggable="false"
                   @click.stop="openRecommendationMaterial(item)"
                 >
                   교안 편집
-                </button>
-                <button
+                </Button>
+                <Button
                   class="remove-button"
+                  variant="ghost"
+                  size="icon-sm"
                   type="button"
                   draggable="false"
                   :aria-label="`${item.title} 삭제`"
                   @click.stop="recommendationPendingDeletion = item"
                 >
                   ×
-                </button>
+                </Button>
               </div>
               <span v-else class="count-label">{{ item.count }}회</span>
             </article>
@@ -335,7 +342,7 @@ function saveLessonMaterial(item: CurriculumItem) {
             </p>
           </div>
         </section>
-      </aside>
+      </Card>
     </div>
 
     <ConfirmDialog
@@ -364,16 +371,23 @@ function saveLessonMaterial(item: CurriculumItem) {
 }
 .curriculum-workspace {
   display: grid;
+  align-items: stretch;
+  gap: 20px;
   grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
 }
 .curriculum-library {
+  height: 100%;
   min-width: 0;
-  padding: 2px 24px 18px 0;
+  gap: 0;
+  padding: 20px;
+  border-radius: var(--radius-lg);
 }
 .curriculum-panel {
+  height: 100%;
   min-width: 0;
-  padding: 2px 0 18px 24px;
-  border-left: 1px solid var(--slate-200);
+  gap: 0;
+  padding: 20px;
+  border-radius: var(--radius-lg);
 }
 .section-heading {
   display: flex;
@@ -396,7 +410,10 @@ function saveLessonMaterial(item: CurriculumItem) {
   font-weight: 600;
 }
 .curriculum-table {
-  margin-top: 12px;
+  overflow: hidden;
+  margin: 18px 0 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 .curriculum-table__head,
 .curriculum-row {
@@ -406,8 +423,10 @@ function saveLessonMaterial(item: CurriculumItem) {
   grid-template-columns: 46px 86px minmax(0, 1fr) 94px;
 }
 .curriculum-table__head {
-  padding: 9px 12px;
+  min-height: 40px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--slate-300);
+  background: color-mix(in oklch, var(--muted) 42%, transparent);
   color: var(--slate-500);
   font-size: 12px;
   font-weight: 600;
@@ -415,8 +434,8 @@ function saveLessonMaterial(item: CurriculumItem) {
 .curriculum-row {
   position: relative;
   width: 100%;
-  min-height: 54px;
-  padding: 10px 12px;
+  min-height: 58px;
+  padding: 10px 14px;
   border: 0;
   border-bottom: 1px solid var(--slate-200);
   background: transparent;
@@ -433,13 +452,17 @@ function saveLessonMaterial(item: CurriculumItem) {
   content: '';
 }
 .curriculum-row:hover {
-  background: var(--slate-50);
+  background: var(--interactive-hover-background);
 }
 .curriculum-row.active::before {
   background: var(--primary-600);
 }
+.curriculum-row.active {
+  background: var(--active-selection-background);
+  color: var(--active-selection-foreground);
+}
 .curriculum-row.active strong {
-  color: var(--slate-900);
+  color: var(--active-selection-foreground);
 }
 .achievement {
   display: grid;
@@ -479,14 +502,15 @@ function saveLessonMaterial(item: CurriculumItem) {
 }
 .selected-training dl {
   display: grid;
+  gap: 8px;
   margin: 17px 0 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.selected-training dl > div + div {
-  padding-left: 14px;
-  border-left: 1px solid var(--slate-200);
-}
 .selected-training dl > div {
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--muted) 35%, transparent);
   text-align: center;
 }
 .selected-training dt {
@@ -502,12 +526,13 @@ function saveLessonMaterial(item: CurriculumItem) {
 .material-access-card {
   margin: 4px 0 15px;
   padding: 12px 14px;
-  border-left: 3px solid var(--primary-300);
-  background: var(--primary-50);
+  border-color: color-mix(in oklch, var(--primary-600) 24%, var(--border));
+  border-left: 3px solid var(--primary-600);
+  background: var(--active-selection-background);
 }
 .material-access-card > p {
   margin: 0;
-  color: var(--slate-700);
+  color: var(--active-selection-foreground);
   font-size: 11px;
   line-height: 1.55;
 }
@@ -524,27 +549,14 @@ function saveLessonMaterial(item: CurriculumItem) {
   font-size: 12px;
 }
 .next-session {
-  padding-top: 24px;
+  margin-top: 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
 }
 .title-line {
   display: flex;
   align-items: center;
   gap: 9px;
-}
-.unsaved-indicator {
-  color: var(--slate-600);
-  font-size: 12px;
-  font-weight: 700;
-}
-.unsaved-indicator::before {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 5px;
-  border-radius: 50%;
-  background: var(--primary-600);
-  content: '';
-  vertical-align: 1px;
 }
 .edit-button {
   display: inline-flex;
@@ -584,15 +596,18 @@ function saveLessonMaterial(item: CurriculumItem) {
 }
 .recommendation-list {
   display: grid;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 .recommendation-list article {
   display: grid;
   min-height: 58px;
   align-items: center;
   gap: 8px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--slate-200);
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--muted) 25%, transparent);
   grid-template-columns: 20px 22px minmax(0, 1fr) auto;
   transition: 150ms ease;
 }
@@ -600,7 +615,8 @@ function saveLessonMaterial(item: CurriculumItem) {
   cursor: grab;
 }
 .recommendation-list article.editable:hover {
-  background: var(--slate-50);
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: var(--interactive-hover-background);
 }
 .recommendation-list article.dragging {
   opacity: 0.45;
@@ -713,16 +729,13 @@ function saveLessonMaterial(item: CurriculumItem) {
   transform: none;
 }
 
-@container (max-width: 1000px) {
+@container (max-width: 850px) {
   .curriculum-workspace {
     grid-template-columns: 1fr;
   }
-  .curriculum-library {
-    padding-right: 0;
-  }
   .curriculum-panel {
-    padding: 28px 0 18px;
-    border-left: 0;
+    padding: 20px;
   }
 }
 </style>
+            variant="ghost"

@@ -18,6 +18,9 @@
   --learner-color-sky-bottom: #73c9f1;
   --learner-color-surface: #ffffff;
   --learner-color-surface-soft: #f7fbff;
+  --learner-color-surface-warm: #fff8e8;
+  --learner-color-surface-calm: #eef6ff;
+  --learner-color-surface-balanced: #fffaf0;
   --learner-background: linear-gradient(
     180deg,
     var(--learner-color-sky-top) 0%,
@@ -35,6 +38,38 @@
   --learner-color-game: #f5b514;
   --learner-color-learning: #59b93b;
   --learner-color-challenge: #4b78e6;
+
+  /* 학습자 메인 지도 전용 팔레트 */
+  --learner-home-sea: #55cdf2;
+  --learner-home-warm-white: #fff8e8;
+  --learner-home-growth: #ff785a;
+  --learner-home-story: #ffc83d;
+  --learner-home-training: #54c96b;
+  --learner-home-challenge: #5c70ed;
+
+  /* 화면별 감성 방향: C 놀이형 / B 안정형 / A 균형형 */
+  --learner-emotion-playful-background: linear-gradient(
+    180deg,
+    var(--learner-color-sky-top) 0%,
+    var(--learner-color-sky-middle) 62%,
+    var(--learner-color-sky-bottom) 100%
+  );
+  --learner-emotion-playful-surface: var(--learner-color-surface-warm);
+  --learner-emotion-playful-accent: var(--learner-home-story);
+  --learner-emotion-calm-background: linear-gradient(
+    180deg,
+    #eaf5ff 0%,
+    var(--learner-color-surface-soft) 100%
+  );
+  --learner-emotion-calm-surface: var(--learner-color-surface);
+  --learner-emotion-calm-accent: var(--learner-color-primary);
+  --learner-emotion-balanced-background: linear-gradient(
+    180deg,
+    var(--learner-color-surface-balanced) 0%,
+    #edf9f0 100%
+  );
+  --learner-emotion-balanced-surface: var(--learner-color-surface);
+  --learner-emotion-balanced-accent: var(--learner-color-success);
 
   /* 학습자 상태 */
   --learner-color-success: #4caf68;
@@ -83,29 +118,36 @@
   --learner-shadow-card: 0 10px 24px rgb(35 71 130 / 16%);
   --learner-shadow-floating: 0 16px 32px rgb(35 71 130 / 20%);
   --learner-shadow-focus: 0 0 0 5px rgb(255 255 255 / 90%), 0 0 0 9px rgb(62 102 233 / 70%);
+  --learner-outline-focus: 4px solid var(--learner-color-primary);
+  --learner-outline-offset: 4px;
 
   /* 학습자 테두리와 컨트롤 */
   --learner-border-width: 3px;
   --learner-border-width-strong: 6px;
   --learner-border-color: rgb(255 255 255 / 75%);
   --learner-border-color-soft: rgb(23 38 80 / 10%);
-  --learner-control-height-small: 48px;
+  --learner-control-height-small: 52px;
   --learner-control-height-medium: 60px;
   --learner-control-height-large: 72px;
   --learner-touch-target: 52px;
+  --learner-control-gap: 12px;
 
   /* 학습자 레이아웃 */
   --learner-header-height: clamp(76px, 12.5vh, 108px);
   --learner-content-width: 1440px;
   --learner-reading-width: 1080px;
   --learner-page-padding: clamp(24px, 4vw, 64px);
+  --learner-readable-line: 34rem;
+  --learner-z-help: 220;
+  --learner-z-dialog: 400;
 
   /* 학습자 애니메이션 */
   --learner-duration-fast: 160ms;
   --learner-duration-normal: 240ms;
   --learner-duration-slow: 360ms;
+  --learner-duration-completion: 500ms;
   --learner-easing-standard: cubic-bezier(.2, .8, .2, 1);
-  --learner-easing-bounce: cubic-bezier(.2, 1.35, .4, 1);
+  --learner-easing-bounce: cubic-bezier(.2, 1.2, .4, 1);
 
   /* 교수자 UI는 학습자 토큰과 독립적으로 관리 */
   --educator-header-height: 72px;
@@ -123,5 +165,6 @@
     --learner-duration-fast: 0ms;
     --learner-duration-normal: 0ms;
     --learner-duration-slow: 0ms;
+    --learner-duration-completion: 0ms;
   }
 }

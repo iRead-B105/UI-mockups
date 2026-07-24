@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const props = defineProps<{
   studentName: string
@@ -26,21 +30,21 @@ const reportSections = [
 </script>
 
 <template>
-  <section class="report-setup" aria-labelledby="report-setup-title">
-    <header class="report-setup__header">
+  <Card class="report-setup" role="region" aria-labelledby="report-setup-title">
+    <CardHeader class="report-setup__header">
       <div>
         <h2 id="report-setup-title">보고서 설정</h2>
-        <p>{{ studentName }} 학생의 조회 기간을 정해 보고서를 만듭니다.</p>
+        <p>{{ studentName }} 아동의 조회 기간을 정해 보고서를 만듭니다.</p>
       </div>
-    </header>
+    </CardHeader>
 
-    <div class="report-setup__body">
+    <CardContent class="report-setup__body">
       <div class="report-period">
         <h3>조회 기간</h3>
         <div class="report-period__fields">
           <div class="field">
-            <label for="report-start-date">시작일</label>
-            <input
+            <Label for="report-start-date">시작일</Label>
+            <Input
               id="report-start-date"
               class="input"
               type="date"
@@ -50,8 +54,8 @@ const reportSections = [
           </div>
           <span aria-hidden="true">—</span>
           <div class="field">
-            <label for="report-end-date">종료일</label>
-            <input
+            <Label for="report-end-date">종료일</Label>
+            <Input
               id="report-end-date"
               class="input"
               type="date"
@@ -76,20 +80,27 @@ const reportSections = [
             </div>
           </li>
         </ul>
+        <div class="report-setup__actions">
+          <Button type="button" :disabled="invalidPeriod" @click="emit('generate')">
+            보고서 생성
+          </Button>
+        </div>
       </div>
-    </div>
-
-    <footer class="report-setup__footer">
-      <button class="button" type="button" :disabled="invalidPeriod" @click="emit('generate')">
-        보고서 생성
-      </button>
-    </footer>
-  </section>
+    </CardContent>
+  </Card>
 </template>
 
 <style scoped>
-.report-setup__header,
-.report-setup__footer {
+.report-setup {
+  container-type: inline-size;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.report-setup__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -107,8 +118,11 @@ const reportSections = [
   font-size: 17px;
 }
 
-.report-setup__header p,
-.report-setup__footer p {
+.report-setup__header {
+  border-bottom: 1px solid var(--border);
+}
+
+.report-setup__header p {
   margin: 3px 0 0;
   color: var(--slate-500);
   font-size: 12px;
@@ -116,7 +130,8 @@ const reportSections = [
 
 .report-setup__body {
   display: grid;
-  grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
+  padding: 0;
+  grid-template-columns: 1fr;
 }
 
 .report-period,
@@ -125,7 +140,7 @@ const reportSections = [
 }
 
 .report-period {
-  border-right: 1px solid var(--slate-200);
+  border-bottom: 1px solid var(--slate-200);
 }
 
 .report-setup__body h3 {
@@ -164,6 +179,9 @@ const reportSections = [
   display: grid;
   align-items: start;
   gap: 9px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--muted) 55%, transparent);
   grid-template-columns: 16px minmax(0, 1fr);
 }
 
@@ -190,11 +208,16 @@ const reportSections = [
   line-height: 1.45;
 }
 
-.report-setup__footer {
+.report-setup__actions {
+  display: flex;
   justify-content: flex-end;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  background: var(--white);
 }
 
-.report-setup__footer .button:disabled {
+.report-setup__actions .button:disabled {
   border-color: var(--slate-200);
   background: var(--slate-100);
   color: var(--slate-400);
@@ -202,13 +225,14 @@ const reportSections = [
   transform: none;
 }
 
-@media (max-width: 1080px) {
+@container (min-width: 760px) {
   .report-setup__body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
   }
 
   .report-period {
-    border-right: 0;
+    border-right: 1px solid var(--slate-200);
+    border-bottom: 0;
   }
 }
 </style>

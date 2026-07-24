@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const props = withDefaults(
   defineProps<{
@@ -55,7 +57,9 @@ onBeforeUnmount(() => {
       <strong>{{ label }}</strong>
       <small>{{ help }}</small>
     </div>
-    <label class="button button--secondary button--small" :for="inputId">{{ buttonLabel }}</label>
+    <label :class="cn(buttonVariants({ variant: 'outline', size: 'sm' }))" :for="inputId">
+      {{ buttonLabel }}
+    </label>
     <input :id="inputId" hidden type="file" accept="image/jpeg,image/png" @change="selectImage" />
   </div>
 </template>
@@ -67,7 +71,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
   padding: 12px 0 18px;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
+  grid-template-columns: 58px auto minmax(0, 1fr);
 }
 
 .profile-image-editor img,
@@ -101,5 +105,10 @@ onBeforeUnmount(() => {
 .profile-image-editor__copy small {
   color: var(--slate-500);
   font-size: 11px;
+}
+
+.profile-image-editor > label {
+  justify-self: start;
+  margin-left: 6px;
 }
 </style>

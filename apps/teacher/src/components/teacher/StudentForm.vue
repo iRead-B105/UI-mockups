@@ -6,6 +6,16 @@ import FormActions from '@/components/teacher/FormActions.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
 import ProfileImageEditor from '@/components/teacher/ProfileImageEditor.vue'
 import SettingsSection from '@/components/teacher/SettingsSection.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 import type { Student } from '@/features/teacher/types'
 
@@ -43,11 +53,11 @@ const emptyStudent: Student = {
 
 const form = reactive<Student>({ ...(props.initialValue ?? emptyStudent) })
 const savedSnapshot = ref(JSON.stringify(form))
-const title = computed(() => (props.mode === 'create' ? '새 학생 등록' : '학생 정보 수정'))
+const title = computed(() => (props.mode === 'create' ? '새 아동 등록' : '아동 정보 관리'))
 const description = computed(() =>
   props.mode === 'create'
-    ? '학생과 보호자 정보를 입력합니다.'
-    : '학생과 보호자 정보를 수정합니다.',
+    ? '아동과 보호자 정보를 입력합니다.'
+    : '아동과 보호자 정보를 수정합니다.',
 )
 const studentInitial = computed(() => form.name.trim().charAt(0) || '학')
 const formChanged = computed(
@@ -89,7 +99,7 @@ function confirmStudentDeletion() {
   <form class="student-form page-stack" @submit.prevent="submitForm">
     <PageHeader :title="title" :description="description" />
 
-    <SettingsSection title="학생 기본 정보" description="학습 관리에 사용하는 정보입니다.">
+    <SettingsSection title="아동 정보" description="학습 관리에 사용하는 정보입니다.">
       <ProfileImageEditor
         input-id="student-photo"
         label="프로필 사진"
@@ -101,27 +111,32 @@ function confirmStudentDeletion() {
 
       <div class="form-grid section-fields">
         <div class="field field--medium">
-          <label for="student-name">학생명</label>
-          <input id="student-name" v-model="form.name" class="input" required placeholder="학생 이름" />
+          <Label for="student-name">아동명</Label>
+          <Input id="student-name" v-model="form.name" class="input" required placeholder="아동 이름" />
         </div>
         <div class="field field--date">
-          <label for="student-birth">생년월일</label>
-          <input id="student-birth" v-model="form.birthDate" class="input" required type="date" />
+          <Label for="student-birth">생년월일</Label>
+          <Input id="student-birth" v-model="form.birthDate" class="input" required type="date" />
         </div>
         <div class="field field--short">
-          <label for="student-gender">성별</label>
-          <select id="student-gender" v-model="form.gender" class="select">
-            <option>남자</option>
-            <option>여자</option>
-          </select>
+          <Label for="student-gender">성별</Label>
+          <Select v-model="form.gender">
+            <SelectTrigger id="student-gender" class="select !w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="남자">남자</SelectItem>
+              <SelectItem value="여자">여자</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div class="field field--phone">
-          <label for="student-phone">학생 연락처</label>
-          <input id="student-phone" v-model="form.phone" class="input" placeholder="010-0000-0000" />
+          <Label for="student-phone">아동 연락처</Label>
+          <Input id="student-phone" v-model="form.phone" class="input" placeholder="010-0000-0000" />
         </div>
         <div class="field form-grid__wide">
-          <label for="student-school">학교명</label>
-          <input id="student-school" v-model="form.school" class="input" required placeholder="학교명" />
+          <Label for="student-school">학교명</Label>
+          <Input id="student-school" v-model="form.school" class="input" required placeholder="학교명" />
         </div>
       </div>
     </SettingsSection>
@@ -129,56 +144,63 @@ function confirmStudentDeletion() {
     <SettingsSection title="보호자 정보" description="상담에 사용할 보호자 연락처입니다.">
       <div class="form-grid">
         <div class="field field--medium">
-          <label for="guardian-name">보호자명</label>
-          <input id="guardian-name" v-model="form.guardianName" class="input" required placeholder="보호자 이름" />
+          <Label for="guardian-name">보호자명</Label>
+          <Input id="guardian-name" v-model="form.guardianName" class="input" required placeholder="보호자 이름" />
         </div>
         <div class="field field--short">
-          <label for="guardian-relation">관계</label>
-          <select id="guardian-relation" v-model="form.guardianRelation" class="select">
-            <option>어머니</option>
-            <option>아버지</option>
-            <option>조부모</option>
-            <option>기타</option>
-          </select>
+          <Label for="guardian-relation">관계</Label>
+          <Select v-model="form.guardianRelation">
+            <SelectTrigger id="guardian-relation" class="select !w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="어머니">어머니</SelectItem>
+              <SelectItem value="아버지">아버지</SelectItem>
+              <SelectItem value="조부모">조부모</SelectItem>
+              <SelectItem value="기타">기타</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div class="field field--phone">
-          <label for="guardian-phone">보호자 연락처</label>
-          <input id="guardian-phone" v-model="form.guardianPhone" class="input" required placeholder="010-0000-0000" />
+          <Label for="guardian-phone">보호자 연락처</Label>
+          <Input id="guardian-phone" v-model="form.guardianPhone" class="input" required placeholder="010-0000-0000" />
         </div>
         <div class="field">
-          <label for="guardian-email">보호자 이메일</label>
-          <input id="guardian-email" v-model="form.guardianEmail" class="input" type="email" placeholder="example@email.com" />
+          <Label for="guardian-email">보호자 이메일</Label>
+          <Input id="guardian-email" v-model="form.guardianEmail" class="input" type="email" placeholder="example@email.com" />
         </div>
         <div class="field form-grid__wide">
-          <label for="address">주소</label>
-          <input id="address" v-model="form.address" class="input" placeholder="주소를 입력하세요" />
+          <Label for="address">주소</Label>
+          <Input id="address" v-model="form.address" class="input" placeholder="주소를 입력하세요" />
         </div>
       </div>
     </SettingsSection>
 
-    <FormActions
-      :saved="saved"
-      :disabled="!canSubmit"
-      :save-label="mode === 'create' ? '학생 등록' : '변경 사항 저장'"
-      :saved-message="mode === 'create' ? '학생 정보가 저장되었습니다.' : '변경 사항이 저장되었습니다.'"
-      @cancel="router.back()"
-    />
+    <div class="student-form__footer">
+      <FormActions
+        :saved="saved"
+        :disabled="!canSubmit"
+        :save-label="mode === 'create' ? '아동 등록' : '변경 사항 저장'"
+        :saved-message="mode === 'create' ? '아동 정보가 저장되었습니다.' : '변경 사항이 저장되었습니다.'"
+        @cancel="router.back()"
+      />
 
-    <section v-if="mode === 'edit'" class="danger-zone" aria-label="학생 삭제">
-      <div>
-        <h2>학생 삭제</h2>
-        <p>학생 목록에서 제외하고 연결된 학습 기록에 더 이상 접근할 수 없게 됩니다.</p>
-      </div>
-      <button class="button button--danger button--small" type="button" @click="deleteDialogOpen = true">
-        학생 삭제
-      </button>
-    </section>
+      <section v-if="mode === 'edit'" class="danger-zone" aria-label="아동 삭제">
+        <div>
+          <h2>아동 삭제</h2>
+          <p>아동 목록에서 제외하고 연결된 학습 기록에 더 이상 접근할 수 없게 됩니다.</p>
+        </div>
+        <Button variant="destructive" size="sm" type="button" @click="deleteDialogOpen = true">
+          아동 삭제
+        </Button>
+      </section>
+    </div>
 
     <ConfirmDialog
       :open="deleteDialogOpen"
-      title="학생을 삭제할까요?"
-      :message="`${form.name} 학생을 목록에서 삭제합니다. 목업에서는 실제 데이터가 삭제되지 않습니다.`"
-      confirm-label="학생 삭제"
+      title="아동을 삭제할까요?"
+      :message="`${form.name} 아동을 목록에서 삭제합니다. 목업에서는 실제 데이터가 삭제되지 않습니다.`"
+      confirm-label="아동 삭제"
       @cancel="deleteDialogOpen = false"
       @confirm="confirmStudentDeletion"
     />
@@ -187,39 +209,62 @@ function confirmStudentDeletion() {
 
 <style scoped>
 .student-form {
-  max-width: 1020px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
 .form-grid {
   display: grid;
-  max-width: 620px;
-  gap: 18px 20px;
-  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  gap: 18px 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid .field {
+  max-width: none;
 }
 
 .section-fields {
-  padding-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
 }
 
 .form-grid__wide {
   grid-column: 1 / -1;
 }
 
+.student-form__footer {
+  display: grid;
+  gap: 16px;
+  padding-top: 2px;
+}
+
 .danger-zone {
   display: flex;
-  min-height: 82px;
+  min-height: 76px;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 18px 0;
-  border-top: 1px solid #fecaca;
-  border-bottom: 1px solid #fecaca;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in oklch, var(--destructive) 30%, var(--border));
+  border-left: 3px solid var(--destructive);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+}
+
+@media (max-width: 760px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid__wide {
+    grid-column: auto;
+  }
 }
 
 .danger-zone h2 {
   margin: 0;
-  color: var(--slate-800);
+  color: var(--destructive);
   font-size: 15px;
 }
 

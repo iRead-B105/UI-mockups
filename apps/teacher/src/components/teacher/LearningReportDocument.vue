@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
+import GazeAnalysisPanel from '@/components/teacher/GazeAnalysisPanel.vue'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import type { Student } from '@/features/teacher/types'
 
 defineProps<{
   student: Student
   startDate: string
   endDate: string
+  versionLabel: string
   teacherOpinion: string
   editable: boolean
   internalMemoAvailable: boolean
@@ -46,22 +50,23 @@ function formatDate(value: string) {
 </script>
 
 <template>
-  <article class="learning-report" aria-label="학생 보고서 문서">
+  <article class="learning-report" aria-label="아동 보고서 문서">
     <header class="learning-report__header">
       <div class="learning-report__brand">
         <span><img src="/images/iread-logo.png" alt="iRead" /></span>
       </div>
       <div class="learning-report__title">
-        <h1>{{ student.name }} 학생 학습 보고서</h1>
+        <h1>{{ student.name }} 아동 학습 보고서</h1>
         <span>{{ formatDate(startDate) }} – {{ formatDate(endDate) }}</span>
       </div>
     </header>
 
     <dl class="report-profile">
-      <div><dt>학생</dt><dd>{{ student.name }}</dd></div>
+      <div><dt>아동</dt><dd>{{ student.name }}</dd></div>
       <div><dt>학교 / 나이</dt><dd>{{ student.school }} · {{ student.age }}세</dd></div>
       <div><dt>보고서 기간</dt><dd>{{ formatDate(startDate) }} – {{ formatDate(endDate) }}</dd></div>
       <div><dt>담당 교수자</dt><dd>이OO 선생님</dd></div>
+      <div><dt>보고서 버전</dt><dd>{{ versionLabel }}</dd></div>
     </dl>
 
     <section class="report-section" aria-labelledby="summary-title">
@@ -140,6 +145,14 @@ function formatDate(value: string) {
       </table>
     </section>
 
+    <section class="report-section" aria-label="시선 분석 결과">
+      <GazeAnalysisPanel
+        title="읽기 시선 분석"
+        description="선택 기간에 저장된 시선 분석 결과를 학습 변화와 함께 정리했습니다."
+        compact
+      />
+    </section>
+
     <section class="report-section report-opinion" aria-labelledby="opinion-title">
       <div class="report-section__heading">
         <div>
@@ -149,17 +162,17 @@ function formatDate(value: string) {
       </div>
       <div v-if="editable && internalMemoAvailable" class="opinion-import screen-only">
         <span>내부 메모는 자동으로 공개되지 않습니다.</span>
-        <button class="button button--secondary button--small" type="button" @click="emit('importInternalMemo')">
+        <Button variant="outline" size="sm" type="button" @click="emit('importInternalMemo')">
           내부 메모에서 불러오기
-        </button>
+        </Button>
       </div>
-      <textarea
+      <Textarea
         v-if="editable"
         class="textarea screen-only"
         :value="teacherOpinion"
         aria-label="보호자에게 전달할 교수자 의견"
         @input="emit('update:teacherOpinion', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+      />
       <p v-else class="report-opinion__published screen-only">{{ teacherOpinion }}</p>
       <p class="report-opinion__print print-only">{{ teacherOpinion }}</p>
       <slot name="actions"></slot>

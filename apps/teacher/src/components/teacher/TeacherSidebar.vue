@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
 import { selectedStudent, students } from '@/features/teacher/mockData'
 import type { Student } from '@/features/teacher/types'
 import SidebarIcon from '@/components/teacher/SidebarIcon.vue'
@@ -8,7 +9,6 @@ import StudentSwitcher from '@/components/teacher/StudentSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
-const isAccountMenuOpen = ref(false)
 const currentStudent = computed(
   () => students.find((student) => student.id === Number(route.params.id)) ?? selectedStudent,
 )
@@ -21,13 +21,6 @@ const studentRouteNames = new Set([
   'student-edit',
 ])
 
-watch(
-  () => route.fullPath,
-  () => {
-    isAccountMenuOpen.value = false
-  },
-)
-
 function selectStudent(student: Student) {
   const routeName = studentRouteNames.has(String(route.name))
     ? String(route.name)
@@ -36,27 +29,17 @@ function selectStudent(student: Student) {
 }
 
 function openProfileSettings() {
-  isAccountMenuOpen.value = false
   router.push('/teacher/settings')
 }
 
 function logout() {
-  isAccountMenuOpen.value = false
   router.push('/login')
 }
-
-function closeAccountMenuOnOutsideClick(event: MouseEvent) {
-  if (!(event.target instanceof Element)) return
-  if (!event.target.closest('.sidebar-account')) isAccountMenuOpen.value = false
-}
-
-onMounted(() => document.addEventListener('click', closeAccountMenuOnOutsideClick))
-onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOutsideClick))
 </script>
 
 <template>
   <aside class="teacher-sidebar">
-    <RouterLink class="sidebar-brand" to="/teacher/dashboard" aria-label="iRead 학습자 목록">
+    <RouterLink class="sidebar-brand" to="/teacher/dashboard" aria-label="iRead 아동 목록">
       <img src="/images/iread-logo.png" alt="iRead" />
     </RouterLink>
 
@@ -74,11 +57,11 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
           <strong>아동 목록</strong>
         </RouterLink>
         <RouterLink :to="{ name: 'student-overview', params: { id: currentStudent.id } }">
-          <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>메인</strong>
+          <span class="sidebar-nav__icon"><SidebarIcon name="home" /></span><strong>학습 현황</strong>
         </RouterLink>
         <RouterLink :to="{ name: 'student-curriculum', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="book" /></span
-          ><strong>커리큘럼</strong>
+          ><strong>커리큘럼 관리</strong>
         </RouterLink>
         <RouterLink :to="{ name: 'student-training-history', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="chart" /></span
@@ -94,34 +77,40 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
         </RouterLink>
         <RouterLink :to="{ name: 'student-edit', params: { id: currentStudent.id } }">
           <span class="sidebar-nav__icon"><SidebarIcon name="edit" /></span
-          ><strong>아동 정보 수정</strong>
+          ><strong>아동 정보 관리</strong>
         </RouterLink>
       </nav>
     </div>
 
     <div class="sidebar-footer">
       <div class="sidebar-account">
-        <button
+        <Button
           class="sidebar-account__trigger"
+          variant="ghost"
           type="button"
-          :aria-expanded="isAccountMenuOpen"
-          aria-label="이OO 선생님 계정 메뉴"
-          @click="isAccountMenuOpen = !isAccountMenuOpen"
+          aria-label="프로필 설정으로 이동"
+          @click="openProfileSettings"
         >
           <img src="/images/teacher-profile.png" alt="" />
           <span>
             <strong>이OO 선생님</strong>
             <small>OO복지센터</small>
           </span>
-          <span class="sidebar-account__more" aria-hidden="true">···</span>
-        </button>
-
-        <div v-if="isAccountMenuOpen" class="sidebar-account-menu">
-          <button type="button" @click="openProfileSettings">프로필 설정</button>
-          <button class="sidebar-account-menu__danger" type="button" @click="logout">
-            로그아웃
-          </button>
-        </div>
+        </Button>
+        <Button
+          class="sidebar-account__logout"
+          variant="ghost"
+          size="icon"
+          type="button"
+          aria-label="로그아웃"
+          title="로그아웃"
+          @click="logout"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10" />
+            <path d="m15 8 4 4-4 4M19 12H9" />
+          </svg>
+        </Button>
       </div>
     </div>
   </aside>
@@ -140,8 +129,8 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
   margin: 0;
   padding: 16px 16px 14px;
   overflow: visible;
-  border-right: 1px solid var(--slate-200);
-  background: var(--white);
+  border-right: 1px solid var(--sidebar-border);
+  background: var(--sidebar);
 }
 
 .sidebar-brand {
@@ -177,22 +166,20 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
   min-height: 44px;
   align-items: center;
   gap: 8px;
-  padding: 7px 10px 7px 9px;
-  border-left: 3px solid transparent;
-  border-radius: 0 6px 6px 0;
-  color: var(--slate-600);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-foreground);
   grid-template-columns: 26px 1fr;
 }
 
 .sidebar-nav a:hover {
-  background: var(--slate-50);
-  color: var(--slate-950);
+  background: var(--interactive-hover-background);
+  color: var(--sidebar-accent-foreground);
 }
 
 .sidebar-nav a.router-link-exact-active {
-  border-left-color: var(--primary-600);
-  background: transparent;
-  color: var(--primary-700);
+  background: var(--active-selection-background);
+  color: var(--active-selection-foreground);
 }
 
 .sidebar-nav__icon {
@@ -214,52 +201,61 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 
 .sidebar-footer {
   margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid var(--slate-200);
+  margin-right: -16px;
+  margin-bottom: -14px;
+  margin-left: -16px;
+  padding: 0;
+  border-top: 1px solid var(--sidebar-border);
+  background: var(--sidebar);
 }
 
 .sidebar-account {
   position: relative;
+  width: 100%;
+  min-height: 64px;
 }
 
 .sidebar-account__trigger {
   display: grid;
   width: 100%;
-  min-height: 48px;
+  height: 100%;
+  min-height: 64px;
   align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
+  gap: 7px;
+  padding: 8px 54px 8px 16px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: var(--slate-700);
+  box-shadow: none;
   text-align: left;
-  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  grid-template-columns: 34px minmax(0, 1fr);
 }
 
-.sidebar-account__trigger:hover,
-.sidebar-account__trigger[aria-expanded='true'] {
-  background: var(--slate-50);
+.sidebar-account__trigger:hover {
+  background: var(--interactive-hover-background);
 }
 
 .sidebar-account__trigger img {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--slate-200);
   border-radius: 50%;
   object-fit: cover;
 }
 
-.sidebar-account__trigger > span:not(.sidebar-account__more) {
+.sidebar-account__trigger > span {
   display: grid;
   min-width: 0;
-  gap: 1px;
+  gap: 2px;
 }
 
 .sidebar-account__trigger strong {
   overflow: hidden;
   color: var(--slate-800);
-  font-size: 11px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -267,48 +263,39 @@ onBeforeUnmount(() => document.removeEventListener('click', closeAccountMenuOnOu
 .sidebar-account__trigger small {
   overflow: hidden;
   color: var(--slate-500);
-  font-size: 9px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sidebar-account__more {
-  color: var(--slate-400);
-  font-size: 14px;
-  letter-spacing: 1px;
-}
-
-.sidebar-account-menu {
+.sidebar-account__logout {
   position: absolute;
-  z-index: 20;
-  right: 0;
-  bottom: calc(100% + 8px);
-  left: 0;
-  display: grid;
-  gap: 2px;
-  padding: 6px;
-  border: 1px solid var(--slate-200);
-  border-radius: 8px;
-  background: var(--white);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
-}
-
-.sidebar-account-menu button {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--slate-700);
-  font-size: 11px;
-  text-align: left;
-}
-
-.sidebar-account-menu button:hover {
-  background: var(--slate-50);
-}
-
-.sidebar-account-menu .sidebar-account-menu__danger {
+  top: 50%;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in oklch, var(--destructive) 32%, var(--sidebar-border));
+  border-radius: 50%;
+  background: var(--sidebar);
   color: var(--danger-600);
+  transform: translateY(-50%);
+}
+
+.sidebar-account__logout:hover {
+  border-color: color-mix(in oklch, var(--destructive) 56%, var(--sidebar-border));
+  background: color-mix(in oklch, var(--destructive) 8%, var(--sidebar));
+  color: var(--danger-600);
+}
+
+.sidebar-account__logout svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 </style>

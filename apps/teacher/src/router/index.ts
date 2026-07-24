@@ -19,6 +19,22 @@ const router = createRouter({
       component: () => import('@/views/teacher/TeacherSignupView.vue'),
     },
     {
+      path: '/find-id',
+      name: 'teacher-find-id',
+      component: () => import('@/views/teacher/TeacherFindIdView.vue'),
+    },
+    {
+      path: '/reset-password',
+      name: 'teacher-reset-password',
+      component: () => import('@/views/teacher/TeacherResetPasswordView.vue'),
+    },
+    {
+      path: '/shared-report/:token',
+      name: 'guardian-shared-report',
+      component: () => import('@/views/guardian/GuardianReportView.vue'),
+      meta: { title: '보호자 공유 보고서' },
+    },
+    {
       path: '/teacher',
       // import()는 해당 화면이 필요할 때 파일을 내려받는 '지연 로딩' 방식입니다.
       component: () => import('@/layouts/TeacherLayout.vue'),
@@ -35,22 +51,22 @@ const router = createRouter({
           path: 'students/new',
           name: 'student-create',
           component: () => import('@/views/teacher/StudentCreateView.vue'),
-          meta: { title: '학생 관리', section: 'students' },
+          meta: { title: '아동 관리', section: 'students' },
         },
         {
-          // :id는 학생마다 달라지는 주소 부분입니다. 예: students/1/edit
+          // :id는 아동마다 달라지는 주소 부분입니다. 예: students/1/edit
           path: 'students/:id/edit',
           name: 'student-edit',
           component: () => import('@/views/teacher/StudentEditView.vue'),
-          meta: { title: '학생 관리', section: 'students' },
+          meta: { title: '아동 관리', section: 'students' },
         },
         {
           path: 'students/:id',
           component: () => import('@/layouts/StudentManagementLayout.vue'),
-          meta: { title: '학생 관리', section: 'students' },
+          meta: { title: '아동 관리', section: 'students' },
           children: [
             {
-              // 빈 path는 부모 주소와 정확히 같은 경우 표시되는 기본 학생 화면입니다.
+              // 빈 path는 부모 주소와 정확히 같은 경우 표시되는 기본 아동 화면입니다.
               path: '',
               name: 'student-overview',
               component: () => import('@/views/teacher/StudentOverviewView.vue'),

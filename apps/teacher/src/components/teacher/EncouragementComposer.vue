@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Button } from '@/components/ui/button'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Textarea } from '@/components/ui/textarea'
 
 const props = withDefaults(
   defineProps<{
@@ -28,46 +31,49 @@ const canSubmit = computed(() => props.modelValue.trim().length > 0 && !props.bu
   >
     <label class="composer-field">
       <span>전달 문장</span>
-      <textarea
+      <Textarea
         class="textarea"
         :value="modelValue"
         maxlength="180"
         placeholder="아동에게 전할 응원을 작성해 주세요."
         @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+      />
       <small>{{ modelValue.length }}/180자</small>
     </label>
 
     <div class="composer-footer">
       <fieldset class="delivery-timing">
         <legend>전달 시점</legend>
-        <label>
-          <input v-model="deliveryTiming" type="radio" value="immediate" />
-          바로 전달
-        </label>
-        <label>
-          <input v-model="deliveryTiming" type="radio" value="next-login" />
-          다음 로그인 때 전달
-        </label>
+        <RadioGroup v-model="deliveryTiming" class="delivery-timing__options">
+          <label>
+            <RadioGroupItem value="immediate" />
+            바로 전달
+          </label>
+          <label>
+            <RadioGroupItem value="next-login" />
+            다음 로그인 때 전달
+          </label>
+        </RadioGroup>
       </fieldset>
 
       <div class="composer-actions">
-        <button
+        <Button
           v-if="editing"
-          class="button button--secondary button--small"
+          variant="outline"
+          size="sm"
           type="button"
           @click="emit('cancelEdit')"
         >
           수정 취소
-        </button>
-        <button
-          class="button button--small"
+        </Button>
+        <Button
+          size="sm"
           type="button"
           :disabled="!canSubmit"
           @click="emit('submit', deliveryTiming)"
         >
           {{ busy ? '처리 중…' : editing ? '수정 내용 저장' : '응원 전달' }}
-        </button>
+        </Button>
       </div>
     </div>
   </section>
@@ -120,6 +126,10 @@ const canSubmit = computed(() => props.modelValue.trim().length > 0 && !props.bu
   gap: 5px;
   color: var(--slate-600);
   font-size: 11px;
+}
+.delivery-timing__options {
+  display: flex;
+  gap: 16px;
 }
 .composer-actions {
   display: flex;

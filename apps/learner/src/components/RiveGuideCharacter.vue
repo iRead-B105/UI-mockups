@@ -24,12 +24,14 @@ const source = ref<HTMLCanvasElement | null>(null)
 const output = ref<HTMLCanvasElement | null>(null)
 const ready = ref(false)
 const hovered = ref(false)
+const introActive = ref(false)
 let rive: Rive | null = null
 let renderFrame = 0
 let compositorStarted = false
 let waveTimer: ReturnType<typeof setInterval> | undefined
 let waveResetTimer: ReturnType<typeof setTimeout> | undefined
 let poseTimer: ReturnType<typeof setTimeout> | undefined
+let introTimer: ReturnType<typeof setTimeout> | undefined
 
 const menuMessages: Record<MainMapMenuItem['id'], string> = {
   growth: '얼마나 열심히 했는지\n확인하러 가볼까?',
@@ -42,9 +44,17 @@ const bubbleMessage = computed(() => {
   // 학습 화면: 상위가 넘겨준 메시지를 응원/피드백으로 그대로 표시
   if (isCompanion.value) return props.message ?? '힘내요!'
   if (hovered.value) return '안녕~~'
+  if (introActive.value) return '안녕, 윤정아! 오늘은 어디로 가볼까?'
   if (props.activeMenu) return menuMessages[props.activeMenu]
-  return '윤정아!\n오늘도 화이팅!'
+  return ''
 })
+
+const showBubble = computed(() => (
+  isCompanion.value
+  || introActive.value
+  || hovered.value
+  || props.activeMenu !== null
+))
 
 type BunnyAnimation = 'Idle Loop' | 'WALK' | '01 Wave 2' | 'idle to Pose 1' | 'Pose 1 loop'
 
@@ -188,7 +198,13 @@ const leave = () => {
   playMenuMotion()
 }
 
-watch(() => props.activeMenu, playMenuMotion)
+watch(() => props.activeMenu, (menu) => {
+  if (!isCompanion.value && introActive.value && menu) {
+    introActive.value = false
+    clearTimeout(introTimer)
+  }
+  playMenuMotion()
+})
 
 // 컴패니언 상태에 따라 책 읽기, 대기, 환호 모션을 전환합니다.
 watch(
@@ -210,7 +226,17 @@ watch(
 )
 
 onMounted(() => {
-  playMenuMotion()
+  if (isCompanion.value) {
+    playMenuMotion()
+    return
+  }
+
+  introActive.value = true
+  playAnimation('01 Wave 2')
+  introTimer = setTimeout(() => {
+    introActive.value = false
+    playMenuMotion()
+  }, 3000)
 })
 
 onBeforeUnmount(() => {
@@ -218,17 +244,16 @@ onBeforeUnmount(() => {
   clearInterval(waveTimer)
   clearTimeout(waveResetTimer)
   clearTimeout(poseTimer)
+  clearTimeout(introTimer)
   rive?.cleanup()
 })
 </script>
 
 <template>
   <div class="guide" :class="{ ready }">
-    <div
-      class="bubble"
-      :role="isCompanion ? 'status' : undefined"
-      :aria-live="isCompanion ? 'polite' : undefined"
-    >{{ bubbleMessage }}</div>
+    <Transition name="bubble">
+      <div v-if="showBubble" class="bubble" role="status" aria-live="polite">{{ bubbleMessage }}</div>
+    </Transition>
     <canvas ref="source" class="source" width="620" height="570"></canvas>
     <canvas ref="output" class="bunny" width="620" height="570"></canvas>
     <button class="bunny-hit" type="button" aria-label="기리 토끼에게 인사하기" @pointerenter="enter" @pointerleave="leave" @focus="enter" @blur="leave"></button>
@@ -245,5 +270,7 @@ onBeforeUnmount(() => {
 .source { position:absolute;z-index:1;inset:0;width:620px;height:570px;opacity:0;pointer-events:none; }
 .bubble { position:absolute;z-index:3;right:100%;bottom:43%;width:clamp(205px,18vw,270px);padding:var(--learner-space-5);border-radius:var(--learner-radius-large);background:var(--learner-color-surface);color:var(--learner-color-text);font-family:var(--learner-font-display);font-size:clamp(18px,1.65vw,25px);font-weight:var(--learner-font-weight-heavy);line-height:1.35;text-align:center;white-space:pre-line;box-shadow:var(--learner-shadow-card);pointer-events:none; }
 .bubble::after { content:'';position:absolute;right:-25px;bottom:20px;border:16px solid transparent;border-left-color:var(--learner-color-surface);transform:rotate(16deg); }
+.bubble-enter-active,.bubble-leave-active{transition:opacity var(--learner-duration-normal) var(--learner-easing-standard),transform var(--learner-duration-normal) var(--learner-easing-bounce)}
+.bubble-enter-from,.bubble-leave-to{opacity:0;transform:translate(12px,8px) scale(.94)}
 @media (max-width:900px) { .guide{right:-4%;width:280px}.bubble{right:82%} }
 </style>

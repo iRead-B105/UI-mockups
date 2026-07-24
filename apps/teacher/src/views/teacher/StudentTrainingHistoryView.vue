@@ -3,7 +3,19 @@
 import { computed, ref } from 'vue'
 import type { EChartsOption } from 'echarts'
 import ChartPanel from '@/components/common/ChartPanel.vue'
+import GazeAnalysisPanel from '@/components/teacher/GazeAnalysisPanel.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { chartColors } from '@/features/teacher/chartTheme'
 import { trainingSessions } from '@/features/teacher/mockData'
 
 // 첫 훈련을 기본 선택하며 데이터가 비어 있으면 id 1을 임시 기본값으로 씁니다.
@@ -32,8 +44,12 @@ const speedChart: EChartsOption = {
       symbol: 'circle',
       symbolSize: 5,
       data: [98, 126, 84, 151, 114, 148, 102, 128, 164],
-      lineStyle: { color: '#0ea5e9', width: 3 },
-      itemStyle: { color: '#0ea5e9' },
+      lineStyle: { color: chartColors.blue, width: 2.5 },
+      itemStyle: {
+        color: chartColors.white,
+        borderColor: chartColors.blue,
+        borderWidth: 2,
+      },
     },
   ],
 }
@@ -113,22 +129,11 @@ function downloadJsonData() {
 
 <template>
   <div class="training-history page-stack">
-    <PageHeader title="훈련 이력" description="훈련 결과와 읽기 속도 변화를 확인합니다.">
-      <template #actions>
-        <div class="header-history-controls" aria-label="이력 조회 조건">
-          <label for="training-period">조회 기간</label>
-          <select id="training-period" v-model="period" class="select">
-            <option>최근 30일</option>
-            <option>최근 3개월</option>
-          </select>
-          <span>{{ period }} · 훈련 {{ trainingSessions.length }}건</span>
-        </div>
-      </template>
-    </PageHeader>
+    <PageHeader title="훈련 이력" description="훈련 결과와 읽기 속도 변화를 확인합니다." />
 
     <div class="training-workspace">
       <div class="training-main">
-        <section class="session-history">
+        <Card class="session-history">
           <header class="section-heading">
             <div>
               <h2>훈련 기록</h2>
@@ -139,11 +144,12 @@ function downloadJsonData() {
             <div class="session-table__head">
               <span>학습일</span><span>커리큘럼</span><span>결과</span>
             </div>
-            <button
+            <Button
               v-for="session in trainingSessions"
               :key="session.id"
               class="session-row"
               :class="{ active: session.id === selectedSessionId }"
+              variant="ghost"
               type="button"
               @click="selectedSessionId = session.id"
             >
@@ -153,11 +159,11 @@ function downloadJsonData() {
                 <b>{{ session.achievement }}%</b>
                 <small>{{ getLearningStatus(session.achievement) }}</small>
               </span>
-            </button>
+            </Button>
           </div>
-        </section>
+        </Card>
 
-        <section class="speed-trend">
+        <Card class="speed-trend">
           <header class="section-heading">
             <div>
               <h2>읽기 속도 추이</h2>
@@ -169,10 +175,26 @@ function downloadJsonData() {
             </div>
           </header>
           <ChartPanel :option="speedChart" height="250px" aria-label="읽기 속도 추이 차트" />
-        </section>
+        </Card>
       </div>
 
-      <aside class="training-detail">
+      <Card class="training-detail">
+        <div class="detail-filter">
+          <div class="detail-filter__field">
+            <Label for="training-period">조회 기간</Label>
+            <Select v-model="period">
+              <SelectTrigger id="training-period" class="select !h-9 !w-[148px] px-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="최근 30일">최근 30일</SelectItem>
+                <SelectItem value="최근 3개월">최근 3개월</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <span>{{ period }} · 훈련 {{ trainingSessions.length }}건</span>
+        </div>
+
         <header class="detail-heading">
           <div>
             <span>선택한 훈련</span>
@@ -206,62 +228,79 @@ function downloadJsonData() {
         </div>
 
         <div class="download-actions">
-          <button class="download-button" type="button" @click="downloadRawData">
+          <Button variant="outline" class="download-button" type="button" @click="downloadRawData">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" />
             </svg>
             <span>CSV 저장</span>
-          </button>
-          <button class="download-button" type="button" @click="downloadJsonData">
+          </Button>
+          <Button variant="outline" class="download-button" type="button" @click="downloadJsonData">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 3h7l4 4v14H7zM14 3v5h4m-7 4-2 2 2 2m4-4 2 2-2 2" />
             </svg>
             <span>JSON 저장</span>
-          </button>
+          </Button>
         </div>
-      </aside>
+      </Card>
     </div>
+
+    <GazeAnalysisPanel
+      title="선택 훈련 시선 분석"
+      :description="`${selectedSession?.title ?? '선택한 훈련'}에서 읽기 어려움이 나타난 구간입니다.`"
+    />
   </div>
 </template>
 
 <style scoped>
 .training-history {
-  gap: 18px;
+  gap: 20px;
   container-type: inline-size;
 }
-.header-history-controls {
+.detail-filter {
   display: flex;
-  align-items: center;
-  gap: 9px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
-.header-history-controls label {
+.detail-filter__field {
+  display: grid;
+  gap: 6px;
+}
+.detail-filter label {
   color: var(--slate-600);
   font-size: 11px;
   font-weight: 700;
 }
-.header-history-controls .select {
-  width: 132px;
-}
-.header-history-controls span {
-  margin-left: 3px;
-  padding-left: 12px;
-  border-left: 1px solid var(--slate-200);
+.detail-filter > span {
+  padding-bottom: 9px;
   color: var(--slate-500);
   font-size: 11px;
   white-space: nowrap;
 }
 .training-workspace {
   display: grid;
+  align-items: stretch;
+  gap: 20px;
   grid-template-columns: minmax(0, 1.12fr) minmax(380px, 0.88fr);
 }
 .training-main {
+  display: grid;
   min-width: 0;
-  padding: 2px 24px 18px 0;
+  gap: 20px;
 }
+.session-history,
+.speed-trend,
 .training-detail {
   min-width: 0;
-  padding: 2px 0 18px 24px;
-  border-left: 1px solid var(--slate-200);
+  gap: 0;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+}
+.training-detail {
+  height: 100%;
 }
 .section-heading {
   display: flex;
@@ -279,7 +318,10 @@ function downloadJsonData() {
   font-size: 12px;
 }
 .session-table {
+  overflow: hidden;
   margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 .session-table__head,
 .session-row {
@@ -289,8 +331,10 @@ function downloadJsonData() {
   grid-template-columns: 120px minmax(0, 1fr) 88px;
 }
 .session-table__head {
-  padding: 9px 12px;
+  min-height: 40px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--slate-300);
+  background: color-mix(in oklch, var(--muted) 42%, transparent);
   color: var(--slate-500);
   font-size: 12px;
   font-weight: 600;
@@ -299,7 +343,7 @@ function downloadJsonData() {
   position: relative;
   width: 100%;
   min-height: 58px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 0;
   border-bottom: 1px solid var(--slate-200);
   background: transparent;
@@ -316,10 +360,18 @@ function downloadJsonData() {
   content: '';
 }
 .session-row:hover {
-  background: var(--slate-50);
+  background: var(--interactive-hover-background);
 }
 .session-row.active::before {
   background: var(--primary-600);
+}
+.session-row.active {
+  background: var(--active-selection-background);
+  color: var(--active-selection-foreground);
+}
+.session-row.active strong,
+.session-row.active .session-result b {
+  color: var(--active-selection-foreground);
 }
 .session-row > span:first-child {
   font-size: 12px;
@@ -342,7 +394,7 @@ function downloadJsonData() {
   font-size: 12px;
 }
 .speed-trend {
-  margin-top: 30px;
+  margin-top: 0;
 }
 .trend-summary {
   display: grid;
@@ -397,29 +449,37 @@ function downloadJsonData() {
   font-size: 12px;
 }
 .training-summary {
-  padding: 14px 0 8px;
+  margin: 10px 0 14px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in oklch, var(--primary-600) 24%, var(--border));
+  border-left: 3px solid var(--primary-600);
+  border-radius: var(--radius-sm);
+  background: var(--active-selection-background);
 }
 .training-summary > span {
-  color: var(--slate-500);
+  color: var(--active-selection-foreground);
   font-size: 12px;
   font-weight: 600;
 }
 .training-summary p {
   margin: 6px 0 0;
-  color: var(--slate-700);
+  color: var(--active-selection-foreground);
   font-size: 13px;
   line-height: 1.6;
 }
 .detail-list {
   display: grid;
+  gap: 8px;
 }
 .detail-list article {
   display: grid;
   min-height: 66px;
   align-items: center;
   gap: 16px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--slate-200);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--muted) 30%, transparent);
   grid-template-columns: minmax(0, 1fr) auto;
 }
 .detail-list strong {
@@ -448,7 +508,15 @@ function downloadJsonData() {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+.training-history :deep(.gaze-analysis) {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
 }
 .download-button {
   display: inline-flex;
@@ -481,16 +549,9 @@ function downloadJsonData() {
   stroke-width: 1.8;
 }
 
-@container (max-width: 1000px) {
+@container (max-width: 850px) {
   .training-workspace {
     grid-template-columns: 1fr;
-  }
-  .training-main {
-    padding-right: 0;
-  }
-  .training-detail {
-    padding: 30px 0 18px;
-    border-left: 0;
   }
 }
 </style>

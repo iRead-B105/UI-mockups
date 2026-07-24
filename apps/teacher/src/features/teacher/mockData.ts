@@ -7,13 +7,14 @@ import type {
   LearningEvent,
   LearningRecord,
   RecommendedCurriculumItem,
+  ReportVersion,
   ShareLink,
   Student,
   TeacherNote,
   TrainingSession,
 } from './types'
 
-// 서버가 연결되지 않은 UI 목업에서 화면을 채우기 위한 가짜 학생 목록입니다.
+// 서버가 연결되지 않은 UI 목업에서 화면을 채우기 위한 가짜 아동 목록입니다.
 // Student[]는 배열의 모든 항목이 Student 설계도를 따라야 한다는 의미입니다.
 export const students: Student[] = [
   {
@@ -58,9 +59,72 @@ export const students: Student[] = [
     learningStartDate: '2026-06-21',
     weeklyAttendance: '67% (2일/3일)',
   },
+  {
+    id: 3,
+    name: '이OO',
+    age: 8,
+    birthDate: '2018-02-21',
+    gender: '여자',
+    phone: '010-2468-1357',
+    school: '새봄초등학교',
+    guardianName: '한OO',
+    guardianRelation: '어머니',
+    guardianPhone: '010-2468-1357',
+    guardianEmail: 'saebom.guardian@example.com',
+    address: '서울특별시 마포구 월드컵북로 45',
+    lastLearningDate: '2026-07-19',
+    lastTestDate: '2026-07-12',
+    totalLearningTime: '21시간',
+    latestTraining: '낱말 유창성 훈련',
+    lastAccess: '오늘 08:45',
+    learningStartDate: '2026-07-01',
+    weeklyAttendance: '100% (3일/3일)',
+  },
+  {
+    id: 4,
+    name: '최OO',
+    age: 11,
+    birthDate: '2015-08-30',
+    gender: '남자',
+    phone: '010-3579-2468',
+    school: '한빛초등학교',
+    guardianName: '정OO',
+    guardianRelation: '아버지',
+    guardianPhone: '010-3579-2468',
+    guardianEmail: 'hanbit.guardian@example.com',
+    address: '서울특별시 서대문구 연희로 88',
+    lastLearningDate: '2026-07-16',
+    lastTestDate: '2026-07-10',
+    totalLearningTime: '17시간',
+    latestTraining: '핵심 내용 찾기',
+    lastAccess: '3일 전 17:10',
+    learningStartDate: '2026-06-28',
+    weeklyAttendance: '33% (1일/3일)',
+  },
+  {
+    id: 5,
+    name: '정OO',
+    age: 9,
+    birthDate: '2017-05-16',
+    gender: '여자',
+    phone: '010-4680-3579',
+    school: '푸른초등학교',
+    guardianName: '김OO',
+    guardianRelation: '어머니',
+    guardianPhone: '010-4680-3579',
+    guardianEmail: 'pureun.guardian@example.com',
+    address: '서울특별시 성동구 왕십리로 101',
+    lastLearningDate: '2026-07-20',
+    lastTestDate: '2026-07-18',
+    totalLearningTime: '26시간',
+    latestTraining: '문장 억양과 끊어 읽기',
+    lastAccess: '오늘 10:05',
+    learningStartDate: '2026-06-15',
+    weeklyAttendance: '67% (2일/3일)',
+  },
 ]
 
-// 여러 화면이 같은 학생을 표시하도록 목록의 첫 학생을 현재 선택 학생으로 사용합니다.
+// 여러 화면이 같은 아동을 표시하도록 목록의 첫 아동을 현재 선택 아동으로 사용합니다.
 // 끝의 !는 이 위치에는 값이 반드시 있다고 TypeScript에 알려 주는 표시입니다.
 export const selectedStudent = students[0]!
 
@@ -620,6 +684,35 @@ export const guardianComments: GuardianComment[] = [
     text: '집에서도 소리 내어 읽는 시간이 늘었습니다. 다음 단계에서 집에서 도울 방법이 있을까요?',
     createdAt: '2026-07-20 20:09',
     updatedAt: '2026-07-20 20:09',
+  },
+]
+
+export const reportVersions: ReportVersion[] = [
+  {
+    id: 601,
+    studentId: 1,
+    version: 2,
+    status: 'published',
+    periodStart: '2026-06-15',
+    periodEnd: '2026-07-15',
+    teacherOpinion:
+      '아동은 읽기 정확도와 유창성이 함께 향상되었습니다. 다음 학습에서는 낯선 낱말을 문맥으로 추론하는 활동을 강화할 예정입니다.',
+    createdAt: '2026-07-21 14:42',
+    updatedAt: '2026-07-21 15:10',
+    publishedAt: '2026-07-21 15:10',
+  },
+  {
+    id: 600,
+    studentId: 1,
+    version: 1,
+    status: 'shared',
+    periodStart: '2026-05-15',
+    periodEnd: '2026-06-14',
+    teacherOpinion:
+      '아동이 짧은 문장을 끝까지 읽는 힘이 안정되었습니다. 받침이 연속되는 낱말은 속도를 늦춰 반복 연습해 주세요.',
+    createdAt: '2026-06-18 10:20',
+    updatedAt: '2026-06-18 11:05',
+    publishedAt: '2026-06-18 11:05',
   },
 ]
 

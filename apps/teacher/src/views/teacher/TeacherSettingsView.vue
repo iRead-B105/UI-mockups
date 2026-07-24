@@ -5,6 +5,15 @@ import FormActions from '@/components/teacher/FormActions.vue'
 import PageHeader from '@/components/teacher/PageHeader.vue'
 import ProfileImageEditor from '@/components/teacher/ProfileImageEditor.vue'
 import SettingsSection from '@/components/teacher/SettingsSection.vue'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTemporaryNotice } from '@/composables/useTemporaryNotice'
 
 const router = useRouter()
@@ -56,19 +65,24 @@ function saveProfile() {
       <SettingsSection title="기본 정보" description="이름과 소속 기관을 관리합니다.">
         <div class="form-grid">
           <div class="field field--medium">
-            <label for="teacher-name">이름</label>
-            <input id="teacher-name" v-model="form.name" class="input" required />
+            <Label for="teacher-name">이름</Label>
+            <Input id="teacher-name" v-model="form.name" class="input" required />
           </div>
           <div class="field field--medium">
-            <label for="organization">소속 기관</label>
-            <input id="organization" v-model="form.organization" class="input" required />
+            <Label for="organization">소속 기관</Label>
+            <Input id="organization" v-model="form.organization" class="input" required />
           </div>
           <div class="field field--short">
-            <label for="teacher-gender">성별</label>
-            <select id="teacher-gender" v-model="form.gender" class="select">
-              <option>여자</option>
-              <option>남자</option>
-            </select>
+            <Label for="teacher-gender">성별</Label>
+            <Select v-model="form.gender">
+              <SelectTrigger id="teacher-gender" class="select !w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="여자">여자</SelectItem>
+                <SelectItem value="남자">남자</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </SettingsSection>
@@ -76,16 +90,16 @@ function saveProfile() {
       <SettingsSection title="연락처" description="상담과 안내에 사용할 연락처입니다.">
         <div class="form-grid">
           <div class="field">
-            <label for="teacher-email">이메일</label>
-            <input id="teacher-email" v-model="form.email" class="input" type="email" required />
+            <Label for="teacher-email">이메일</Label>
+            <Input id="teacher-email" v-model="form.email" class="input" type="email" required />
           </div>
           <div class="field field--phone">
-            <label for="teacher-phone">연락처</label>
-            <input id="teacher-phone" v-model="form.phone" class="input" />
+            <Label for="teacher-phone">연락처</Label>
+            <Input id="teacher-phone" v-model="form.phone" class="input" />
           </div>
           <div class="field form-grid__wide">
-            <label for="teacher-address">주소</label>
-            <input id="teacher-address" v-model="form.address" class="input" />
+            <Label for="teacher-address">주소</Label>
+            <Input id="teacher-address" v-model="form.address" class="input" />
           </div>
         </div>
       </SettingsSection>

@@ -1,7 +1,31 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { students as mockStudents } from '@/features/teacher/mockData'
 import type { Student } from '@/features/teacher/types'
 
@@ -13,7 +37,6 @@ const page = ref(1)
 const pageSize = 10
 const students = ref(mockStudents.map((student) => ({ ...student })))
 const studentPendingDeletion = ref<Student>()
-const openActionMenuId = ref<number>()
 const referenceDate = new Date('2026-07-20T00:00:00')
 
 function daysSince(date: string) {
@@ -62,6 +85,9 @@ const filteredStudents = computed(() => {
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredStudents.value.length / pageSize)))
+const attentionStudentCount = computed(
+  () => students.value.filter((student) => needsAttention(student)).length,
+)
 const pageStudents = computed(() => {
   const start = (page.value - 1) * pageSize
   return filteredStudents.value.slice(start, start + pageSize)
@@ -76,27 +102,13 @@ function openStudent(student: Student) {
   router.push(`/teacher/students/${student.id}`)
 }
 
-function toggleActionMenu(studentId: number) {
-  openActionMenuId.value = openActionMenuId.value === studentId ? undefined : studentId
-}
-
 function editStudent(student: Student) {
-  openActionMenuId.value = undefined
   router.push(`/teacher/students/${student.id}/edit`)
 }
 
 function requestStudentDeletion(student: Student) {
-  openActionMenuId.value = undefined
   studentPendingDeletion.value = student
 }
-
-function closeActionMenuOnOutsideClick(event: MouseEvent) {
-  if (!(event.target instanceof Element)) return
-  if (!event.target.closest('.action-cell')) openActionMenuId.value = undefined
-}
-
-onMounted(() => document.addEventListener('click', closeActionMenuOnOutsideClick))
-onBeforeUnmount(() => document.removeEventListener('click', closeActionMenuOnOutsideClick))
 
 function confirmStudentDeletion() {
   if (!studentPendingDeletion.value) return
@@ -112,51 +124,79 @@ function confirmStudentDeletion() {
     <section class="student-list">
       <div class="list-toolbar">
         <div class="list-toolbar__copy">
-          <h1>학습자 목록</h1>
+          <h1>아동 목록</h1>
           <p>담당 아동을 검색하고 학습 현황을 확인합니다.</p>
         </div>
+        <Button
+          class="register-button"
+          type="button"
+          @click="router.push('/teacher/students/new')"
+        >
+          ＋ 아동 등록
+        </Button>
+      </div>
+
+      <Card class="list-controls">
         <div class="filter-row">
           <label class="search-field">
             <span aria-hidden="true">⌕</span>
-            <input v-model="query" type="search" placeholder="이름 또는 학교 검색" />
+            <Input v-model="query" class="search-input" type="search" placeholder="이름 또는 학교 검색" />
           </label>
-          <select v-model="ageFilter" class="select" aria-label="나이 선택">
-            <option>전체 나이</option>
-            <option v-for="age in [6, 7, 8, 9, 10, 11, 12]" :key="age" :value="String(age)">
-              {{ age }}세
-            </option>
-          </select>
-          <select v-model="periodFilter" class="select" aria-label="기간 선택">
-            <option>전체 기간</option>
-            <option>최근 7일</option>
-            <option>최근 30일</option>
-          </select>
-          <button
-            class="button register-button"
-            type="button"
-            @click="router.push('/teacher/students/new')"
-          >
-            ＋ 학생 등록
-          </button>
+          <Select v-model="ageFilter">
+            <SelectTrigger class="select filter-select" aria-label="나이 선택">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="전체 나이">전체 나이</SelectItem>
+              <SelectItem v-for="age in [6, 7, 8, 9, 10, 11, 12]" :key="age" :value="String(age)">
+                {{ age }}세
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-model="periodFilter">
+            <SelectTrigger class="select filter-select" aria-label="기간 선택">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="전체 기간">전체 기간</SelectItem>
+              <SelectItem value="최근 7일">최근 7일</SelectItem>
+              <SelectItem value="최근 30일">최근 30일</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </div>
 
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>학생</th>
-              <th>현재 학습</th>
-              <th>최근 학습</th>
-              <th>이번 주 상태</th>
-              <th>누적 학습</th>
-              <th><span class="visually-hidden">관리 메뉴</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="student in pageStudents" :key="student.id" class="student-row">
-              <td>
-                <button class="student-cell" type="button" @click="openStudent(student)">
+        <dl class="list-summary" aria-label="담당 아동 요약">
+          <div>
+            <dt>전체 아동</dt>
+            <dd>{{ students.length }}명</dd>
+          </div>
+          <div>
+            <dt>검색 결과</dt>
+            <dd>{{ filteredStudents.length }}명</dd>
+          </div>
+          <div class="list-summary__attention">
+            <dt>확인 필요</dt>
+            <dd>{{ attentionStudentCount }}명</dd>
+          </div>
+        </dl>
+      </Card>
+
+      <Card class="table-scroll">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>아동</TableHead>
+              <TableHead>현재 학습</TableHead>
+              <TableHead>최근 학습</TableHead>
+              <TableHead>이번 주 상태</TableHead>
+              <TableHead>누적 학습</TableHead>
+              <TableHead><span class="visually-hidden">관리 메뉴</span></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="student in pageStudents" :key="student.id" class="student-row">
+              <TableCell>
+                <Button variant="ghost" class="student-cell" type="button" @click="openStudent(student)">
                   <img v-if="student.profileImage" :src="student.profileImage" alt="" />
                   <span v-else class="student-initial" aria-hidden="true">{{
                     studentInitial(student.name)
@@ -165,18 +205,18 @@ function confirmStudentDeletion() {
                     <strong>{{ student.name }}</strong>
                     <span>{{ student.school }} · {{ student.age }}세</span>
                   </div>
-                </button>
-              </td>
-              <td>
+                </Button>
+              </TableCell>
+              <TableCell>
                 <span class="current-training">{{ student.latestTraining }}</span>
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 <div class="learning-date">
                   <strong>{{ formatLearningRecency(student.lastLearningDate) }}</strong>
                   <span>{{ formatDate(student.lastLearningDate) }}</span>
                 </div>
-              </td>
-              <td>
+              </TableCell>
+              <TableCell>
                 <div
                   class="weekly-status"
                   :class="{ 'weekly-status--attention': needsAttention(student) }"
@@ -184,60 +224,61 @@ function confirmStudentDeletion() {
                   <strong>{{ needsAttention(student) ? '확인 필요' : '양호' }}</strong>
                   <span>참여 {{ student.weeklyAttendance }}</span>
                 </div>
-              </td>
-              <td>{{ student.totalLearningTime }}</td>
-              <td class="action-cell" @click.stop>
-                <button
-                  class="more-button"
-                  type="button"
-                  :aria-expanded="openActionMenuId === student.id"
-                  :aria-label="`${student.name} 관리 메뉴`"
-                  @click="toggleActionMenu(student.id)"
-                >
-                  ···
-                </button>
-                <div v-if="openActionMenuId === student.id" class="row-menu">
-                  <button type="button" @click="openStudent(student)">학생 상세</button>
-                  <button type="button" @click="editStudent(student)">정보 수정</button>
-                  <button
-                    class="row-menu__danger"
-                    type="button"
-                    @click="requestStudentDeletion(student)"
-                  >
-                    학생 삭제
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="pageStudents.length === 0">
-              <td colspan="6" class="empty-row">검색 조건에 맞는 학생이 없습니다.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </TableCell>
+              <TableCell>{{ student.totalLearningTime }}</TableCell>
+              <TableCell class="action-cell">
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button
+                      class="more-button"
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      :aria-label="`${student.name} 관리 메뉴`"
+                    >
+                      ···
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem @select="openStudent(student)">아동 상세</DropdownMenuItem>
+                    <DropdownMenuItem @select="editStudent(student)">정보 수정</DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" @select="requestStudentDeletion(student)">
+                      아동 삭제
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+            <TableRow v-if="pageStudents.length === 0">
+              <TableCell colspan="6" class="empty-row">검색 조건에 맞는 아동이 없습니다.</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Card>
 
       <footer v-if="totalPages > 1" class="table-footer">
         <nav class="pagination" aria-label="페이지 이동">
-          <button type="button" :disabled="page === 1" @click="page--">이전</button>
-          <button
+          <Button variant="outline" size="sm" type="button" :disabled="page === 1" @click="page--">이전</Button>
+          <Button
             v-for="number in totalPages"
             :key="number"
-            :class="{ active: page === number }"
+            :variant="page === number ? 'default' : 'outline'"
+            size="sm"
             type="button"
             @click="page = number"
           >
             {{ number }}
-          </button>
-          <button type="button" :disabled="page === totalPages" @click="page++">다음</button>
+          </Button>
+          <Button variant="outline" size="sm" type="button" :disabled="page === totalPages" @click="page++">다음</Button>
         </nav>
       </footer>
     </section>
 
     <ConfirmDialog
       :open="Boolean(studentPendingDeletion)"
-      title="학생을 삭제할까요?"
-      :message="`${studentPendingDeletion?.name ?? ''} 학생의 목업 정보를 목록에서 삭제합니다.`"
-      confirm-label="학생 삭제"
+      title="아동을 삭제할까요?"
+      :message="`${studentPendingDeletion?.name ?? ''} 아동의 목업 정보를 목록에서 삭제합니다.`"
+      confirm-label="아동 삭제"
       @cancel="studentPendingDeletion = undefined"
       @confirm="confirmStudentDeletion"
     />
@@ -249,20 +290,23 @@ function confirmStudentDeletion() {
   display: grid;
 }
 .student-list {
+  display: grid;
   min-width: 0;
+  gap: 20px;
 }
 .list-toolbar {
   display: flex;
-  min-height: 64px;
-  align-items: center;
+  min-height: 76px;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 28px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--slate-200);
 }
 .list-toolbar h1 {
   margin: 0;
   color: var(--slate-950);
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.25;
 }
 .list-toolbar__copy {
@@ -277,10 +321,61 @@ function confirmStudentDeletion() {
 }
 .filter-row {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
   gap: 9px;
+  padding: 0;
 }
 .filter-row .select {
-  width: 118px;
+  width: 132px;
+}
+.list-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: row;
+  gap: 24px;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.list-summary {
+  display: flex;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+.list-summary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 14px;
+}
+.list-summary > div:first-child {
+  padding-left: 0;
+}
+.list-summary > div + div {
+  border-left: 1px solid var(--border);
+}
+.list-summary dt {
+  color: var(--slate-500);
+  font-size: 11px;
+}
+.list-summary dd {
+  margin: 0;
+  color: var(--slate-900);
+  font-size: 18px;
+  font-weight: 800;
+}
+.list-summary__attention dd {
+  color: var(--danger-600);
 }
 .register-button {
   min-height: 40px;
@@ -288,7 +383,9 @@ function confirmStudentDeletion() {
 }
 .search-field {
   display: flex;
-  width: 280px;
+  min-width: 240px;
+  flex: 1 1 340px;
+  max-width: 440px;
   height: 40px;
   align-items: center;
   gap: 8px;
@@ -307,7 +404,10 @@ function confirmStudentDeletion() {
   outline: 0;
 }
 .table-scroll {
-  overflow: visible;
+  gap: 0;
+  overflow: hidden auto;
+  padding: 0;
+  border-radius: var(--radius-lg);
 }
 table {
   width: 100%;
@@ -316,12 +416,14 @@ table {
 }
 th,
 td {
-  padding: 15px 16px;
+  height: 68px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--slate-200);
   text-align: left;
   white-space: nowrap;
 }
 th {
+  height: 44px;
   background: var(--slate-50);
   color: var(--slate-500);
   font-size: 11px;
@@ -341,7 +443,7 @@ td:last-child {
   transition: background 120ms ease;
 }
 .student-row:hover {
-  background: #fafaff;
+  background: var(--interactive-hover-background);
 }
 .student-cell {
   display: flex;
@@ -497,6 +599,48 @@ td:last-child {
   border-color: var(--primary-600);
   background: var(--primary-600);
   color: var(--white);
+}
+
+@media (max-width: 900px) {
+  .list-controls {
+    align-items: stretch;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .filter-row {
+    flex-wrap: wrap;
+  }
+
+  .search-field {
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .list-summary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .list-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .register-button {
+    align-self: flex-start;
+  }
+
+  .list-summary > div,
+  .list-summary > div:first-child {
+    padding: 0 10px;
+  }
+
+  .list-summary > div + div {
+    border-left: 1px solid var(--border);
+  }
 }
 .visually-hidden {
   position: absolute;
