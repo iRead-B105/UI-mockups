@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 type TobiiGazeFrame = {
   type?: string
@@ -102,7 +102,12 @@ const GAZE_REPLAY_MAX_MS = 220
 const ANCHOR_FALLBACK_MAX_AGE_MS = 450
 
 const connected = ref(false)
+const connecting = ref(false)
+const status = computed<'connected' | 'connecting' | 'disconnected'>(() =>
+  connected.value ? 'connected' : connecting.value ? 'connecting' : 'disconnected',
+)
 let socket: WebSocket | null = null
+let userStopped = false
 let reconnectTimer: number | undefined
 let animationFrame: number | undefined
 let pendingFrame: TobiiGazeFrame | null = null
@@ -119,6 +124,10 @@ let lastAdjustedPoint: GazePoint | null = null
 let smoothedPoint: GazePoint | null = null
 let headPoseBaseline: HeadPose | null = null
 let lastHeadPoseDelta: HeadPoseDelta | null = null
+
+// 연결이 끊긴 동안 마우스 포인터를 시선처럼 사용하는 전역 폴백 상태.
+let pointerFallbackActive = false
+let lastPointerEmitAt = 0
 let consumers = 0
 
 function clearReconnectTimer() {
@@ -575,7 +584,7 @@ function pumpGaze(now: number) {
 }
 
 function scheduleReconnect() {
-  if (consumers <= 0 || reconnectTimer !== undefined) return
+  if (consumers <= 0 || reconnectTimer !== undefined || userStopped) return
   reconnectTimer = window.setTimeout(() => {
     reconnectTimer = undefined
     connect()
@@ -583,24 +592,35 @@ function scheduleReconnect() {
 }
 
 function connect() {
+  if (userStopped) return
   if (
     socket
     && (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)
   ) return
 
+  connecting.value = true
+  emitState()
   try {
     socket = new WebSocket(GAZE_WS_URL)
   } catch {
+    connecting.value = false
     connected.value = false
+    emitState()
     scheduleReconnect()
     return
   }
 
   socket.addEventListener('open', () => {
     void requestNativeMode()
-      .then(() => { connected.value = true })
+      .then(() => {
+        connecting.value = false
+        connected.value = true
+        emitState()
+      })
       .catch(() => {
+        connecting.value = false
         connected.value = false
+        emitState()
         socket?.close()
       })
   })
@@ -612,17 +632,22 @@ function connect() {
     }
   })
   socket.addEventListener('close', () => {
+    connecting.value = false
     connected.value = false
+    emitState()
     socket = null
     scheduleReconnect()
   })
   socket.addEventListener('error', () => {
+    connecting.value = false
     connected.value = false
+    emitState()
     socket?.close()
   })
 }
 
 function disconnect() {
+  userStopped = true
   clearReconnectTimer()
   if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame)
   animationFrame = undefined
@@ -631,28 +656,94 @@ function disconnect() {
   emittedFrameSequence = 0
   lastFreshFrameAt = 0
   smoothedPoint = null
+  connecting.value = false
   connected.value = false
+  emitState()
   socket?.close()
   socket = null
   resetHeadPoseBaseline()
 }
 
+// 사용자가 "재연결"을 눌렀을 때 — 재연결 루프를 다시 허용하고 연결 시도.
+function reconnect() {
+  userStopped = false
+  if (
+    socket
+    && (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)
+  ) return
+  connect()
+}
+
+// 헤더 아이콘/메뉴가 상태를 반영하도록 iread:eye-tracker-state 이벤트로 알림.
+function emitState() {
+  window.dispatchEvent(
+    new CustomEvent('iread:eye-tracker-state', {
+      detail: { connected: connected.value, connecting: connecting.value },
+    }),
+  )
+}
+
+// 연결이 끊긴 동안 마우스 포인터를 iread:gaze로 흘려보내 모든 시선 소비자가 동일 동작.
+function onPointerFallbackMove(event: PointerEvent) {
+  if (connected.value) return
+  const now = performance.now()
+  if (now - lastPointerEmitAt < GAZE_EMIT_INTERVAL_MS) return
+  lastPointerEmitAt = now
+  const clientX = event.clientX
+  const clientY = event.clientY
+  window.dispatchEvent(
+    new CustomEvent('iread:gaze', {
+      detail: {
+        clientX,
+        clientY,
+        x: clientX,
+        y: clientY,
+        rawClientX: clientX,
+        rawClientY: clientY,
+        source: 'pointer',
+        transform: { offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1 },
+        headPose: null,
+        headPoseDelta: null,
+        headPoseStable: true,
+      },
+    }),
+  )
+}
+
+function attachPointerFallback() {
+  if (pointerFallbackActive) return
+  pointerFallbackActive = true
+  window.addEventListener('pointermove', onPointerFallbackMove, { passive: true })
+}
+
+function detachPointerFallback() {
+  if (!pointerFallbackActive) return
+  pointerFallbackActive = false
+  window.removeEventListener('pointermove', onPointerFallbackMove)
+}
+
 export function useTobiiGazeBridge() {
   onMounted(() => {
     consumers += 1
+    userStopped = false
     readStoredTransform()
     readStoredAnchors()
     installControls()
     connect()
+    watch(connected, (isConnected) => {
+      if (isConnected) detachPointerFallback()
+      else attachPointerFallback()
+    }, { immediate: true })
   })
 
   onBeforeUnmount(() => {
     consumers = Math.max(0, consumers - 1)
     if (consumers === 0) {
+      detachPointerFallback()
       uninstallControls()
       disconnect()
     }
   })
 
-  return { connected }
+  return { connected, connecting, status, connect, disconnect, reconnect }
 }

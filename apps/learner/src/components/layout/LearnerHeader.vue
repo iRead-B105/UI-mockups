@@ -5,6 +5,7 @@ import iReadMainLogo from '../../assets/header/iread-main.png'
 import headerCloudBackground from '../../assets/header/iread-header-true-alpha.png'
 import { useDeviceStatus } from '../../composables/useDeviceStatus'
 import { useGazeCalibration } from '../../composables/useGazeCalibration'
+import { useTobiiGazeBridge } from '../../composables/useTobiiGazeBridge'
 
 defineProps<{ userName: string }>()
 
@@ -19,9 +20,22 @@ const {
 
 const showEyeMenu = ref(false)
 const { open: openGazeCalibration } = useGazeCalibration()
+const {
+  status: eyeTrackerStatus,
+  disconnect: disconnectEyeTracker,
+  reconnect: reconnectEyeTracker,
+} = useTobiiGazeBridge()
 const startCalibration = () => {
   showEyeMenu.value = false
   openGazeCalibration()
+}
+const reconnectFromMenu = () => {
+  showEyeMenu.value = false
+  reconnectEyeTracker()
+}
+const disconnectFromMenu = () => {
+  showEyeMenu.value = false
+  disconnectEyeTracker()
 }
 
 const handleMicrophoneState = (event: Event) => {
@@ -88,8 +102,12 @@ const handleLogout = async () => {
         <button
           type="button"
           class="device-button"
-          :class="{ active: eyeTrackerConnected, disconnected: !eyeTrackerConnected }"
-          :aria-label="eyeTrackerConnected ? '아이트래커 연결됨' : '아이트래커 연결 안 됨'"
+          :class="{
+            active: eyeTrackerStatus === 'connected',
+            connecting: eyeTrackerStatus === 'connecting',
+            disconnected: eyeTrackerStatus === 'disconnected',
+          }"
+          :aria-label="eyeTrackerStatus === 'connected' ? '아이트래커 연결됨' : eyeTrackerStatus === 'connecting' ? '아이트래커 연결 중' : '아이트래커 연결 안 됨'"
           :aria-expanded="showEyeMenu"
           @click="showEyeMenu = !showEyeMenu"
         >
@@ -107,10 +125,16 @@ const handleLogout = async () => {
           <span class="visually-hidden">시선</span>
         </button>
         <div v-if="showEyeMenu" class="eye-tracker-menu" role="menu" aria-label="아이트래커 메뉴">
-          <p class="eye-tracker-menu-status">
-            {{ eyeTrackerConnected ? '아이트래커 연결됨' : '아이트래커 연결 안 됨' }}
+          <p class="eye-tracker-menu-status" :data-state="eyeTrackerStatus">
+            {{ eyeTrackerStatus === 'connected' ? '아이트래커 연결됨' : eyeTrackerStatus === 'connecting' ? '아이트래커 연결 중...' : '아이트래커 연결 안 됨' }}
           </p>
-          <button type="button" class="eye-tracker-menu-item" role="menuitem" @click="startCalibration">
+          <button v-if="eyeTrackerStatus !== 'connected'" type="button" class="eye-tracker-menu-item" role="menuitem" @click="reconnectFromMenu">
+            재연결
+          </button>
+          <button v-if="eyeTrackerStatus !== 'disconnected'" type="button" class="eye-tracker-menu-item eye-tracker-menu-item--secondary" role="menuitem" @click="disconnectFromMenu">
+            연결 해제
+          </button>
+          <button v-if="eyeTrackerStatus === 'connected'" type="button" class="eye-tracker-menu-item" role="menuitem" @click="startCalibration">
             보정하기
           </button>
         </div>
