@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import RiveGuideCharacter from '../../components/RiveGuideCharacter.vue'
+import { useRoute, useRouter } from 'vue-router'
 import storyChoiceScene from '../../assets/story/story-choice-turtle-crossroads.png'
-import storyScene from '../../assets/story/story-reader-turtle-scene-mock.png'
+import { getStoryDetail } from '@/services/learnerDataRepository'
+import PageBackButton from '@/components/common/PageBackButton.vue'
 
 interface StoryPage { lines: string[]; image: string; imagePosition?: string }
 interface Story { title: string; character: string; question: string; pages: StoryPage[] }
 
 interface SpeechRecognitionResultLike { 0?: { transcript?: string } }
 interface SpeechRecognitionEventLike { results?: ArrayLike<SpeechRecognitionResultLike> }
+interface SpeechRecognitionErrorLike { error: string }
 interface SpeechRecognitionLike {
   lang: string
   continuous: boolean
@@ -17,47 +18,27 @@ interface SpeechRecognitionLike {
   start: () => void
   stop: () => void
   onresult: ((event: SpeechRecognitionEventLike) => void) | null
-  onerror: (() => void) | null
+  onerror: ((event: SpeechRecognitionErrorLike) => void) | null
   onend: (() => void) | null
 }
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
 
-const stories: Record<string, Story> = {
-  'ant-and-grasshopper': {
-    title: '개미와 베짱이',
-    character: '개미와 베짱이',
-    question: '개미와 베짱이는 이제 무엇을 할까요?',
-    pages: [
-      { image: storyScene, lines: ['개미는 부지런히 먹이를 옮겼어요.', '작은 곡식도 차곡차곡 쌓았지요.', '베짱이는 나무 아래에서 노래했어요.'] },
-      { image: storyScene, lines: ['개미는 겨울을 생각하며 일했어요.', '창고에는 곡식이 가득 모였지요.', '베짱이는 여름 내내 노래를 불렀어요.'] },
-      { image: storyScene, lines: ['겨울이 오자 베짱이는 배가 고팠어요.', '베짱이는 개미의 집을 찾아갔지요.', '개미는 따뜻한 음식을 함께 나누었어요.'] },
-    ],
-  },
-  'old-man-and-sea': {
-    title: '노인과 바다',
-    character: '노인',
-    question: '노인은 다음에 어디로 가게 될까요?',
-    pages: [
-      { image: storyScene, lines: ['노인은 오늘도 작은 배를 띄웠어요.', '푸른 바다에는 잔잔한 파도가 일었지요.', '반짝이는 물고기 떼가 지나갔어요.'] },
-      { image: storyScene, lines: ['노인은 바다의 소리에 귀 기울였어요.', '멀리서 하얀 새 한 마리가 날아왔지요.', '노인은 용기를 내어 노를 저었답니다.'] },
-      { image: storyScene, lines: ['노인의 배는 노을빛으로 물들었어요.', '따뜻한 바람이 배를 살며시 밀어 주었지요.', '노인은 바다에 인사하고 돌아왔어요.'] },
-    ],
-  },
-  alice: {
-    title: '이상한 나라의 앨리스',
-    character: '앨리스',
-    question: '앨리스는 다음에 어떻게 될까요?',
-    pages: [
-      { image: storyScene, lines: ['앨리스는 하얀 토끼를 보고 놀랐어요.', '토끼는 시계를 보며 늦었다고 외쳤지요.', '그리고 알록달록한 숲길로 달려갔어요.'] },
-      { image: storyScene, lines: ['커다란 악어가 책을 읽고 있었어요.', '앨리스는 악어에게 길을 물어보았지요.', '악어는 이상한 나라의 길을 알려 주었어요.'] },
-      { image: storyScene, lines: ['앨리스는 갈림길 앞에서 고민했어요.', '어느 길로 가야 할지 알 수 없었지요.', '앨리스는 용기를 내어 힘차게 걸어갔어요.'] },
-    ],
-  },
-}
-
 const route = useRoute()
+const router = useRouter()
 const storyId = computed(() => String(route.params.storyId ?? 'alice'))
-const story = computed<Story>(() => stories[storyId.value] ?? stories.alice!)
+const story = computed<Story>(() => {
+  const detail = getStoryDetail(storyId.value)
+  return {
+    title: detail.title,
+    character: detail.character,
+    question: detail.branchQuestion,
+    pages: detail.pages.map((page) => ({
+      image: page.imageUrl,
+      imagePosition: page.imagePosition,
+      lines: page.lines,
+    })),
+  }
+})
 const storageKey = computed(() => `iread-story-page:${storyId.value}`)
 const generatedStorageKey = computed(() => `iread-story-generated:${storyId.value}`)
 
@@ -89,12 +70,12 @@ const textPanel = ref<HTMLElement | null>(null)
 const dwellTargetIndex = ref<number | null>(null)
 const dwellDurationMs = ref(100)
 const transcript = ref('')
-const typedAnswer = ref('')
 const isListening = ref(false)
 const speechError = ref(false)
 let leaveTimer: number | undefined
 let dwellTimer: number | undefined
 let generationTimer: number | undefined
+let silenceRetryTimer: number | undefined
 let recognition: SpeechRecognitionLike | null = null
 
 const allPages = computed(() => [...story.value.pages, ...generatedPages.value])
@@ -102,27 +83,15 @@ const page = computed<StoryPage>(() => allPages.value[currentPage.value] ?? stor
 const pageWords = computed(() => page.value.lines.flatMap((line, lineIndex) => line.split(' ').map((word) => ({ word, lineIndex }))))
 const isLastPage = computed(() => currentPage.value === allPages.value.length - 1)
 const isPageRead = computed(() => readThrough.value >= pageWords.value.length - 1)
-const speechSupported = computed(() => Boolean(getSpeechRecognitionConstructor()))
-const storyGuideMessage = computed(() => {
-  if (isPageRead.value) {
-    return isLastPage.value
-      ? '끝까지 다 읽었네!\n다음 이야기를 만들어 보자!'
-      : '한 페이지를 다 읽었네!\n다음 이야기로 가보자!'
-  }
-  if (showReturnCue.value) return '읽던 곳을 찾았어!\n다시 천천히 읽어보자!'
-  return readThrough.value < 0
-    ? '책을 펼쳤네!\n토끼와 함께 읽어보자!'
-    : '좋아, 잘 읽고 있어!\n천천히 이어서 읽어보자!'
-})
-const storyGuideMood = computed<'idle' | 'reading' | 'cheer'>(() => {
-  if (isPageRead.value) return 'cheer'
-  if (showReturnCue.value) return 'idle'
-  return 'reading'
-})
-
 function getSpeechRecognitionConstructor() {
   const speechWindow = window as Window & { SpeechRecognition?: SpeechRecognitionConstructor; webkitSpeechRecognition?: SpeechRecognitionConstructor }
   return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition
+}
+
+function setMicrophoneState(active: boolean, available?: boolean) {
+  window.dispatchEvent(new CustomEvent('iread:microphone-state', {
+    detail: { active, ...(typeof available === 'boolean' ? { available } : {}) },
+  }))
 }
 
 function clearLeaveTimer() {
@@ -195,9 +164,10 @@ async function goNext() {
     clearLeaveTimer()
     gaze.value.visible = false
     transcript.value = ''
-    typedAnswer.value = ''
     speechError.value = false
     screen.value = 'question'
+    await nextTick()
+    startListening()
     return
   }
   currentPage.value += 1
@@ -211,9 +181,15 @@ async function goNext() {
 }
 
 function startListening() {
+  if (silenceRetryTimer !== undefined) window.clearTimeout(silenceRetryTimer)
+  silenceRetryTimer = undefined
+  speechError.value = false
+  isListening.value = true
+  setMicrophoneState(true)
+
   const Recognition = getSpeechRecognitionConstructor()
   if (!Recognition) {
-    speechError.value = true
+    // 실제 앱에서는 연결된 STT 장치가 iread:speech 이벤트를 전달합니다.
     return
   }
 
@@ -224,39 +200,51 @@ function startListening() {
   recognition.interimResults = false
   recognition.onresult = (event) => {
     const answer = event.results?.[0]?.[0]?.transcript?.trim()
-    if (answer) typedAnswer.value = answer
+    if (answer) {
+      setMicrophoneState(false, true)
+      acceptAnswer(answer)
+    }
   }
-  recognition.onerror = () => {
+  recognition.onerror = (event) => {
     isListening.value = false
     speechError.value = true
+    const unavailable = ['not-allowed', 'service-not-allowed', 'audio-capture'].includes(event.error)
+    setMicrophoneState(false, unavailable ? false : undefined)
   }
-  recognition.onend = () => { isListening.value = false }
-  isListening.value = true
-  speechError.value = false
+  recognition.onend = () => {
+    isListening.value = false
+    setMicrophoneState(false)
+    if (screen.value === 'question' && !speechError.value) {
+      speechError.value = true
+      silenceRetryTimer = window.setTimeout(() => {
+        if (screen.value === 'question') startListening()
+      }, 1400)
+    }
+  }
   recognition.start()
 }
 
 function stopListening() {
   recognition?.stop()
   isListening.value = false
+  setMicrophoneState(false)
 }
 
 function onExternalSpeech(event: Event) {
   if (screen.value !== 'question') return
   const detail = (event as CustomEvent<{ transcript?: string; text?: string }>).detail
   const answer = (detail?.transcript ?? detail?.text ?? '').trim()
-  if (answer) typedAnswer.value = answer
-}
-
-function submitTypedAnswer() {
-  const answer = typedAnswer.value.trim()
-  if (answer) acceptAnswer(answer)
+  if (answer) {
+    speechError.value = false
+    setMicrophoneState(false)
+    acceptAnswer(answer)
+  }
 }
 
 function acceptAnswer(answer: string) {
-  stopListening()
   transcript.value = answer
   screen.value = 'generating'
+  stopListening()
   generationTimer = window.setTimeout(() => appendGeneratedPage(answer), 1400)
 }
 
@@ -298,7 +286,9 @@ onBeforeUnmount(() => {
   clearLeaveTimer()
   clearDwell()
   if (generationTimer !== undefined) window.clearTimeout(generationTimer)
+  if (silenceRetryTimer !== undefined) window.clearTimeout(silenceRetryTimer)
   recognition?.stop()
+  setMicrophoneState(false)
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('iread:gaze', onExternalGaze)
   window.removeEventListener('iread:speech', onExternalSpeech)
@@ -309,6 +299,14 @@ onBeforeUnmount(() => {
   <main class="story-reader">
     <section class="reader-frame" :aria-label="`${story.title} 읽기`">
       <div v-if="screen === 'reading'" class="story-scene">
+        <PageBackButton
+          class="reader-back"
+          label="이야기 나라로 돌아가기"
+          @back="router.push({ name: 'stories' })"
+        />
+        <div class="story-progress" role="status" :aria-label="`현재 ${currentPage + 1}페이지, 전체 ${allPages.length}페이지`">
+          {{ currentPage + 1 }} / {{ allPages.length }}
+        </div>
         <img :src="page.image" :alt="`${story.title} 이야기 장면`" :style="{ objectPosition: page.imagePosition ?? 'center' }" />
         <div class="scene-shade" aria-hidden="true" />
         <div ref="textPanel" class="reading-panel" aria-live="polite" @pointerleave="onPointerLeave">
@@ -338,6 +336,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-else class="question-scene">
+        <PageBackButton
+          class="reader-back"
+          label="이야기 나라로 돌아가기"
+          @back="router.push({ name: 'stories' })"
+        />
         <img :src="page.image" alt="" :style="{ objectPosition: page.imagePosition ?? 'center' }" />
         <div class="question-backdrop" aria-hidden="true" />
         <section class="question-card" :class="{ 'question-card--generating': screen === 'generating' }" aria-live="polite">
@@ -346,101 +349,30 @@ onBeforeUnmount(() => {
               <img :src="storyChoiceScene" alt="갈림길 앞에서 어느 길로 갈지 고민하는 거북이" />
             </div>
             <h1>{{ story.question }}</h1>
-            <form class="answer-form" @submit.prevent="submitTypedAnswer">
-              <label class="sr-only" for="story-answer">내 생각 쓰기</label>
-              <div class="answer-row">
-                <div class="thought-input">
-                  <svg class="pencil-icon" viewBox="0 0 48 48" aria-hidden="true">
-                    <path d="m9 35-2 8 8-2 24-24-6-6L9 35Z" />
-                    <path d="m29 15 6 6M8 41l5-5" />
-                  </svg>
-                  <input id="story-answer" v-model="typedAnswer" autocomplete="off" placeholder="내 생각을 써 봐요" />
-                  <button
-                    v-if="speechSupported"
-                    class="mic-button"
-                    :class="{ 'mic-button--listening': isListening }"
-                    type="button"
-                    :aria-label="isListening ? '듣기 멈추기' : '말로 대답하기'"
-                    @click="isListening ? stopListening() : startListening()"
-                  >
-                    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="17" y="6" width="14" height="25" rx="7"/><path d="M11 23c0 8 5.8 14 13 14s13-6 13-14M24 37v7M17 44h14"/></svg>
-                  </button>
-                </div>
-                <button class="answer-next" type="submit" :disabled="!typedAnswer.trim()" aria-label="내 생각으로 다음 이야기 만들기">
-                  <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 24h28M27 14l10 10-10 10" /></svg>
-                </button>
+            <section class="voice-answer" aria-label="말로 대답하기">
+              <span class="listening-mic" :class="{ 'listening-mic--active': isListening }" aria-hidden="true">
+                <svg viewBox="0 0 48 48"><rect x="17" y="6" width="14" height="25" rx="7"/><path d="M11 23c0 8 5.8 14 13 14s13-6 13-14M24 37v7M17 44h14"/></svg>
+              </span>
+              <div class="listening-copy">
+                <strong>{{ speechError ? '잘 듣지 못했어요' : '이야기를 들려주세요!' }}</strong>
+                <p>{{ speechError ? '천천히 다시 말해 볼까요?' : '지금 대답을 듣고 있어요…' }}</p>
               </div>
-            </form>
-            <p v-if="isListening" class="speech-state">듣고 있어요…</p>
-            <p v-else-if="speechError" class="speech-error">잘 듣지 못했어요. 직접 써 주세요.</p>
+              <button v-if="speechError" class="retry-button" type="button" @click="startListening">
+                다시 말하기
+              </button>
+            </section>
           </template>
 
           <template v-else>
-            <span class="sparkles" aria-hidden="true">✦ ✨ ✦</span>
-            <h1 class="making-title">새 이야기를 만들고 있어요!</h1>
+            <h1 class="making-title">다음 이야기를 만들고 있어요!</h1>
             <blockquote>“{{ transcript }}”</blockquote>
-            <span class="making-dots" aria-label="이야기 만드는 중"><i/><i/><i/></span>
+            <span class="making-dots" aria-label="다음 이야기 만드는 중"><i/><i/><i/></span>
           </template>
         </section>
       </div>
 
     </section>
-    <RiveGuideCharacter
-      v-if="screen === 'reading'"
-      class="story-guide"
-      :message="storyGuideMessage"
-      :mood="storyGuideMood"
-    />
   </main>
 </template>
 
-<style scoped>
-.story-reader{position:relative;width:100%;height:100%;min-height:0;display:grid;place-items:center;padding:clamp(8px,1.35vh,16px) var(--learner-page-padding);overflow:hidden;background-color:#66bdf1;background-image:url('../../assets/backgrounds/story-reader-outer-background-flat-vector.png');background-position:center;background-size:cover;background-repeat:no-repeat;color:var(--learner-color-text);font-family:var(--learner-font-reading)}
-.reader-frame{position:relative;width:min(100%,1520px);height:min(100%,850px);min-height:0;max-height:100%;padding:clamp(10px,1.6vh,20px);border:3px solid #ecd17d;border-radius:34px;background:#fff6cf;box-shadow:0 16px 36px rgba(49,66,124,.22)}
-.story-scene{position:relative;width:100%;height:100%;min-height:0;overflow:hidden;border:var(--learner-border-width-strong) solid rgba(255,255,255,.86);border-radius:calc(var(--learner-radius-card) - 8px);background:#d6edff;box-shadow:inset 0 0 0 2px rgba(119,85,35,.12),var(--learner-shadow-card)}
-.story-scene>img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}.scene-shade{position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(30,37,34,.16) 42%,rgba(30,37,34,.38));pointer-events:none}
-.reading-panel{position:absolute;z-index:2;top:clamp(70px,12vh,120px);left:clamp(70px,8vw,130px);width:min(58%,860px);min-height:0;padding:0;border:0;background:transparent;box-shadow:none}
-.story-lines{width:100%}.story-lines p{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:.2em;margin:0 0 .34em;color:#132b67;font-size:clamp(40px,min(3.55vw,6vh),58px);font-weight:var(--learner-font-weight-heavy);line-height:1.3;letter-spacing:-.025em;white-space:normal;text-align:left;text-shadow:0 2px 0 rgba(255,255,255,.8),0 0 12px rgba(255,252,225,.92)}.story-lines p:last-child{margin-bottom:0}
-.story-word{position:relative;display:inline-block;padding:0 .09em;border-radius:.3em;transition:color var(--learner-duration-fast),background-color var(--learner-duration-fast),box-shadow var(--learner-duration-fast)}
-.story-word--read{color:#315d8c;background:linear-gradient(transparent 64%,rgba(116,188,255,.34) 64%)}
-.story-word--next{color:#183f78;background:#fff0a6;box-shadow:0 0 0 5px rgba(255,218,76,.24),0 0 22px rgba(255,193,36,.5);animation:return-cue 1.15s ease-in-out infinite}
-.gaze-ring{position:absolute;top:0;left:0;width:42px;height:42px;border:4px solid rgba(46,133,232,.54);border-radius:50%;background:rgba(255,255,255,.1);box-shadow:0 0 0 7px rgba(87,170,255,.15);pointer-events:none}
-.gaze-ring--dwelling{animation-name:gaze-dwell;animation-timing-function:linear;animation-fill-mode:forwards}
-.next-page{min-width:clamp(188px,16vw,240px);min-height:var(--learner-control-height-large);display:inline-flex;align-items:center;justify-content:center;gap:var(--learner-space-3);padding:0 var(--learner-space-6);border:var(--learner-border-width) solid var(--learner-color-primary-dark);border-radius:var(--learner-radius-pill);background:var(--learner-color-primary);color:var(--learner-color-text-inverse);box-shadow:var(--learner-shadow-card);font-family:var(--learner-font-display);font-size:var(--learner-font-size-button);font-weight:var(--learner-font-weight-heavy);cursor:pointer;transition:transform var(--learner-duration-fast),box-shadow var(--learner-duration-fast)}
-.story-next{position:absolute;right:clamp(22px,3vw,48px);bottom:clamp(22px,3vh,40px);z-index:5;animation:next-arrive .28s var(--learner-easing-bounce) both}
-.next-page svg{width:30px;fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}.next-page:hover{transform:translateY(-2px);box-shadow:var(--learner-shadow-floating)}.next-page:active{transform:translateY(0)}.next-page:focus-visible{outline:none;box-shadow:var(--learner-shadow-focus)}
-.question-scene{position:relative;width:100%;height:100%;min-height:0;overflow:hidden;border:var(--learner-border-width-strong) solid rgba(255,255,255,.86);border-radius:calc(var(--learner-radius-card) - 8px);background:#d6edff;box-shadow:inset 0 0 0 2px rgba(119,85,35,.12),var(--learner-shadow-card)}
-.question-scene>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.74) blur(2px);transform:scale(1.02)}
-.question-backdrop{position:absolute;inset:0;background:rgba(26,54,92,.46);backdrop-filter:blur(2px)}
-.question-card{position:absolute;z-index:1;top:50%;left:50%;width:min(88%,960px);height:min(90%,760px);display:flex;flex-direction:column;align-items:center;padding:clamp(14px,2vh,22px);border:4px solid rgba(255,255,255,.94);border-radius:clamp(26px,3vw,42px);background:#fffdf2;box-shadow:0 22px 58px rgba(24,46,81,.34),inset 0 0 0 3px rgba(239,205,102,.48);transform:translate(-50%,-50%);text-align:center}
-.choice-illustration{width:100%;min-height:0;flex:1;overflow:hidden;border:3px solid #f3e7bd;border-radius:clamp(18px,2vw,28px);background:#fff4bf;box-shadow:0 8px 18px rgba(71,83,104,.12)}
-.choice-illustration img{width:100%;height:100%;display:block;object-fit:cover}
-.question-card h1{max-width:820px;margin:clamp(12px,2vh,20px) 0;color:#27468d;font-family:var(--learner-font-display);font-size:clamp(34px,4.2vw,58px);font-weight:var(--learner-font-weight-heavy);line-height:1.12;letter-spacing:-.04em;word-break:keep-all;text-shadow:0 3px 0 #fff}
-.answer-form{width:100%;margin-top:auto}
-.answer-row{display:grid;grid-template-columns:minmax(0,1fr) clamp(72px,7vw,96px);align-items:center;gap:clamp(12px,1.8vw,24px)}
-.thought-input{position:relative;min-width:0;height:clamp(72px,8vh,94px);display:flex;align-items:center;border:3px solid #eadbb0;border-radius:24px;background:#fffefa;box-shadow:0 7px 0 rgba(215,196,145,.42),inset 0 0 0 2px #fff}
-.pencil-icon{width:38px;margin-left:24px;flex:0 0 auto;fill:#aeb4bd;stroke:#aeb4bd;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.thought-input input{min-width:0;flex:1;height:100%;padding:0 18px;border:0;outline:0;background:transparent;color:#263d6e;font-family:var(--learner-font-reading);font-size:clamp(24px,2.3vw,34px);font-weight:var(--learner-font-weight-bold)}
-.thought-input input::placeholder{color:#b8bcc3}
-.thought-input:focus-within{border-color:#7e9cf1;box-shadow:0 7px 0 rgba(85,113,199,.24),0 0 0 5px rgba(94,128,231,.16)}
-.mic-button{width:52px;height:52px;margin-right:12px;display:grid;place-items:center;flex:0 0 auto;border:0;border-radius:50%;background:#eaf0ff;color:#4c73df;cursor:pointer;transition:transform .18s ease,background .18s ease}
-.mic-button svg{width:28px;fill:currentColor;stroke:currentColor;stroke-width:4;stroke-linecap:round}.mic-button:hover{transform:translateY(-2px);background:#dce7ff}.mic-button:focus-visible{outline:4px solid rgba(255,199,54,.65);outline-offset:3px}
-.mic-button--listening{background:#ff8177;color:#fff;box-shadow:0 0 0 10px rgba(255,111,94,.15);animation:mic-pulse 1.2s ease-in-out infinite}
-.answer-next{width:clamp(72px,7vw,96px);height:clamp(72px,7vw,96px);display:grid;place-items:center;padding:0;border:5px solid #fff;border-radius:50%;background:linear-gradient(145deg,#6f96ff,#4567df);box-shadow:0 8px 0 #3453bd,0 13px 24px rgba(54,83,181,.28);color:#fff;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
-.answer-next svg{width:52%;fill:none;stroke:currentColor;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}.answer-next:hover:not(:disabled){transform:translateY(-3px)}.answer-next:active:not(:disabled){transform:translateY(4px);box-shadow:0 4px 0 #3453bd}.answer-next:focus-visible{outline:5px solid rgba(255,199,54,.72);outline-offset:3px}.answer-next:disabled{opacity:.42;cursor:not-allowed;box-shadow:0 5px 0 #8794bd}
-.speech-state,.speech-error{min-height:22px;margin:10px 0 0;font-size:18px;font-weight:var(--learner-font-weight-bold)}.speech-state{color:#4567df}.speech-error{color:#b64f4b}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.question-card--generating{width:min(82%,850px);height:auto;min-height:min(74%,540px);justify-content:center;padding:clamp(24px,4vh,46px) clamp(28px,5vw,70px)}
-.sparkles{margin-bottom:20px;color:#efb623;font-size:clamp(32px,4vw,50px);letter-spacing:.25em;animation:sparkle 1.2s ease-in-out infinite}.question-card .making-title{font-size:clamp(36px,4.5vw,60px)}.question-card blockquote{max-width:700px;margin:26px 0 20px;padding:18px 28px;border-radius:24px;background:#eaf2ff;color:#34578d;font-size:clamp(24px,3vw,38px);font-weight:800;line-height:1.35;word-break:keep-all}.making-dots{display:flex;gap:12px;margin-top:12px}.making-dots i{width:18px;height:18px;border-radius:50%;background:#5b86e5;animation:making-dot 1s ease-in-out infinite}.making-dots i:nth-child(2){animation-delay:.15s}.making-dots i:nth-child(3){animation-delay:.3s}
-.question-footer{min-height:var(--learner-control-height-large);display:flex;align-items:center;justify-content:center;color:#786538;font-size:clamp(17px,1.8vw,22px);font-weight:800}
-@keyframes next-arrive{from{opacity:0;transform:translateY(12px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes return-cue{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
-@keyframes gaze-dwell{0%{border-color:rgba(46,133,232,.32);box-shadow:0 0 0 7px rgba(87,170,255,.1)}100%{border-color:#2e85e8;box-shadow:0 0 0 9px rgba(87,170,255,.32)}}
-@keyframes mic-pulse{50%{box-shadow:0 10px 0 #c74542,0 0 0 22px rgba(255,111,94,.1)}}
-@keyframes sparkle{50%{transform:scale(1.08);opacity:.72}}
-@keyframes making-dot{0%,100%{transform:translateY(0);opacity:.45}50%{transform:translateY(-10px);opacity:1}}
-@media(max-width:980px){.reader-frame{width:97vw;padding:var(--learner-space-3)}.reading-panel{top:clamp(28px,7vh,54px);left:var(--learner-space-6);width:calc(100% - 2 * var(--learner-space-6))}.story-lines p{font-size:clamp(36px,5.4vw,50px)}}
-@media(max-width:700px){.question-card{width:94%;padding:12px}.answer-row{grid-template-columns:minmax(0,1fr) 68px}.answer-next{width:68px;height:68px}.pencil-icon{width:30px;margin-left:14px}.thought-input input{padding-inline:10px;font-size:22px}.mic-button{width:44px;height:44px}}
-@media(max-height:720px){.story-reader{padding-block:var(--learner-space-3)}.reader-frame{height:98%;padding:var(--learner-space-4)}.reading-panel{top:var(--learner-space-3);padding-block:var(--learner-space-3)}.story-lines p{font-size:clamp(35px,6.1vh,48px);line-height:1.18}.question-card{height:94%;padding:12px}.question-card h1{margin:8px 0;font-size:clamp(30px,5.5vh,40px)}.thought-input{height:64px}.answer-next{width:64px;height:64px}.mic-button{width:42px;height:42px}.speech-state,.speech-error{min-height:18px;margin-top:6px;font-size:15px}.question-card--generating{height:auto;min-height:88%;padding:18px 28px}}
-@media(prefers-reduced-motion:reduce){.story-word--next,.gaze-ring--dwelling,.mic-button--listening,.sparkles,.making-dots i,.story-next{animation:none}.next-page,.story-word{transition:none}}
-</style>
+<style scoped src="@/styles/story/StoryReaderView.css"></style>

@@ -2,14 +2,14 @@
 //
 // 가능하면 브라우저 MediaRecorder 로 실제 녹음을 수행합니다.
 // MediaRecorder/getUserMedia 를 지원하지 않거나 권한이 거부된 환경에서는
-// "목업 녹음"으로 동작하며(state.isMock === true) 이 경우 실제 음성 분석이 아님을
-// UI에 명확히 표시해야 합니다.
+// 녹음을 시작하지 않고 공용 장치 상태를 연결 안 됨으로 변경합니다.
 //
 // 본 파일은 발음 평가/STT 점수 측정을 수행하지 않습니다.
 // 녹음 결과는 목업 저장소에 Blob(또는 목업 표시)으로만 보관됩니다.
 
 import { onScopeDispose, reactive, ref, shallowRef } from 'vue'
 import type { RecordingState } from '@/types/training'
+import { useDeviceStatus } from './useDeviceStatus'
 
 const MAX_RECORDING_MS = 30_000 // 최대 녹음 시간(목업 안전장치)
 const WAVEFORM_BARS = 28
@@ -24,6 +24,7 @@ const isMediaRecorderSupported = (): boolean =>
 const buildIdleWaveform = (): number[] => Array.from({ length: WAVEFORM_BARS }, () => 0.08)
 
 export function useVoiceRecorder() {
+  const { setMicrophoneState } = useDeviceStatus()
   const state = reactive<RecordingState>({
     status: 'idle',
     elapsedMs: 0,
@@ -68,7 +69,7 @@ export function useVoiceRecorder() {
     waveform.value = Array.from({ length: WAVEFORM_BARS }, () => 0.25 + Math.random() * 0.7)
   }
 
-  // 녹음 시작. 권한이 필요하면 요청하고, 미지원이면 목업 모드로 동작합니다.
+  // 녹음 시작. 권한이 필요하면 요청하고, 미지원·권한 거부 시 학습을 차단합니다.
   const start = async (): Promise<void> => {
     if (state.status === 'recording' || state.status === 'requesting') return
 
@@ -76,7 +77,9 @@ export function useVoiceRecorder() {
     resetRecordingData()
 
     if (!isMediaRecorderSupported()) {
-      startMockRecording()
+      state.status = 'unsupported'
+      state.errorMessage = '마이크를 연결하고 다시 시작해 주세요.'
+      setMicrophoneState({ available: false, active: false })
       return
     }
 
@@ -85,6 +88,7 @@ export function useVoiceRecorder() {
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      setMicrophoneState({ available: true, active: true })
       state.isMock = false
       state.status = 'recording'
       startedAt = Date.now()
@@ -102,6 +106,7 @@ export function useVoiceRecorder() {
         audioUrl.value = URL.createObjectURL(blob)
         state.hasRecording = true
         state.status = 'recorded'
+        setMicrophoneState({ active: false })
         stopStream()
         clearTimers()
       }
@@ -116,20 +121,9 @@ export function useVoiceRecorder() {
     } catch (err) {
       state.status = err instanceof DOMException && err.name === 'NotAllowedError' ? 'denied' : 'unsupported'
       state.errorMessage = '마이크 권한이 필요해요. 권한을 허용해 주세요.'
+      setMicrophoneState({ available: false, active: false })
       stopStream()
     }
-  }
-
-  // MediaRecorder 미지원/권한 거부 시 목업 녹음
-  const startMockRecording = (): void => {
-    state.isMock = true
-    state.status = 'recording'
-    state.errorMessage = null
-    startedAt = Date.now()
-    startTimers(true)
-    setTimeout(() => {
-      if (state.status === 'recording') stop()
-    }, MAX_RECORDING_MS)
   }
 
   const startTimers = (isMock: boolean): void => {
@@ -152,6 +146,7 @@ export function useVoiceRecorder() {
     // 목업 모드 종료
     state.hasRecording = true
     state.status = 'recorded'
+    setMicrophoneState({ active: false })
     clearTimers()
   }
 
@@ -179,6 +174,7 @@ export function useVoiceRecorder() {
 
   // 컴포넌트 언마운트 시 리소스 정리
   onScopeDispose(() => {
+    setMicrophoneState({ active: false })
     reset()
   })
 

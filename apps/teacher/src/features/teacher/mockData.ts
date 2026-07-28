@@ -444,9 +444,6 @@ export const studentCurricula: Record<number, CurriculumItem[]> = {
   ],
 }
 
-// 기존 화면과 다른 목업에서 첫 번째 아동의 목록을 기본값으로 사용할 수 있도록 유지합니다.
-export const curriculumItems = studentCurricula[1]!
-
 // 다음 회차 추천 목록도 아동별로 서로 다른 순서와 횟수를 가집니다.
 export const recommendedCurricula: Record<number, RecommendedCurriculumItem[]> = {
   1: [

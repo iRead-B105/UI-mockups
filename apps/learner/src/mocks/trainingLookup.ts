@@ -4,6 +4,8 @@
 import type { TrainingCategory, TrainingCategoryId, TrainingLessonSummary } from '@/types/training'
 import { trainingCategories } from './trainingCategories'
 import { getLessonById } from './trainingLessons'
+import { getCachedStudent } from '@/services/learnerDataRepository'
+import { learnerRuntimeMock } from '@/mocks/learnerRuntimeMock'
 
 export const getAllCategories = (): TrainingCategory[] => trainingCategories
 
@@ -31,16 +33,3 @@ export const isPlayableLesson = (categoryId: string, lessonId: string): boolean 
   if (!summary || !summary.isReady) return false
   return getLessonById(lessonId) !== null
 }
-
-// 목업 커리큘럼 세션.
-// 현재는 학습자가 직접 레슨을 고르므로 autoAdvance: false.
-// 향후 서버가 순차 커리큘럼을 내려주면 이 값을 서버 응답으로 채우고,
-// 상위(TrainingLessonView)에서 완료 후 다음 레슨으로 자동 진행하도록 확장합니다.
-export const createMockCurriculumSession = (learnerId = 'mock-learner-001') => ({
-  sessionId: 'mock-session-001',
-  learnerId,
-  currentLessonId: '',
-  orderedLessonIds: [],
-  currentLessonIndex: 0,
-  autoAdvance: false,
-})

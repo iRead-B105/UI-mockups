@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Alignment, Fit, Layout, Rive } from '@rive-app/canvas'
 import bunnyUrl from '../assets/24876-46460-interactive-bunny-character.riv?url'
 import type { MainMapMenuItem } from '../data/mainMapMenu'
+import { getCachedStudent } from '@/services/learnerDataRepository'
 
 const props = withDefaults(
   defineProps<{
@@ -19,6 +20,7 @@ const props = withDefaults(
 
 // message 를 넘긴 경우 = 학습 화면 컴패니언 모드. 아니면 메인 섬 화면 모드.
 const isCompanion = computed(() => props.message !== undefined)
+const studentName = getCachedStudent().name
 
 const source = ref<HTMLCanvasElement | null>(null)
 const output = ref<HTMLCanvasElement | null>(null)
@@ -43,7 +45,7 @@ const bubbleMessage = computed(() => {
   if (isCompanion.value) return props.message ?? '힘내요!'
   if (hovered.value) return '안녕~~'
   if (props.activeMenu) return menuMessages[props.activeMenu]
-  return '윤정아!\n오늘도 화이팅!'
+  return `${studentName}아!\n오늘도 화이팅!`
 })
 
 type BunnyAnimation = 'Idle Loop' | 'WALK' | '01 Wave 2' | 'idle to Pose 1' | 'Pose 1 loop'
@@ -242,15 +244,4 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style scoped>
-.guide { position:fixed;z-index:18;right:-1.2%;bottom:-7%;width:clamp(220px,18.2vw,350px);aspect-ratio:.508;opacity:0;transition:opacity var(--learner-duration-slow);pointer-events:none; }
-.guide.ready { opacity:1; }
-.bunny-hit { position:absolute;z-index:4;right:0;top:25%;width:64%;height:72%;border:0;outline:none;background:transparent;cursor:pointer;pointer-events:auto; }
-.guide:has(.bunny-hit:hover) .bunny { transform:translateY(-5px); }
-.bunny-hit:focus-visible { filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 5px var(--learner-color-primary)); }
-.bunny { position:absolute;z-index:2;inset:0;width:100%;height:100%;pointer-events:none;transition:transform var(--learner-duration-fast); }
-.source { position:absolute;z-index:1;inset:0;width:620px;height:570px;opacity:0;pointer-events:none; }
-.bubble { position:absolute;z-index:3;right:100%;bottom:43%;width:clamp(190px,15vw,270px);padding:clamp(14px,1.5vw,20px);border-radius:var(--learner-radius-large);background:var(--learner-color-surface);color:var(--learner-color-text);font-family:var(--learner-font-display);font-size:clamp(17px,1.35vw,25px);font-weight:var(--learner-font-weight-heavy);line-height:1.35;text-align:center;white-space:pre-line;box-shadow:var(--learner-shadow-card);pointer-events:none; }
-.bubble::after { content:'';position:absolute;right:-25px;bottom:20px;border:16px solid transparent;border-left-color:var(--learner-color-surface);transform:rotate(16deg); }
-@media (max-width:900px) { .guide{right:-4%;width:280px}.bubble{right:82%} }
-</style>
+<style scoped src="@/styles/common/RiveGuideCharacter.css"></style>

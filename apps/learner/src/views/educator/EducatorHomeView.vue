@@ -4,16 +4,4 @@
   </section>
 </template>
 
-<style scoped>
-.educator-home {
-  min-height: inherit;
-  display: grid;
-  place-items: center;
-  padding: 32px;
-}
-
-.educator-home p {
-  margin: 0;
-  color: var(--educator-muted);
-}
-</style>
+<style scoped src="@/styles/educator/EducatorHomeView.css"></style>

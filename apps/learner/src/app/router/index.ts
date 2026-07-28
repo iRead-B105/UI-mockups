@@ -98,9 +98,26 @@ const router = createRouter({
           meta: { hideLearnerHeader: true },
         },
         {
+          path: 'training/today/complete',
+          name: 'training-today-complete',
+          component: () => import('../../views/learner/TodayTrainingCompleteView.vue'),
+          meta: { hideLearnerHeader: true },
+        },
+        {
           path: 'growth',
           name: 'growth',
           component: () => import('../../views/learner/GrowthView.vue'),
+        },
+        {
+          path: 'challenge',
+          name: 'skill-challenge',
+          component: () => import('../../views/learner/SkillChallengeView.vue'),
+        },
+        {
+          path: 'challenge/complete',
+          name: 'skill-challenge-complete',
+          component: () => import('../../views/learner/SkillChallengeCompleteView.vue'),
+          meta: { hideLearnerHeader: true },
         },
       ],
     },

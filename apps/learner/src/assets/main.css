@@ -1,7 +1,0 @@
-@import './base.css';
-@import './tokens.css';
-
-:root { color-scheme: light; }
-body { min-width: 320px; min-height: 100vh; background: #8bd8fa; }
-button, canvas { font: inherit; }
-#app { min-height: 100vh; }

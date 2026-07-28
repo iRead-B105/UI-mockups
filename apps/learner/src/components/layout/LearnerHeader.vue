@@ -1,20 +1,48 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onBeforeUnmount, onMounted } from 'vue'
+import { isNavigationFailure, useRouter } from 'vue-router'
 import iReadMainLogo from '../../assets/header/iread-main.png'
 import headerCloudBackground from '../../assets/header/iread-header-true-alpha.png'
+import { useDeviceStatus } from '../../composables/useDeviceStatus'
 
-withDefaults(defineProps<{ userName?: string; stars?: number }>(), { userName: '윤정', stars: undefined })
+defineProps<{ userName: string }>()
 
 const router = useRouter()
-const eyeTrackerConnected = ref(true)
-const speechRecognitionActive = ref(false)
+const {
+  eyeTrackerConnected,
+  microphoneAvailable,
+  microphoneActive,
+  setEyeTrackerConnected,
+  setMicrophoneState,
+} = useDeviceStatus()
+
+const handleMicrophoneState = (event: Event) => {
+  const detail = (event as CustomEvent<{ active?: boolean; available?: boolean }>).detail
+  setMicrophoneState(detail ?? {})
+}
+
+const handleEyeTrackerState = (event: Event) => {
+  const detail = (event as CustomEvent<{ connected?: boolean }>).detail
+  if (typeof detail?.connected === 'boolean') setEyeTrackerConnected(detail.connected)
+}
+
+onMounted(() => {
+  window.addEventListener('iread:microphone-state', handleMicrophoneState)
+  window.addEventListener('iread:eye-tracker-state', handleEyeTrackerState)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('iread:microphone-state', handleMicrophoneState)
+  window.removeEventListener('iread:eye-tracker-state', handleEyeTrackerState)
+})
 
 const handleLogout = async () => {
+  const navigationResult = await router.replace({ name: 'login' })
+  if (isNavigationFailure(navigationResult)) return
+
   localStorage.removeItem('iread-auth')
   localStorage.removeItem('iread-user')
   sessionStorage.removeItem('iread-auth')
-  await router.replace({ name: 'login' })
+  sessionStorage.removeItem('iread-teacher-session')
 }
 </script>
 
@@ -23,9 +51,6 @@ const handleLogout = async () => {
     <img class="header-cloud-background" :src="headerCloudBackground" alt="" aria-hidden="true" />
 
     <div class="profile-cluster">
-      <div v-if="stars !== undefined" class="star-balance" :aria-label="`별 ${stars}개`">
-        <span aria-hidden="true">☆</span><strong>{{ stars }}</strong>
-      </div>
       <div class="profile" :aria-label="`${userName} 프로필`">
         <span class="avatar" aria-hidden="true">
           <svg viewBox="0 0 64 64">
@@ -51,13 +76,11 @@ const handleLogout = async () => {
     </RouterLink>
 
     <nav class="device-actions" aria-label="학습 장치 상태와 나가기">
-      <button
+      <div
         class="device-button"
-        :class="{ active: eyeTrackerConnected }"
-        type="button"
-        :aria-pressed="eyeTrackerConnected"
+        :class="{ active: eyeTrackerConnected, disconnected: !eyeTrackerConnected }"
+        role="status"
         :aria-label="eyeTrackerConnected ? '아이트래커 연결됨' : '아이트래커 연결 안 됨'"
-        @click="eyeTrackerConnected = !eyeTrackerConnected"
       >
         <span class="device-icon" aria-hidden="true">
           <svg class="eyes-icon" viewBox="0 0 48 48">
@@ -71,15 +94,17 @@ const handleLogout = async () => {
           <i></i>
         </span>
         <span class="visually-hidden">시선</span>
-      </button>
+      </div>
 
-      <button
+      <div
         class="device-button device-button--voice"
-        :class="{ active: speechRecognitionActive }"
-        type="button"
-        :aria-pressed="speechRecognitionActive"
-        :aria-label="speechRecognitionActive ? '음성 인식 중' : '음성 인식 대기 중'"
-        @click="speechRecognitionActive = !speechRecognitionActive"
+        :class="{
+          active: microphoneActive,
+          available: microphoneAvailable && !microphoneActive,
+          disconnected: !microphoneAvailable,
+        }"
+        role="status"
+        :aria-label="!microphoneAvailable ? '마이크 연결 안 됨' : microphoneActive ? '음성 인식 중' : '마이크 연결됨'"
       >
         <span class="device-icon" aria-hidden="true">
           <svg class="microphone-icon" viewBox="0 0 48 48">
@@ -90,7 +115,7 @@ const handleLogout = async () => {
           <i></i>
         </span>
         <span class="visually-hidden">음성</span>
-      </button>
+      </div>
 
       <button class="exit-button" type="button" aria-label="로그아웃하고 나가기" @click="handleLogout">
         <svg class="exit-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -102,32 +127,8 @@ const handleLogout = async () => {
         <span class="visually-hidden">나가기</span>
       </button>
     </nav>
+
   </header>
 </template>
 
-<style scoped>
-.learner-header{position:absolute;z-index:20;top:0;right:0;left:0;height:var(--learner-header-height);display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(28px,2.8vw,46px) clamp(32px,5vw,84px) 0;background:none;font-family:var(--learner-font-display);isolation:isolate;overflow:visible;pointer-events:none}
-.header-cloud-background{position:absolute;z-index:0;top:clamp(-84px,-4.5vw,-42px);left:0;width:100%;height:auto;display:block;pointer-events:none;user-select:none}
-.brand{position:absolute;z-index:3;top:clamp(-37px,0vw,-30px);left:50%;width:clamp(190px,15.84vw,290px);height:clamp(100px,11.23vw,167px);display:block;text-decoration:none;pointer-events:auto;transform:translateX(-50%);transition:transform var(--learner-duration-fast),filter var(--learner-duration-fast)}
-.brand img{display:block;width:100%;height:100%;object-fit:contain}
-.brand:hover{transform:translateX(-50%) translateY(-2px) scale(1.035);filter:brightness(1.04)}
-.brand:active{transform:translateX(-50%) translateY(1px) scale(.99)}
-.brand:focus-visible,.device-button:focus-visible,.exit-button:focus-visible{outline:none;box-shadow:var(--learner-shadow-focus)}
-.profile-cluster{position:relative;z-index:3;display:flex;align-items:center;gap:var(--learner-space-3);pointer-events:auto;transform:translateY(-22px)}
-.profile{min-width:clamp(170px,13vw,210px);height:clamp(64px,5.4vw,80px);display:flex;align-items:center;gap:clamp(9px,1vw,14px);padding:5px clamp(18px,1.7vw,26px) 5px 7px;border:4px solid rgba(255,255,255,.96);border-radius:999px;background:#78cef4;color:#173454;box-shadow:0 6px 0 #4da8d4,0 10px 20px rgb(41 100 145 / 20%);transition:transform var(--learner-duration-fast),background var(--learner-duration-fast),box-shadow var(--learner-duration-fast)}
-.profile:hover{transform:translateY(-2px);background:#86daf7;box-shadow:0 8px 0 #4da8d4,0 13px 24px rgb(41 100 145 / 22%)}
-.star-balance{height:var(--learner-control-height-large);min-width:140px;display:flex;align-items:center;justify-content:center;gap:var(--learner-space-3);padding:0 var(--learner-space-6);border-radius:var(--learner-radius-pill);background:var(--learner-color-surface);box-shadow:var(--learner-shadow-small);color:#4d4539}
-.star-balance span{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#ffd968;color:#fff;font-size:34px;font-weight:900;line-height:1;text-shadow:0 2px #e3a82f}
-.star-balance strong{font-family:var(--learner-font-display);font-size:var(--learner-font-size-button);font-weight:var(--learner-font-weight-heavy)}
-.avatar{width:clamp(52px,4.3vw,64px);height:clamp(52px,4.3vw,64px);display:grid;place-items:center;overflow:hidden;flex:0 0 auto;border:4px solid #fff;border-radius:50%;background:#f1edf5;box-shadow:0 3px 9px rgba(34,91,130,.18)}.avatar svg{width:100%;height:100%}.avatar-bg{fill:#fff7e4}.avatar-hair,.avatar-hair-side,.avatar-bangs{fill:#6d3b25}.avatar-face{fill:#ffd6ad}.avatar-eye{fill:#39261d}.avatar-smile{fill:none;stroke:#e45c56;stroke-width:2.5;stroke-linecap:round}.avatar-shirt{fill:#ef8296}.avatar-star{fill:#ffd248}
-.profile strong{font-size:clamp(20px,1.55vw,25px);font-weight:var(--learner-font-weight-heavy);letter-spacing:-.02em;text-shadow:0 1px 0 rgba(255,255,255,.55)}
-.device-actions{position:relative;z-index:3;display:flex;align-items:center;gap:clamp(8px,1vw,14px);pointer-events:auto;transform:translateY(-22px)}
-.device-button,.exit-button{width:clamp(58px,4.8vw,72px);height:clamp(58px,4.8vw,72px);display:grid;place-items:center;padding:0;border:4px solid rgba(255,255,255,.96);border-radius:50%;background:#78cef4;color:#17497b;box-shadow:0 6px 0 #4da8d4,0 10px 20px rgb(41 100 145 / 20%);font-family:var(--learner-font-display);cursor:pointer;transition:transform var(--learner-duration-fast),background var(--learner-duration-fast),box-shadow var(--learner-duration-fast)}
-.device-button:hover,.exit-button:hover{transform:translateY(-2px);box-shadow:0 10px 23px rgb(100 89 45 / 17%)}
-.device-button:active,.exit-button:active{transform:translateY(4px);box-shadow:0 2px 0 #4da8d4,0 5px 10px rgb(41 100 145 / 16%)}
-.device-icon{position:relative;width:clamp(38px,3.2vw,48px);height:clamp(38px,3.2vw,48px);display:grid;place-items:center}.device-icon svg,.exit-button svg{width:100%;height:100%;overflow:visible}.device-icon i{position:absolute;right:-2px;bottom:0;width:12px;height:12px;border:2px solid #fff;border-radius:50%;background:#aeb7c4}.device-button.active{background:#86daf7;color:#17497b}.device-button.active .device-icon i{background:#42c768;box-shadow:0 0 0 3px rgba(66,199,104,.16)}.device-button--voice.active{background:#86daf7;color:#17497b}.device-button--voice.active .device-icon i{background:#438af0;box-shadow:0 0 0 3px rgba(67,138,240,.16)}.eyes-icon .eye-white{fill:#fff;stroke:#173454;stroke-width:2.6}.eyes-icon .eye-pupil{fill:#173454}.eyes-icon .eye-shine{fill:#fff}.microphone-icon .mic-body{fill:#236aa2}.microphone-icon .mic-line{fill:none;stroke:#17497b;stroke-width:3.8;stroke-linecap:round;stroke-linejoin:round}.microphone-icon .mic-shine{fill:none;stroke:#92e2fb;stroke-width:2.8;stroke-linecap:round}.exit-button{background:#78cef4;color:#17497b}.exit-button svg{width:clamp(38px,3.15vw,47px);height:clamp(38px,3.15vw,47px)}.exit-door{fill:#dff4ff;stroke:#17497b;stroke-width:3;stroke-linejoin:round}.exit-door-face{fill:#bce9fb;stroke:#17497b;stroke-width:3;stroke-linejoin:round}.exit-knob{fill:#17497b}.exit-arrow{fill:none;stroke:#17497b;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
-.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-:global(html[data-iread-motion="reduced"] *){animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
-@media(max-width:1100px){.learner-header{padding-inline:30px}.device-button,.exit-button{width:58px;height:58px}.star-balance{min-width:auto;padding-inline:var(--learner-space-3)}.star-balance strong{font-size:20px}}
-@media(max-width:700px){.learner-header{padding-inline:var(--learner-space-4)}.brand{width:126px;height:72px}.profile{min-width:auto;padding-right:8px}.profile>strong{display:none}.device-actions{gap:5px}.device-button,.exit-button{width:50px;height:52px;border-radius:17px}.star-balance{display:none}}
-</style>
+<style scoped src="@/styles/common/LearnerHeader.css"></style>

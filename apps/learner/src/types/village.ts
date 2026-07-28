@@ -11,8 +11,3 @@ export interface VillageItem {
   unlocked?: boolean
 }
 
-export interface PlacedVillageItem {
-  itemId: string
-  x: number
-  y: number
-}

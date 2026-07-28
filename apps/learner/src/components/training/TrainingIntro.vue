@@ -18,13 +18,13 @@ const questionCount = computed(() => props.lesson.questions.length)
 
 <template>
   <div class="intro-screen">
-    <div class="intro-cloud cloud-1" aria-hidden="true"></div>
-    <div class="intro-cloud cloud-2" aria-hidden="true"></div>
-
     <div class="intro-content">
       <h1 class="intro-title">{{ lesson.title }}</h1>
       <p class="intro-desc">{{ lesson.description }}</p>
-      <p class="intro-meta">약 {{ lesson.estimatedMinutes }}분 · {{ questionCount }}문제</p>
+      <div class="intro-meta" aria-label="훈련 정보">
+        <span>약 {{ lesson.estimatedMinutes }}분</span>
+        <span>{{ questionCount }}문제</span>
+      </div>
 
       <button class="start-button" type="button" @click="$emit('start')">
         <span>시작할까요?</span>
@@ -36,113 +36,4 @@ const questionCount = computed(() => props.lesson.questions.length)
   </div>
 </template>
 
-<style scoped>
-.intro-screen {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  padding: var(--learner-page-padding);
-  overflow: hidden;
-}
-
-.intro-cloud {
-  position: absolute;
-  border-radius: var(--learner-radius-pill);
-  background: rgb(255 255 255 / 65%);
-  pointer-events: none;
-}
-.cloud-1 { left: 6%; top: 14%; width: 150px; height: 50px; }
-.cloud-2 { right: 10%; top: 22%; width: 110px; height: 40px; }
-
-.intro-content {
-  position: relative;
-  z-index: 2;
-  margin: auto;
-  width: min(92%, 620px);
-  max-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: var(--learner-space-4);
-  padding: clamp(24px, 4vmin, 56px);
-  border: 4px solid rgb(255 255 255 / 90%);
-  border-radius: 36px;
-  background-color: #fff9dc;
-  background-image: url('../../assets/backgrounds/training-inner-background-flat-vector.png');
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  box-shadow: 0 16px 36px rgb(44 91 119 / 20%);
-}
-
-.intro-eyebrow {
-  margin: 0;
-  font-family: var(--learner-font-display);
-  font-size: var(--learner-font-size-body);
-  font-weight: var(--learner-font-weight-bold);
-  color: var(--learner-color-learning);
-}
-
-.intro-title {
-  margin: 0;
-  font-family: var(--learner-font-display);
-  font-size: var(--learner-font-size-page-title-fluid);
-  font-weight: var(--learner-font-weight-heavy);
-  color: var(--learner-color-text);
-  line-height: 1.15;
-}
-
-.intro-desc {
-  margin: 0;
-  font-size: var(--learner-font-size-body-large);
-  color: var(--learner-color-text-soft);
-  line-height: 1.4;
-}
-
-.intro-meta {
-  margin: var(--learner-space-2) 0 0;
-  padding: var(--learner-space-2) var(--learner-space-5);
-  border-radius: var(--learner-radius-pill);
-  background: rgb(255 255 255 / 55%);
-  font-family: var(--learner-font-display);
-  font-size: var(--learner-font-size-body);
-  font-weight: var(--learner-font-weight-bold);
-  color: var(--learner-color-text-soft);
-}
-
-.start-button {
-  width: min(92%, 460px);
-  min-height: var(--learner-control-height-large);
-  margin-top: var(--learner-space-6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--learner-space-4);
-  border: none;
-  border-radius: var(--learner-radius-large);
-  background: var(--learner-color-learning);
-  color: var(--learner-color-text-inverse);
-  font-family: var(--learner-font-display);
-  font-size: var(--learner-font-size-button);
-  font-weight: var(--learner-font-weight-heavy);
-  cursor: pointer;
-  box-shadow: var(--learner-shadow-card);
-  transition: transform var(--learner-duration-fast) var(--learner-easing-standard),
-    box-shadow var(--learner-duration-fast);
-}
-.start-button:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--learner-shadow-floating);
-}
-.start-button:focus-visible {
-  outline: none;
-  box-shadow: var(--learner-shadow-focus);
-}
-.start-arrow { width: 28px; height: 28px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .start-button:hover { transform: none; }
-}
-</style>
+<style scoped src="@/styles/training/TrainingIntro.css"></style>

@@ -3,6 +3,7 @@
 // 나머지 레슨은 "이 훈련은 준비하고 있어요." 처리됩니다.
 
 import type { TrainingLesson } from '@/types/training'
+import { personalizeRuntimeValue } from '@/services/learnerDataRepository'
 import { traceConsonantLesson, traceSyllableLesson, traceVowelLesson } from './gazeTraceLessons'
 import { letterSoundChoiceLesson, wordFirstSoundChoiceLesson } from './audioChoiceLessons'
 import { basicLetterBuildLesson, batchimLetterBuildLesson, doubleBatchimLetterBuildLesson } from './letterBuildLessons'
@@ -231,7 +232,7 @@ export const firstSoundLesson: TrainingLesson = {
       },
       feedback: {
         correct: '훌륭해요! 다리의 첫소리는 ㄷ이네요.',
-        retry: '힌트를 보고 다시 골라봐요.',
+        retry: '천천히 다시 골라봐요.',
       },
     },
     {
@@ -566,7 +567,7 @@ export const combineCVLesson: TrainingLesson = {
       hint: { level1: 'ㄷ 소리와 ㅏ 소리를 차례로 들어봐요.', level2: 'ㄷ + ㅏ = 다' },
       feedback: {
         correct: '훌륭해요! ㄷ과 ㅏ를 모으면 다가 돼요.',
-        retry: '힌트를 보고 다시 모아봐요.',
+        retry: '천천히 다시 모아봐요.',
       },
     },
     {
@@ -582,114 +583,6 @@ export const combineCVLesson: TrainingLesson = {
         correct: '완성했어요! ㅂ과 ㅗ를 모으면 보가 돼요.',
         retry: '다시 한번 해볼까요?',
         completed: '자음과 모음 합치기를 모두 마쳤어요! 가, 노, 무, 다, 보를 연습했어요.',
-      },
-    },
-  ],
-}
-
-// 짧은 글 - 그림과 문장 연결하기 (그림 + 문장 선택 + 어려운 단어 음절 분리)
-export const matchSentenceLesson: TrainingLesson = {
-  id: 'match-picture',
-  categoryId: 'short-text',
-  title: '그림과 문장 연결하기',
-  description: '그림에 맞는 문장을 골라요.',
-  activityType: 'sentence-choice',
-  estimatedMinutes: 10,
-  questions: [
-    {
-      id: 'q1',
-      instruction: '그림에 맞는 문장을 골라봐요.',
-      // 리소스 추가 필요: 고양이가 공을 보는 그림 PNG
-      targetImageLabel: '고양이와 공 그림',
-      targetSymbol: '🐱 ⚽',
-      focusWord: { word: '고양이가', syllables: ['고', '양', '이', '가'] },
-      choices: [
-        { id: 'cat', text: '고양이가 공을 봐요.' },
-        { id: 'dog', text: '강아지가 잠을 자요.' },
-        { id: 'bird', text: '새가 하늘을 날아요.' },
-      ],
-      answer: 'cat',
-      hint: { level1: '고양이가 무엇을 하고 있나요?', level2: '고양이가 공을 보고 있어요.' },
-      feedback: {
-        correct: '잘 골랐어요! 고양이가 공을 보고 있네요.',
-        retry: '다시 한번 생각해볼까요?',
-      },
-    },
-    {
-      id: 'q2',
-      instruction: '그림에 맞는 문장을 골라봐요.',
-      // 리소스 추가 필요: 눈 오인 산 그림 PNG
-      targetImageLabel: '눈 오인 산 그림',
-      targetSymbol: '🏔️ ❄️',
-      focusWord: { word: '눈이', syllables: ['눈', '이'] },
-      choices: [
-        { id: 'mountain', text: '산에 눈이 왔어요.' },
-        { id: 'beach', text: '바닷가에 모래가 있어요.' },
-        { id: 'forest', text: '숲에 나무가 많아요.' },
-      ],
-      answer: 'mountain',
-      hint: { level1: '무엇이 있나요?', level2: '산에 눈이 왔어요.' },
-      feedback: {
-        correct: '멋지게 찾았어요! 산에 눈이 왔네요.',
-        retry: '괜찮아요. 한 번 더 해봐요.',
-      },
-    },
-    {
-      id: 'q3',
-      instruction: '그림에 맞는 문장을 골라봐요.',
-      // 리소스 추가 필요: 따뜻한 이글루 그림 PNG
-      targetImageLabel: '이글루 그림',
-      targetSymbol: '🧊 ☀️',
-      focusWord: { word: '이글루', syllables: ['이', '글', '루'] },
-      choices: [
-        { id: 'house', text: '이글루에서 추워요.' },
-        { id: 'igloo', text: '이글루에서 따뜻해요.' },
-        { id: 'castle', text: '성에서 놀아요.' },
-      ],
-      answer: 'igloo',
-      hint: { level1: '이글루에서 어떤 느낌이 날까요?', level2: '이글루에서 따뜻해요.' },
-      feedback: {
-        correct: '훌륭해요! 이글루에서 따뜻하네요.',
-        retry: '천천히 다시 생각해볼까요?',
-      },
-    },
-    {
-      id: 'q4',
-      instruction: '그림에 맞는 문장을 골라봐요.',
-      // 리소스 추가 필요: 글씨를 쓰는 아이 그림 PNG
-      targetImageLabel: '글씨를 쓰는 아이 그림',
-      targetSymbol: '✏️ 📝',
-      focusWord: { word: '글씨를', syllables: ['글', '씨', '를'] },
-      choices: [
-        { id: 'write', text: '글씨를 쓰고 있어요.' },
-        { id: 'draw', text: '그림을 그리고 있어요.' },
-        { id: 'read', text: '책을 읽고 있어요.' },
-      ],
-      answer: 'write',
-      hint: { level1: '무엇을 하고 있나요?', level2: '글씨를 쓰고 있어요.' },
-      feedback: {
-        correct: '잘 찾았어요! 글씨를 쓰고 있네요.',
-        retry: '힌트를 보고 다시 골라봐요.',
-      },
-    },
-    {
-      id: 'q5',
-      instruction: '그림에 맞는 문장을 골라봐요.',
-      // 리소스 추가 필요: 핀 꽃 그림 PNG
-      targetImageLabel: '핀 꽃 그림',
-      targetSymbol: '🌸 🌼',
-      focusWord: { word: '꽃이', syllables: ['꽃', '이'] },
-      choices: [
-        { id: 'flower', text: '꽃이 피었어요.' },
-        { id: 'leaf', text: '나무에 잎이 자랐어요.' },
-        { id: 'fruit', text: '열매가 맺혔어요.' },
-      ],
-      answer: 'flower',
-      hint: { level1: '무엇이 피었나요?', level2: '꽃이 활짝 피었어요.' },
-      feedback: {
-        correct: '한 번에 찾았네요! 꽃이 피었네요.',
-        retry: '다시 한번 해볼까요?',
-        completed: '그림과 문장 연결하기를 모두 마쳤어요! 문장을 잘 읽었어요.',
       },
     },
   ],
@@ -753,7 +646,7 @@ export const followSentenceLesson: TrainingLesson = {
       hint: { level1: '오늘 날씨가 어떠한가요?', level2: '오늘은 / 햇빛이 / 따뜻해요.' },
       feedback: {
         correct: '잘 읽었어요! 감정이 살아있네요.',
-        retry: '힌트를 보고 다시 읽어봐요.',
+        retry: '천천히 다시 읽어봐요.',
         completed: '문장 따라 읽기를 모두 마쳤어요! 문장을 자연스럽게 익혔어요.',
       },
     },
@@ -803,5 +696,6 @@ export const lessonMap: Record<string, TrainingLesson> = {
 }
 
 export const getLessonById = (id: string): TrainingLesson | null => {
-  return lessonMap[id] ?? null
+  const lesson = lessonMap[id]
+  return lesson ? personalizeRuntimeValue(lesson) : null
 }

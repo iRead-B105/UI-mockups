@@ -116,8 +116,8 @@ const submitAnswer = (): boolean => {
     storedAnswers[question.id] = answer
   } else {
     progressState.isCurrentCorrect = false
-    // 2회 시도 후에는 1단계 힌트를 자동으로 활성화
-    if (progressState.attemptCount >= 2 && progressState.hintLevel < 1) {
+    // 최대 3회 직접 시도한 뒤 1단계 시각 힌트를 자동으로 활성화
+    if (progressState.attemptCount >= 3 && progressState.hintLevel < 1) {
       progressState.hintLevel = 1
     }
   }
@@ -159,30 +159,28 @@ const nextQuestion = (): boolean => {
   return true
 }
 
-// 목업 결과 저장. 첫 시도는 실패하고 재시도 시 성공하여
-// "저장 실패 → 재시도" 흐름을 보여줍니다. 저장 중에는 입력 잠금(isSaving).
-const saveResult = (): Promise<boolean> => {
+// 결과 저장 중에는 입력을 잠급니다. 실제 API 연결 시 같은 로딩 화면 안에서
+// 최초 요청과 자동 재시도 2회를 수행하고, 모두 실패한 경우에만 일반 오류를 표시합니다.
+const saveResult = async (): Promise<boolean> => {
   if (savingState.status === 'saving') return Promise.resolve(false)
 
   savingState.status = 'saving'
   savingState.errorMessage = null
 
-  return new Promise<boolean>((resolve) => {
-    const delay = 700
-    setTimeout(() => {
-      // 첫 시도 실패 → 재시도 성공(목업)
-      if (savingState.attemptCount === 0) {
-        savingState.attemptCount += 1
-        savingState.status = 'failed'
-        savingState.errorMessage = '저장에 실패했어요. 다시 시도해 주세요.'
-        resolve(false)
-      } else {
-        savingState.status = 'success'
-        savingState.attemptCount += 1
-        resolve(true)
-      }
-    }, delay)
+  // TODO: 백엔드 연결 시 아래 목업 성공 응답을 최대 3회 API 요청으로 교체합니다.
+  const succeeded = await new Promise<boolean>((resolve) => {
+    window.setTimeout(() => resolve(true), 700)
   })
+
+  savingState.attemptCount += 1
+  if (succeeded) {
+    savingState.status = 'success'
+    return true
+  }
+
+  savingState.status = 'failed'
+  savingState.errorMessage = '학습을 마무리하지 못했어. 다시 해보자!'
+  return false
 }
 
 const completeLesson = (): void => {

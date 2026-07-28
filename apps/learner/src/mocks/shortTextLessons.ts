@@ -56,7 +56,7 @@ export const sentenceOrderLesson: TrainingLesson = {
   activityType: 'sentence-order',
   estimatedMinutes: 12,
   questions: [
-    { id: 'q1', instruction: '문장을 순서대로 만들어봐요.', targetText: '윤정이가 사과를 먹어요.', choices: [{ id: 'eat', text: '먹어요.' }, { id: 'apple', text: '사과를' }, { id: 'yj', text: '윤정이가' }], answer: 'yj|apple|eat', feedback: { correct: '맞아요! 문장을 잘 만들었어요.', retry: '누가, 무엇을, 어떻게 했는지 차례로 놓아봐요.' } },
+    { id: 'q1', instruction: '문장을 순서대로 만들어봐요.', targetText: '{studentName}이가 사과를 먹어요.', choices: [{ id: 'eat', text: '먹어요.' }, { id: 'apple', text: '사과를' }, { id: 'yj', text: '{studentName}이가' }], answer: 'yj|apple|eat', feedback: { correct: '맞아요! 문장을 잘 만들었어요.', retry: '누가, 무엇을, 어떻게 했는지 차례로 놓아봐요.' } },
     { id: 'q2', instruction: '문장을 순서대로 만들어봐요.', targetText: '강아지가 빨간 공을 찾아요.', choices: [{ id: 'ball', text: '공을' }, { id: 'find', text: '찾아요.' }, { id: 'dog', text: '강아지가' }, { id: 'red', text: '빨간' }], answer: 'dog|red|ball|find', feedback: { correct: '문장 순서가 맞아요!', retry: '한 번 더 해봐요.' } },
     { id: 'q3', instruction: '문장을 순서대로 만들어봐요.', targetText: '나비가 꽃에 앉아요.', choices: [{ id: 'sit', text: '앉아요.' }, { id: 'butterfly', text: '나비가' }, { id: 'flower', text: '꽃에' }], answer: 'butterfly|flower|sit', feedback: { correct: '잘했어요! 자연스러운 문장이 되었어요.', retry: '나비가 어디에 앉는지 생각해봐요.' } },
     { id: 'q4', instruction: '문장을 순서대로 만들어봐요.', targetText: '친구가 도서관에서 그림책을 읽어요.', choices: [{ id: 'read', text: '읽어요.' }, { id: 'friend', text: '친구가' }, { id: 'book', text: '그림책을' }, { id: 'library', text: '도서관에서' }], answer: 'friend|library|book|read', feedback: { correct: '맞아요! 문장을 잘 완성했어요.', retry: '한 번 더 해봐요.' } },

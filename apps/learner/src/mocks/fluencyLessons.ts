@@ -25,7 +25,7 @@ export const phraseReadingLesson: TrainingLesson = {
   estimatedMinutes: 10,
   questions: [
     { id: 'q1', instruction: '묶음마다 잠깐 쉬어 읽어봐요.', targetText: '작은 새가 하늘을 날아요.', phraseChunks: ['작은 새가', '하늘을', '날아요.'], answer: 'q1', feedback: { correct: '뜻에 맞게 잘 끊어 읽었어요!', retry: '보이는 묶음마다 잠깐 쉬어봐요.' } },
-    { id: 'q2', instruction: '묶음마다 잠깐 쉬어 읽어봐요.', targetText: '윤정이는 도서관에서 책을 읽어요.', phraseChunks: ['윤정이는', '도서관에서', '책을 읽어요.'], answer: 'q2', feedback: { correct: '문장 뜻이 잘 들리게 읽었어요!', retry: '세 묶음으로 나눠 읽어봐요.' } },
+    { id: 'q2', instruction: '묶음마다 잠깐 쉬어 읽어봐요.', targetText: '{studentName}이는 도서관에서 책을 읽어요.', phraseChunks: ['{studentName}이는', '도서관에서', '책을 읽어요.'], answer: 'q2', feedback: { correct: '문장 뜻이 잘 들리게 읽었어요!', retry: '세 묶음으로 나눠 읽어봐요.' } },
     { id: 'q3', instruction: '묶음마다 잠깐 쉬어 읽어봐요.', targetText: '비가 그치면 무지개가 떠요.', phraseChunks: ['비가 그치면', '무지개가', '떠요.'], answer: 'q3', feedback: { correct: '자연스럽게 끊어 읽었어요!', retry: '모범 소리의 쉬는 곳을 들어봐요.' } },
     { id: 'q4', instruction: '묶음마다 잠깐 쉬어 읽어봐요.', targetText: '따뜻한 햇살이 창문으로 들어와요.', phraseChunks: ['따뜻한 햇살이', '창문으로', '들어와요.'], answer: 'q4', feedback: { correct: '긴 문장도 편안하게 읽었어요!', retry: '한 묶음씩 차분히 읽어봐요.' } },
     { id: 'q5', instruction: '묶음마다 잠깐 쉬어 읽어봐요.', targetText: '친구와 손을 잡고 공원으로 걸어가요.', phraseChunks: ['친구와 손을 잡고', '공원으로', '걸어가요.'], answer: 'q5', feedback: { correct: '훌륭하게 끊어 읽었어요!', retry: '뜻이 이어지는 말끼리 읽어봐요.', completed: '끊어 읽기를 마쳤어요!' } },
@@ -59,7 +59,7 @@ export const shortStoryLesson: TrainingLesson = {
     { id: 'q1', instruction: '두 문장을 이어 읽어봐요.', targetText: '봄이 왔어요. 따뜻한 햇살이 비쳐요.', phraseChunks: ['봄이 왔어요.', '따뜻한 햇살이 비쳐요.'], answer: 'q1', feedback: { correct: '봄 이야기를 잘 읽었어요!', retry: '한 문장씩 이어 읽어봐요.' } },
     { id: 'q2', instruction: '두 문장을 이어 읽어봐요.', targetText: '민수는 씨앗을 심었어요. 작은 싹이 돋았어요.', phraseChunks: ['민수는 씨앗을 심었어요.', '작은 싹이 돋았어요.'], answer: 'q2', feedback: { correct: '이야기의 흐름이 잘 들렸어요!', retry: '마침표에서 잠깐 쉬어봐요.' } },
     { id: 'q3', instruction: '두 문장을 이어 읽어봐요.', targetText: '구름이 모였어요. 곧 비가 내리기 시작했어요.', phraseChunks: ['구름이 모였어요.', '곧 비가 내리기 시작했어요.'], answer: 'q3', feedback: { correct: '두 문장을 자연스럽게 이었어요!', retry: '첫 문장 뒤에 잠깐 쉬어봐요.' } },
-    { id: 'q4', instruction: '두 문장을 이어 읽어봐요.', targetText: '윤정이는 우산을 폈어요. 친구와 함께 걸어갔어요.', phraseChunks: ['윤정이는 우산을 폈어요.', '친구와 함께 걸어갔어요.'], answer: 'q4', feedback: { correct: '긴 이야기도 또박또박 읽었어요!', retry: '한 문장씩 차분히 읽어봐요.' } },
+    { id: 'q4', instruction: '두 문장을 이어 읽어봐요.', targetText: '{studentName}이는 우산을 폈어요. 친구와 함께 걸어갔어요.', phraseChunks: ['{studentName}이는 우산을 폈어요.', '친구와 함께 걸어갔어요.'], answer: 'q4', feedback: { correct: '긴 이야기도 또박또박 읽었어요!', retry: '한 문장씩 차분히 읽어봐요.' } },
     { id: 'q5', instruction: '두 문장을 이어 읽어봐요.', targetText: '비가 그쳤어요. 하늘에 무지개가 떴어요.', phraseChunks: ['비가 그쳤어요.', '하늘에 무지개가 떴어요.'], answer: 'q5', feedback: { correct: '짧은 이야기를 끝까지 읽었어요!', retry: '마침표를 보고 쉬어 읽어봐요.', completed: '짧은 이야기 읽기를 마쳤어요!' } },
   ],
 }

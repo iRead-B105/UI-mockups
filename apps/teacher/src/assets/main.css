@@ -307,9 +307,7 @@ p {
     background: var(--white);
   }
 
-  .teacher-header,
   .teacher-sidebar,
-  .student-tabs,
   .print-hidden {
     /* 조작용 메뉴와 버튼은 보고서 인쇄물에 필요 없으므로 완전히 숨깁니다. */
     display: none !important;

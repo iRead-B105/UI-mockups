@@ -226,16 +226,3 @@ export interface SavingState {
   errorMessage: string | null
   attemptCount: number
 }
-
-// 향후 서버 연동 시 사용할 커리큘럼 세션 타입.
-// 현재 목업에서는 autoAdvance: false(학습자가 직접 다음 레슨 선택).
-// 액티비티 컴포넌트 내부에 다음 레슨 이동을 하드코딩하지 말고,
-// 이 세션 정보를 통해 상위(뷰/라우터)에서 처리하도록 설계합니다.
-export interface CurriculumSession {
-  sessionId: string
-  learnerId: string
-  currentLessonId: string
-  orderedLessonIds: string[]
-  currentLessonIndex: number
-  autoAdvance: boolean
-}

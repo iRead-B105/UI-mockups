@@ -101,21 +101,3 @@ export const getHangulCardUrl = (jamo: string): string | null => {
   }
   return null
 }
-
-// 학습 심볼(correct/equals/plus 등) → URL 조회
-export const getLearningSymbolUrl = (
-  name: 'correct' | 'incorrect' | 'arrow_right' | 'equals' | 'plus' | 'question',
-): string | null => {
-  const file = `learning_symbol_${name}.png`
-  const entry = Object.entries(symbolModules).find(([path]) => path.endsWith(file))
-  return entry ? entry[1].default : null
-}
-
-// 빈 카드(배경용) 색상 → URL 조회
-export const getBlankCardUrl = (
-  color: 'pink' | 'coral' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple',
-): string | null => {
-  const file = `hangul_blank_card_${color}.png`
-  const entry = Object.entries(blankModules).find(([path]) => path.endsWith(file))
-  return entry ? entry[1].default : null
-}

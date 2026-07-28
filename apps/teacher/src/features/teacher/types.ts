@@ -171,19 +171,6 @@ export interface GuardianComment extends MessageBase<'unread' | 'read' | 'archiv
   readAt?: string
 }
 
-export interface ReportVersion {
-  id: number
-  studentId: number
-  version: number
-  status: ReportStatus
-  periodStart: string
-  periodEnd: string
-  teacherOpinion: string
-  createdAt: string
-  updatedAt: string
-  publishedAt?: string
-}
-
 export interface ShareLink {
   id: number
   reportVersionId: number
