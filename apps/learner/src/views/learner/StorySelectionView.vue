@@ -77,7 +77,7 @@ const visibleLibraryBooks = computed(() =>
 
 function readingRoute(book: StoryTemplate, continueReading = false): RouteLocationRaw {
   return {
-    name: 'story-reading',
+    name: 'story-gaze-calibration',
     params: { storyId: book.id },
     query: continueReading ? { continue: '1' } : { new: '1' },
   }
