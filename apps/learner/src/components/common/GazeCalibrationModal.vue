@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import storyScene from '../../assets/story/story-reader-turtle-scene-mock.png'
 
 type BridgeAnchorTarget = string | Element | { x: number; y: number } | { clientX: number; clientY: number }
@@ -22,9 +21,7 @@ type GazeEventDetail = {
   y?: number
 }
 
-const route = useRoute()
-const router = useRouter()
-const storyId = computed(() => String(route.params.storyId ?? 'alice'))
+const emit = defineEmits<{ close: [] }>()
 
 const targets = [
   { id: 'left', label: '왼쪽', style: { left: '18%', top: '50%' } },
@@ -188,8 +185,8 @@ async function sampleCurrentTarget() {
   }
 }
 
-async function startReading() {
-  await router.replace({ name: 'story-reading', params: { storyId: storyId.value }, query: route.query })
+function close() {
+  emit('close')
 }
 
 function retryCalibration() {
@@ -216,7 +213,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="gaze-calibration-page">
+  <div class="gaze-calibration-overlay" role="dialog" aria-modal="true" aria-labelledby="gaze-calibration-title" @click.self="close">
     <section class="calibration-frame" aria-labelledby="gaze-calibration-title">
       <img :src="storyScene" alt="" />
       <div class="scene-shade" aria-hidden="true" />
@@ -255,20 +252,20 @@ onBeforeUnmount(() => {
         <p v-else class="error">{{ errorMessage }}</p>
 
         <div>
-          <button v-if="status !== 'complete'" class="secondary" type="button" @click="startReading">건너뛰기</button>
+          <button v-if="status !== 'complete'" class="secondary" type="button" @click="close">건너뛰기</button>
           <button v-if="status === 'error'" class="secondary" type="button" @click="retryCalibration">다시 시작</button>
           <button v-if="status !== 'complete'" class="primary" type="button" :disabled="status === 'sampling'" @click="sampleCurrentTarget">
             {{ status === 'sampling' ? '측정 중' : '수동 저장' }}
           </button>
-          <button v-else class="primary" type="button" @click="startReading">이야기 읽기</button>
+          <button v-else class="primary" type="button" @click="close">완료</button>
         </div>
       </footer>
     </section>
-  </main>
+  </div>
 </template>
 
 <style scoped>
-.gaze-calibration-page{position:relative;width:100%;height:100%;min-height:590px;display:grid;place-items:center;padding:clamp(10px,1.5vh,18px) var(--learner-page-padding);overflow:hidden;background:#66bdf1;color:var(--learner-color-text);font-family:var(--learner-font-reading)}
+.gaze-calibration-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:clamp(10px,1.5vh,18px) var(--learner-page-padding);background:rgb(32 49 86 / 55%);backdrop-filter:blur(4px);color:var(--learner-color-text);font-family:var(--learner-font-reading)}
 .calibration-frame{position:relative;width:min(94vw,1520px);height:min(97%,850px);min-height:0;overflow:hidden;border:var(--learner-border-width-strong) solid rgba(255,255,255,.86);border-radius:34px;background:#d6edff;box-shadow:var(--learner-shadow-floating)}
 .calibration-frame>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scene-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,252,226,.18),rgba(32,49,86,.24));pointer-events:none}

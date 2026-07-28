@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { isNavigationFailure, useRouter } from 'vue-router'
 import iReadMainLogo from '../../assets/header/iread-main.png'
 import headerCloudBackground from '../../assets/header/iread-header-true-alpha.png'
 import { useDeviceStatus } from '../../composables/useDeviceStatus'
+import { useGazeCalibration } from '../../composables/useGazeCalibration'
 
 defineProps<{ userName: string }>()
 
@@ -15,6 +16,13 @@ const {
   setEyeTrackerConnected,
   setMicrophoneState,
 } = useDeviceStatus()
+
+const showEyeMenu = ref(false)
+const { open: openGazeCalibration } = useGazeCalibration()
+const startCalibration = () => {
+  showEyeMenu.value = false
+  openGazeCalibration()
+}
 
 const handleMicrophoneState = (event: Event) => {
   const detail = (event as CustomEvent<{ active?: boolean; available?: boolean }>).detail
@@ -76,24 +84,36 @@ const handleLogout = async () => {
     </RouterLink>
 
     <nav class="device-actions" aria-label="학습 장치 상태와 나가기">
-      <div
-        class="device-button"
-        :class="{ active: eyeTrackerConnected, disconnected: !eyeTrackerConnected }"
-        role="status"
-        :aria-label="eyeTrackerConnected ? '아이트래커 연결됨' : '아이트래커 연결 안 됨'"
-      >
-        <span class="device-icon" aria-hidden="true">
-          <svg class="eyes-icon" viewBox="0 0 48 48">
-            <ellipse class="eye-white" cx="15" cy="24" rx="10" ry="14" />
-            <ellipse class="eye-white" cx="33" cy="24" rx="10" ry="14" />
-            <ellipse class="eye-pupil" cx="17" cy="26" rx="5.5" ry="8" />
-            <ellipse class="eye-pupil" cx="35" cy="26" rx="5.5" ry="8" />
-            <circle class="eye-shine" cx="19" cy="22" r="2.2" />
-            <circle class="eye-shine" cx="37" cy="22" r="2.2" />
-          </svg>
-          <i></i>
-        </span>
-        <span class="visually-hidden">시선</span>
+      <div class="device-button-wrap">
+        <button
+          type="button"
+          class="device-button"
+          :class="{ active: eyeTrackerConnected, disconnected: !eyeTrackerConnected }"
+          :aria-label="eyeTrackerConnected ? '아이트래커 연결됨' : '아이트래커 연결 안 됨'"
+          :aria-expanded="showEyeMenu"
+          @click="showEyeMenu = !showEyeMenu"
+        >
+          <span class="device-icon" aria-hidden="true">
+            <svg class="eyes-icon" viewBox="0 0 48 48">
+              <ellipse class="eye-white" cx="15" cy="24" rx="10" ry="14" />
+              <ellipse class="eye-white" cx="33" cy="24" rx="10" ry="14" />
+              <ellipse class="eye-pupil" cx="17" cy="26" rx="5.5" ry="8" />
+              <ellipse class="eye-pupil" cx="35" cy="26" rx="5.5" ry="8" />
+              <circle class="eye-shine" cx="19" cy="22" r="2.2" />
+              <circle class="eye-shine" cx="37" cy="22" r="2.2" />
+            </svg>
+            <i></i>
+          </span>
+          <span class="visually-hidden">시선</span>
+        </button>
+        <div v-if="showEyeMenu" class="eye-tracker-menu" role="menu" aria-label="아이트래커 메뉴">
+          <p class="eye-tracker-menu-status">
+            {{ eyeTrackerConnected ? '아이트래커 연결됨' : '아이트래커 연결 안 됨' }}
+          </p>
+          <button type="button" class="eye-tracker-menu-item" role="menuitem" @click="startCalibration">
+            보정하기
+          </button>
+        </div>
       </div>
 
       <div
@@ -132,3 +152,43 @@ const handleLogout = async () => {
 </template>
 
 <style scoped src="@/styles/common/LearnerHeader.css"></style>
+<style scoped>
+.device-button-wrap {
+  position: relative;
+}
+.eye-tracker-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  min-width: 220px;
+  padding: 14px;
+  border-radius: 20px;
+  background: #fffdf8;
+  border: 3px solid #eadfbf;
+  box-shadow: 0 16px 40px rgb(40 65 95 / 0.28);
+  display: grid;
+  gap: 10px;
+}
+.eye-tracker-menu-status {
+  margin: 0;
+  padding: 4px 10px;
+  color: #4d668a;
+  font-size: 15px;
+  font-weight: 800;
+}
+.eye-tracker-menu-item {
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: #5d6fe8;
+  color: #fff;
+  font-family: var(--learner-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.eye-tracker-menu-item:hover {
+  background: #4454c9;
+}
+</style>

@@ -65,12 +65,6 @@ const router = createRouter({
           component: () => import('../../views/learner/StorySelectionView.vue'),
         },
         {
-          // 스토리 읽기 전 시선 보정(4점 앵커). 하드웨어가 없으면 건너뛰기 가능.
-          path: 'stories/:storyId/calibration',
-          name: 'story-gaze-calibration',
-          component: () => import('../../views/learner/StoryGazeCalibrationView.vue'),
-        },
-        {
           path: 'stories/:storyId',
           name: 'story-reading',
           component: () => import('../../views/learner/StoryReaderView.vue'),

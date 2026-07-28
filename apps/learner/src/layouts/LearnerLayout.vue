@@ -2,11 +2,14 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import LearnerHeader from '../components/layout/LearnerHeader.vue'
+import GazeCalibrationModal from '../components/common/GazeCalibrationModal.vue'
+import { useGazeCalibration } from '../composables/useGazeCalibration'
 import { getCachedStudent } from '@/services/learnerDataRepository'
 
 const route = useRoute()
 const hideHeader = computed(() => route.meta.hideLearnerHeader === true)
 const activeStudent = computed(() => getCachedStudent())
+const { isOpen: isGazeCalibrationOpen, close: closeGazeCalibration } = useGazeCalibration()
 </script>
 
 <template>
@@ -23,6 +26,8 @@ const activeStudent = computed(() => getCachedStudent())
         />
       </RouterView>
     </div>
+
+    <GazeCalibrationModal v-if="isGazeCalibrationOpen" @close="closeGazeCalibration" />
   </div>
 </template>
 
